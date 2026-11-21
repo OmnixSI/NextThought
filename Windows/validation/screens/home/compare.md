@@ -1,7 +1,7 @@
 # 首页（HomeView.swift ↔ HomeView.axaml）逐元素对照
 
-- Mac 标准：`Sources/NextThought/HomeView.swift`，对照图 `docs/screenshots/v3/home.png`（Mac v3 浅色首页）。
-- Windows 截图：`windows-light.png` / `windows-dark.png`（本目录，`--demo --screenshots` 生成，1120×820 逻辑像素 @1.5 缩放）。
+- Mac 标准：`Sources/NextThought/HomeView.swift`；Mac 3.4.0 参考图 [home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21 实机渲染；旧 v3 图 `docs/screenshots/v3/home.png` 仅留档）。
+- Windows 截图：`validation/screens/current/home-light.png` / `home-dark.png`（task-48 用 `--demo --screenshots` 刷新，未入库；旧 `windows-*.png` 留档）。
 - 旧基线：`light.png` / `dark.png` / `en-*.png` 是 D1 之前的 Windows 首页，仅留档，不再作为对照标准。
 
 ## 元素对照
@@ -46,3 +46,14 @@
 - `tests/NextThought.Core.Tests/MeetingOutcomeTests.cs`：5 项（状态、计数、场景+分钟、when 中英）。
 - `tests/NextThought.Tests/HomeParityTests.cs`：8 项（子视图同名/顺序、hero、猜场景、场景默认、继续系列、最近记录、截图卡、OnboardingResume 与 demo 刷新）。
 - 真实启动：`--demo --self-test=startup` → `startup-check: passed`。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考（2026-11-21，macOS 26.5.2，1120×820 pt @2x = 1600×1171 px）：
+[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)。
+Windows 最新批次（`--demo --screenshots`，未入库）：`validation/screens/current/home-light.png` / `home-dark.png`（1120×820）。
+
+- 逐图核对（浅/深各看一遍）：日期 overline、两行 hero、场景卡图标/标题/胶囊/承诺/三条 moments、`不挑场合，立即记录`、先准备资料/开始按钮、背景水墨、内容宽 760 与上下留白一致；场景胶囊**顺序**本轮已按 Mac `SessionMode.builtIn` 修正为 面试、组会、汇报 / 答辩、小组作业、客户沟通、工作会议、讲座 / 课程、小组讨论、通用（`AppState.Audio.cs` 的 `SceneChoices`，旧顺序把「汇报 / 答辩」排在「组会」前）。
+- 差异（未改，记录）：Mac 顶部是 首页/所有记录/系列 胶囊导航 + 交通灯，Windows 是 首页/会议/资料库；区块标题 Mac「继续一个系列 / 全部系列」↔ Windows「接着上一场 / 全部资料夹」（Windows 文案来自旧字符串表，需 localization 统一）；Mac 图含第二屏「最近记录」首行，Windows 820 高截到同一区块之前，滚动后内容一致。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+- 其它元素（猜场景、场景默认、ContinueSeries 顺序、RecentMeetings、ScreenshotCard、OnboardingResume）沿用上表的结论，Mac 图不改变判定。

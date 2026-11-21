@@ -109,17 +109,32 @@ public partial class MainWindow
                 await WriteInventoryAsync(sample, textDirectory, dark ? "controls-dark" : "controls-light");
                 sample.Close();
             }
-            // First-run guide: first and last step (the per-step batch is deferred; switching the
-            // theme variant between captures made this loop flaky).
-            state.OnboardingStep = 0;
+            // First-run guide: all four steps in both themes, so the Mac step-1..4 reference
+            // screenshots each have a matching Windows capture (the old batch only kept the first
+            // and last step and happened to inherit the dark theme from the loop above).
             state.OnboardingVisible = true;
+            foreach (var dark in new[] { false, true })
+            {
+                if (Application.Current is { } app)
+                    app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                var suffix = dark ? "-dark.png" : "-light.png";
+                for (var step = 0; step < 4; step++)
+                {
+                    state.OnboardingStep = step;
+                    await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    await Task.Delay(160);
+                    CaptureWindow(Path.Combine(directory, "onboarding-step" + step + suffix));
+                    await WriteInventoryAsync(this, textDirectory, "onboarding-step" + step + (dark ? "-dark" : "-light"));
+                }
+            }
+            state.OnboardingStep = 0;
+            if (Application.Current is { } lightApp)
+                lightApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             CaptureWindow(Path.Combine(directory, "onboarding-first.png"));
-            await WriteInventoryAsync(this, textDirectory, "onboarding-first");
             state.OnboardingStep = 3;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             CaptureWindow(Path.Combine(directory, "onboarding-last.png"));
-            await WriteInventoryAsync(this, textDirectory, "onboarding-last");
             state.OnboardingVisible = false;
 
             // The current island has one implemented visual state; capture it as evidence until C5 adds five.

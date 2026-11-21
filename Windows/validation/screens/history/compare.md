@@ -1,7 +1,7 @@
 # E18 会议列表：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/HistoryView.swift`（1738 行全文）、`Sources/NextThought/MeetingActionsMenu.swift`（68 行全文）
-对照基准：Mac v3.3.0（`5ddb9e5`）；Mac 截图 `docs/screenshots/history-light.png` / `history-dark.png`（v3 目录没有单独的 history 截图，先用这两张；如需 v3.3.0 实机截图见文末「待补」）
+对照基准：Mac v3.3.0（`5ddb9e5`）+ Mac 3.4.0 参考批次（**没有 history 独立截图**，用 [home-light](../../mac-screens/home/home-light.png) 的「所有记录」导航侧证；旧 `docs/screenshots/history-light.png` / `history-dark.png` 仅留档）
 Windows 代码：`Windows/src/NextThought.Desktop/Views/HistoryView.axaml(.cs)`、`AppState.Meeting.cs`（本次新增 E18 段）、`AppState.Deletion.cs`、`AppState.Archive.cs`、`RecentMeetingRow.cs`
 Windows 截图：`Windows/validation/screens/history/`（自检 `history-ui` 生成；另 `Windows/validation/screens/current/history-*.png` 为上一批 D1 截图）
 
@@ -123,3 +123,13 @@ Windows 截图：`Windows/validation/screens/history/`（自检 `history-ui` 生
 7. 重新整理行为：Mac 的 NotesRegeneration 重新生成结构化纪要；Windows 走自动纪要服务（模板纪要语言分支已支持强制中/英）。
 8. 删除确认/搜索占位等文案与 Mac confirmationDialog 原句未逐字一致（部分 Windows 专用文案走双语兜底，需 G9 文案表补齐）。
 9. 全部待实机验证项按 FIX_TASKS 第 4 节口径最多「已实现、未验证」。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考批次**没有 history 独立截图**（Mac 里「所有记录」= HistoryView，3.4 参考图只给了 home/notes 等页）：可用
+[home-light](../../mac-screens/home/home-light.png) 的「所有记录」导航与 [notes/transcript-light](../../mac-screens/notes/transcript-light.png) 的会议页做侧证。
+Windows 最新批次：`validation/screens/current/history-light.png` / `history-dark.png`（已刷新）。
+
+- 逐图核对：Windows 历史页的筛选（日期/长度/排序）、行标题/场景/时间/状态、右键菜单与 E18 原表一致；与 Mac 图能对照的只有导航位置和会议页视觉，无法逐像素对照列表行（Mac 批次缺口）。
+- 差异：Mac 3.4 历史页在「所有记录」标签内、左侧可选系列；Windows 历史页是同页顶部导航内的独立页面（E18 结构），细节差异见原表。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

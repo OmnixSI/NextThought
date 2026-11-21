@@ -16,7 +16,11 @@
     <!-- Title row: the client area extends into the title bar; the window keeps only its
          resize border, and the caption buttons are drawn here so the brand reads first. -->
     <Grid Grid.Row="0" Name="TitleBar" Background="Transparent" PointerPressed="TitleBar_PointerPressed">
-      <StackPanel Orientation="Horizontal" Margin="{DynamicResource D4Margin_24_0_0_0}" VerticalAlignment="Center" Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding !Recording}">
+      <!-- Three columns keep the brand, the centred tabs and the page subtitle from overlapping:
+           the subtitle is long in demo/archive contexts and used to run over the tabs when all
+           three sat in one grid cell. -->
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_0_0_142_0}">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="{DynamicResource D4Margin_24_0_0_0}" VerticalAlignment="Center" Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding !Recording}">
         <Border Width="24" Height="24" CornerRadius="{DynamicResource D4CornerRadius_7}" Background="{DynamicResource InkBrush}" VerticalAlignment="Center">
           <TextBlock Text="N" Foreground="{DynamicResource OnInk}" FontSize="12" FontWeight="SemiBold"
                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -26,7 +30,7 @@
           <TextBlock Text="{Binding VersionText}" Classes="overline" FontSize="10" />
         </Border>
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
         <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 首页}" IsChecked="{Binding OnHome, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Home" />
         <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 会议}" IsChecked="{Binding OnLive, Mode=OneWay}"
@@ -34,7 +38,7 @@
         <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 资料库}" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Library" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_142_0}" IsVisible="{Binding !Recording}">
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
         <Button Classes="primary" Content="{loc:Tr 重启以更新}" Command="{Binding InstallUpdateCommand}"
@@ -51,6 +55,7 @@
           </StackPanel>
         </Button>
       </StackPanel>
+      </Grid>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="{DynamicResource D4Spacing_0}">
         <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="{loc:Tr 最小化}">
           <Path Data="M0,5 H10" StrokeThickness="1" />

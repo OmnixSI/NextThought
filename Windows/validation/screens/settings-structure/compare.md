@@ -35,3 +35,15 @@ Mac 参照：`Sources/NextThought/SettingsView.swift` 的 `SettingsPage` / `Sett
 - 「说话人与翻译」仍位于「提词与教练」页（Mac 通用→说话人组）；拖动涉及跨页卡片拆分，留待下一轮小改。
 - 语义检索卡片在「回答与资料」与「高级→资料组件」两处（Mac 仅高级资料组件）。
 - 搜索关键词表未移植；临场教练（E10）缺失。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：主窗口设置 [window-light](../../mac-screens/settings/window-light.png) / [window-dark](../../mac-screens/settings/window-dark.png)、
+快速设置 [quick-settings-light](../../mac-screens/settings/quick-settings-light.png) / [quick-settings-dark](../../mac-screens/settings/quick-settings-dark.png)、
+六页全高图见 `settings-pages/compare.md`。
+
+Windows 最新批次：`validation/screens/current/settings-light.png`、`quick-settings-light.png`、`settings-{scene,answer,coach,notes,general,advanced}-*.png`。
+
+- 逐图核对：Mac 3.4 的设置是「全高页」：顶部左侧「‹ 完成」、居中页名（场景/回答与资料/…）、右侧搜索框，左栏六项；内容区是分组卡片。Windows 是同窗口内嵌的设置页：左上「设置」大标题+说明、右上「完成」、搜索框在标题下、左栏六项、卡片分组。**布局差异大**（页标题位置、完成按钮位置、搜索框位置、全高页 vs 内嵌页），本轮只记录未改。
+- 卡片归属（哪张卡在哪一页）仍按本文件原表；Mac 图显示「回答服务」「联网搜索」在回答与资料页顶部，Windows 的对应卡在「高级」/回答页内（见 settings-pages 对照），属大差异。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

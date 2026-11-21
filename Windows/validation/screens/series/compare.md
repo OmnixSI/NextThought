@@ -1,7 +1,7 @@
 # E20 系列编辑器：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/WorkspacesView.swift` 全文（1877 行）、`Sources/NextThought/WorkspaceActions.swift`
-对照基准：Mac v3.3.0（`5ddb9e5`）；Mac 截图 `docs/screenshots/materials-light.png` / `materials-dark.png`（v3 目录无 series 单独截图，materials 页含系列列表；编辑器窗口 Mac 截图缺失，按源码逐元素对照）
+对照基准：Mac v3.3.0（`5ddb9e5`）+ Mac 3.4.0 参考图 [series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（系列页：左系列列表 + 右详情）；旧 `docs/screenshots/materials-light.png` / `materials-dark.png` 仅留档；编辑器窗口仍按源码逐元素对照
 Windows 代码：`Windows/src/NextThought.Desktop/Views/SeriesView.axaml(.cs)`、`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.Series.cs`、`AppState.SeriesEditor.cs`（本次重写）、`NextThought.Core/SeriesMaterials.cs`（新增）
 Windows 截图：`Windows/validation/screens/series/`（自检 `series-editor` 生成：series-light.png / series-editor-light.png；另 series/ 下 D4 批 series 页面 light/dark/en-light/en-dark 为上一批截图）
 
@@ -103,3 +103,12 @@ Windows 为「系列」页：左列系列列表（现有），右侧选中系列
 6. 基本信息缺 Mac「其他背景」notes 字段（Windows series 模型无该字段）与「更多信息」折叠分组；类型下拉用原始值而非 Mac 显示名 + 自定义类型名。
 7. Mac v3 截图目录没有 series 编辑器实机截图，当前用 materials 页 + 源码对照；需要 Mac 上补 WorkspaceEditor 四标签截图（交 OPEN_QUESTIONS）。
 8. `SeriesView` 的经验/题库行仍为只读（编辑入口在编辑器复盘标签）；如要求页内直接编辑需再加行内编辑。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：[series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（WorkspacesView 系列页：左系列列表 + 右详情）。
+Windows 最新批次：`validation/screens/current/series-light.png` / `series-dark.png`；另 `library-light/dark.png` 是 Windows 专有的「资料库」导入/解析页，不是 Mac 的系列页。
+
+- 逐图核对：Windows `SeriesView` 对应 Mac 系列页的结构（左列表 + 右详情/记录/资料/经验积累、开下一场、配置），标题/统计行/记录行样式沿用 E20 原表；Mac 图确认列表项是「图标 + 名称 + 统计」、右侧是 hero 标题 + 统计 + 标签（记录/资料/经验积累）+ 记录列表。
+- 差异（未改，记录）：Mac 3.4 顶部导航是「首页/所有记录/系列」，Windows 顶部是「首页/会议/资料库」；Windows「资料库」页做资料导入与解析（Mac 没有等价页面），系列页入口在 Windows 里是独立 Section 而非顶部导航（E20 结构决定）。列表排序/统计文案若与此图不符，按 E20 未解决项处理。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

@@ -1,7 +1,7 @@
 # 会中主界面（LiveSessionView.swift ↔ LiveView.axaml）逐元素对照
 
-- Mac 标准：`Sources/NextThought/LiveSessionView.swift`（LiveTopBar / RecordingTimer / PauseResumeButton / AnswerSettingsMenu / QuestionMark / CandidateStrip / TranscriptStatus / RightColumn / AnswerColumn / WebStatusLine / WebSources / RefinementRow / AnswerMoreMenu / EvidenceLine / EvidenceDetails / LiveComposer）+ `LiveWindowController.swift`（LiveWindowMenu）；对照图 `docs/screenshots/v3/live.png`。
-- Windows 截图：`windows-light.png` / `windows-dark.png`（本目录；`--demo --screenshots` 生成）。
+- Mac 标准：`Sources/NextThought/LiveSessionView.swift`（LiveTopBar / RecordingTimer / PauseResumeButton / AnswerSettingsMenu / QuestionMark / CandidateStrip / TranscriptStatus / RightColumn / AnswerColumn / WebStatusLine / WebSources / RefinementRow / AnswerMoreMenu / EvidenceLine / EvidenceDetails / LiveComposer）+ `LiveWindowController.swift`（LiveWindowMenu）；Mac 3.4.0 参考图 [live-light](../../mac-screens/live/live-light.png) / [live-dark](../../mac-screens/live/live-dark.png)，右栏另有 [live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)（旧 v3 图 `docs/screenshots/v3/live.png` 留档）。
+- Windows 截图：`validation/screens/current/live-light.png` / `live-dark.png`（task-48 刷新，未入库）。
 - 自动点检：`--demo --self-test=live-ui`（RunLiveUiCheckAsync）逐项验证顶栏状态、模式切换、问题标记、候选条、联网状态/来源、证据行与详情、回答历史导航、输入框与截图预览；结果见文末。
 
 ## 元素对照
@@ -100,3 +100,13 @@
 测试：`WebSearchModesTests` 5/5（off/auto/always 决策、Parse/Value、Title）；`LivePageParityTests` 9/9 通过（含更新后的三态菜单断言；更新该旧断言是因为顶部联网控件已从二态 CheckBox 改为三态 RadioButton）。
 
 未解决：原回答↔联网版两阶段切换未做；遗漏音频段无 Windows 计数来源；滚动跟随的「文本选择固定」未接（只按滚动位置判定）；真实联网/滚动/快捷键需实机点按验证。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：[live-light](../../mac-screens/live/live-light.png) / [live-dark](../../mac-screens/live/live-dark.png)；
+右栏实时纪要参考：[live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)。
+Windows 最新批次：`validation/screens/current/live-light.png` / `live-dark.png`。
+
+- 逐图核对（浅/深）：录音红点+计时+正在聆听、场景徽章+标题+系列名、自动回答/只记录分段、暂停/结束、左栏实时对话（对方/我、问题徽章、可回答问题行）、右侧建议回答（问句、2/2 历史、更简短/举例/英文版/…）、依据行、底部输入框（⌘L、截图、发送、立即回答）一致。
+- 差异（未改，记录）：Mac 3.4 右栏三标签「实时纪要 / 问答 / 我的笔记」，Windows 只有「我的笔记 / 问答」两标签，缺实时纪要标签与 lanes（E11 的两条未定稿 lane 已做，标签页未落地）；Mac 顶栏是 自动回答/只记录 + 图标 + 暂停 + 结束，Windows 多出 洞察/说话人/补译/开启同声传译 等入口（Windows 功能更外露）；Mac 1600×1171 的高度让答案全文同屏，Windows 820 高下答案区出现内部滚动条（同窗口逻辑尺寸的滚动差异，不算内容差异）。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

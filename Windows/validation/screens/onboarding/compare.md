@@ -38,3 +38,18 @@
 ## 未完成项
 
 - 示例面板无自动滚动跟读与逐字过渡动画；Mac 的 `AIHeading` 图标细节（sparkle）未复刻；清单「本机签名」行按 Windows 实际去掉（无对应能力）。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：四步 × 浅/深
+[step-1-light](../../mac-screens/onboarding/step-1-light.png) / [step-1-dark](../../mac-screens/onboarding/step-1-dark.png)、
+[step-2-light](../../mac-screens/onboarding/step-2-light.png) / [step-2-dark](../../mac-screens/onboarding/step-2-dark.png)、
+[step-3-light](../../mac-screens/onboarding/step-3-light.png) / [step-3-dark](../../mac-screens/onboarding/step-3-dark.png)、
+[step-4-light](../../mac-screens/onboarding/step-4-light.png) / [step-4-dark](../../mac-screens/onboarding/step-4-dark.png)。
+
+本轮改了截图 harness（`SelfTest/RunScreenshotsAsync.cs`）：引导现在按 4 步 × 浅/深各截一张（`onboarding-step0..3-{light,dark}.png`），
+并保留 first/last 别名；Windows 最新批次在 `validation/screens/current/`。
+
+- 逐图核对：进度条（1/4 场合 约 15 秒）、标题/说明、场合卡（图标+名称、场景胶囊顺序见 home 的修正、承诺+moments）、下一步/上一步、稍后继续 的位置和文案与 Mac 一致；第 1 步与第 4 步的浅/深配色随主题切换正确。
+- 差异（未改，记录）：Windows 第 1 步多一个「看一场示例会议」按钮，且「看一段面试示例」被窄列挤成三行（Mac 3.4 只有单行「看一段面试示例」）；Windows 每步都显示禁用的「上一步」（Mac 第一步没有）；Mac 有「稍后继续」链接，Windows 同位置有；第 2/3/4 步内容差异沿用原表。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

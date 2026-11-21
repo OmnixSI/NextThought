@@ -39,3 +39,13 @@
 ## 未完成项
 
 - 资料逐条解析进度/取消/重试、AudioSourceMenu 窗口选择、SeriesMatcher 建议、录制同意提示；洞察结果无缓存复用。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：[prepare-light](../../mac-screens/prepare/prepare-light.png) / [prepare-dark](../../mac-screens/prepare/prepare-dark.png)。
+Windows 最新批次：`validation/screens/current/prepare-light.png` / `prepare-dark.png`。
+
+- 逐图核对：标题卡（图标、标题、线上/线下分段、`这是什么会` 提示）、场景胶囊（顺序已按 Mac 修正，见 home 页同一改动）、承诺与三条 moments、底部开始条（声音/AI 状态、取消、开始）一致。
+- 差异（未改，记录）：Mac 3.4 把「这场用什么 不用的可以关掉」五开关（实时转写 始终开启、自动回答、实时纪要、同声传译、区分说话人）直接放在标题卡下方同屏；Windows 准备页同屏先出现「系列与资料」卡，这五个开关在页面下方/其它位置，未与 Mac 同屏。
+- Windows 额外：底部 `记录对方`、`导入 WAV`（E2 的导入/离线路径），Mac 没有；Mac 顶部没有「准备」页头，Windows 有页头 + 说明句（平台/信息架构差异）。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

@@ -1,7 +1,7 @@
 # E15 会议页：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/NotesPageView.swift`（1327 行）、`Sources/NextThought/SessionInfoView.swift`（202 行全文）、`Sources/NextThought/OutlineView.swift`（91 行全文）、`Sources/NextThought/NotesRegeneration.swift`（49 行全文）
-对照基准：Mac v3.3.0（`5ddb9e5`）；Mac 截图 `docs/screenshots/notes.png`（v3 会议页浅色）
+对照基准：Mac v3.3.0（`5ddb9e5`）+ Mac 3.4.0 参考图（见文末 task-48 节）；Mac 3.4.0 有 [review-light](../../mac-screens/notes/review-light.png) / [review-dark](../../mac-screens/notes/review-dark.png)、[work-light](../../mac-screens/notes/work-light.png) / [work-dark](../../mac-screens/notes/work-dark.png)、[transcript-light](../../mac-screens/notes/transcript-light.png) / [transcript-dark](../../mac-screens/notes/transcript-dark.png)；旧 `docs/screenshots/notes.png` 仅留档
 Windows 代码：`Windows/src/NextThought.Desktop/Views/NotesView.axaml(.cs)`、`Views/SessionInfoWindow.axaml(.cs)`、`Views/NotesEditorWindow.axaml`、`AppState.StructuredNotes.cs`（E15 段）、`NotesOutlineRows.cs`、`AppState.MeetingNotes.cs`
 Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成：notes-light / notes-outline-light / notes-transcript-light / notes-personal-light / notes-info-light）
 
@@ -89,3 +89,14 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 5. 转写 tab 内嵌版本切换/查找/逐行撤销未做（E17 的 CorrectedTranscriptView 窗口已实现，可从按钮进入）；跳转滚动为近似最近行。
 6. 个人笔记选中高亮时联动证据侧栏未做；标签名「个人笔记」与 Mac「我的笔记」用词不同。
 7. 会议信息缺不可用空状态、unqueued 丢失确认/重试保存；无 Mac v3.3 会议页深色截图（v3 只有 notes.png）。
+
+## Mac 3.4.0 参考图与逐图核对（task-48）
+
+Mac 3.4.0 参考：[review-light](../../mac-screens/notes/review-light.png) / [review-dark](../../mac-screens/notes/review-dark.png)（回顾纪要）、
+[work-light](../../mac-screens/notes/work-light.png) / [work-dark](../../mac-screens/notes/work-dark.png)（工作会议纪要）、
+[transcript-light](../../mac-screens/notes/transcript-light.png) / [transcript-dark](../../mac-screens/notes/transcript-dark.png)（转写）。
+Windows 最新批次：`validation/screens/current/notes-*.png`、`transcript-*.png`；本轮 `--demo --screenshots` 的 notes 标签页只截到 纪要/转写/回答/个人笔记 四个标签，**review（回顾）与 work（工作模板）未截**，已记入 mac-screens README 的「未覆盖」。
+
+- 逐图核对：转写标签的说话人行、时间、译文/原文切换、问题徽章与 Mac transcript 图一致（`notes/current/transcript-light.png` 对照）；纪要标签的标题、决策/待办/风险分组沿用原表结论。
+- 差异/缺口（未改，记录）：Mac 的「回顾纪要」与「工作会议纪要」两个模板页在 Windows 批次里没有对应截图（Windows 用 `review/work` 两个 Demo 模板页，标签页存在但截图循环未覆盖）；Mac 3.4 的标签顺序与 Windows 四标签（纪要/转写/回答/个人笔记）见 E15/E16 的原表，本轮 mac 图不改变判定。
+- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。

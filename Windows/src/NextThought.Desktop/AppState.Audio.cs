@@ -3,11 +3,13 @@ namespace NextThought.Desktop;
 public partial class AppState
 {
 
+    // Mac SessionMode.builtIn order: interview, labMeeting, academic, groupProject, client,
+    // meeting, lesson, discussion, general.
     private static readonly SceneChoice[] SceneChoices =
     [
         new(MeetingMode.Interview, "面试", "被问、要答得清楚"),
-        new(MeetingMode.Academic, "汇报 / 答辩", "讲给别人听"),
         new(MeetingMode.LabMeeting, "组会", "讲进展，听意见"),
+        new(MeetingMode.Academic, "汇报 / 答辩", "讲给别人听"),
         new(MeetingMode.GroupProject, "小组作业", "分工与对齐"),
         new(MeetingMode.Client, "客户沟通", "先听需求再回应"),
         new(MeetingMode.Meeting, "工作会议", "结论与待办"),
