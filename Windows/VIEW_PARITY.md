@@ -41,7 +41,7 @@
 | `Sources/NextThought/Theme.swift` | `MetricPill` | C9 | — | 未做 | — |
 | `Sources/NextThought/Theme.swift` | `RefinementBar` | C9 | — | 未做 | — |
 | `Sources/NextThought/UnderlineTabs.swift` | `UnderlineTabs` | C9 | — | 未做 | — |
-| `Sources/NextThought/HomeView.swift` | `Chip` | E1 | Views/HomeView.axaml | 未做 | — |
+| `Sources/NextThought/HomeView.swift` | `Chip` | E1 | Views/Home/StartComposer.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
 | `Sources/NextThought/HomeView.swift` | `ContinueSeries` | E1 | Views/Home/ContinueSeries.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
 | `Sources/NextThought/HomeView.swift` | `HomeScreenshotCard` | E1 | Views/Home/HomeScreenshotCard.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
 | `Sources/NextThought/HomeView.swift` | `HomeView` | E1 | Views/HomeView.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
@@ -84,14 +84,14 @@
 | `Sources/NextThought/NotesPageView.swift` | `AIHeadingText` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `ConfirmBadge` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `CorrectedTranscript` | E15 | Views/CorrectedTranscriptView.axaml | 已实现、未验证 | `Windows/validation/screens/CorrectedTranscript/` |
-| `Sources/NextThought/NotesPageView.swift` | `LineEditSheet` | E15 | Views/NotesView.axaml | 未做 | — |
+| `Sources/NextThought/NotesPageView.swift` | `LineEditSheet` | E15 | Views/NotesView.axaml.cs | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `MeetingPage` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesBody` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesItemEditSheet` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesProgressLine` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesSectionView` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `SessionEvidencePane` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
-| `Sources/NextThought/NotesPageView.swift` | `TemplateMenu` | E15 | Views/NotesView.axaml | 未做 | — |
+| `Sources/NextThought/NotesPageView.swift` | `TemplateMenu` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `TimeLink` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `VerdictBadge` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesSettingsView.swift` | `NotesAdvanced` | E15 | — | 未做 | — |
@@ -182,27 +182,27 @@
 | `Sources/NextThought/SettingsPages.swift` | `SceneSettingsPage` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsPages.swift` | `SettingToggle` | E25 | — | 未做 | — |
 | `Sources/NextThought/SettingsStatusRows.swift` | `SettingsStatusRow` | E25 | — | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `AdvancedGroup` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `AdvancedOptions` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `CloudSettings` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `AdvancedGroup` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SettingsView.swift` | `AdvancedOptions` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SettingsView.swift` | `CloudSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `CodexFastModeToggle` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `CodexReasoningPicker` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/SettingsView.swift` | `CompanionSection` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `CompanionSection` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `EngineTestRow` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `GitHubAccessSection` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `LanguagePicker` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/SettingsView.swift` | `ModelDownloadRow` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `Note` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `ModelDownloadRow` | E25 | Views/ManagedModelRow.axaml | 已实现、未验证 | `Windows/validation/screens/document-settings/` |
+| `Sources/NextThought/SettingsView.swift` | `Note` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `SettingsPageContent` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `SettingsPageView` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/SettingsView.swift` | `SettingsSection` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `SignatureStatus` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `SettingsSection` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SettingsView.swift` | `SignatureStatus` | E25 | Views/SettingsView.axaml | 本版不做 | 平台差异：Mac Gatekeeper 签名状态行；Windows 本版不签名、无对应信息（任务书 §2.8 平台差异） |
 | `Sources/NextThought/SettingsView.swift` | `SkillEditor` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `SkillSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `UpdateAdvanced` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `UpdateSettings` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `WebSearchAdvanced` | E25 | Views/SettingsView.axaml | 未做 | — |
-| `Sources/NextThought/SettingsView.swift` | `WebSearchSettings` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `UpdateSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SettingsView.swift` | `WebSearchAdvanced` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SettingsView.swift` | `WebSearchSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/ShortcutSettingsView.swift` | `ShortcutSettingsView` | E25 | — | 未做 | — |
 | `Sources/NextThought/QuickSettings.swift` | `QuickSettingsPanel` | E26 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/QuickSettings.swift` | `QuickStatusRow` | E26 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
@@ -234,11 +234,11 @@
 | `Sources/NextThought/LiveSessionView.swift` | `AnswerSettingsMenu` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `AnswerText` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `CandidateStrip` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
-| `Sources/NextThought/LiveSessionView.swift` | `Chip` | E4 | Views/LiveView.axaml | 未做 | — |
+| `Sources/NextThought/LiveSessionView.swift` | `Chip` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `EvidenceDetails` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `EvidenceLine` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveComposer` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
-| `Sources/NextThought/LiveSessionView.swift` | `LiveNotesColumn` | E4 | Views/LiveView.axaml | 未做 | — |
+| `Sources/NextThought/LiveSessionView.swift` | `LiveNotesColumn` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveSessionView` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveTopBar` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `NotesOnlyColumn` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
@@ -288,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | — | 未做 | — |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**281** 个视图；已有 Windows 页面 **165** 个，其余 **116** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **180** 个，其余 **101** 个待做。

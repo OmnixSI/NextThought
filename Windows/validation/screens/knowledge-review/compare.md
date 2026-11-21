@@ -37,7 +37,7 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
 | Mac | Windows | 结论 |
 |---|---|---|
 | 系列编辑器/详情内「记录」区块：这个系列的会议，按时间倒序 | 系列编辑器新增「记录」标签：`SeriesRecords`（按系列成员、当前排序） | 一致 |
-| 空状态「还没有记录」+「从这个资料夹开始一场会议，记录和资料会保存在一起。」 | 同文案（`SeriesRecordsEmptyText`） | 一致 |
+| 空状态「还没有记录」+「从这个系列开始一场会议，记录和资料会保存在一起。」 | 同文案（`SeriesRecordsEmptyText`） | 一致 |
 | 点击一行 → 打开会议页（historySelection + select(.meetings)） | 「查看」按钮 → `OpenSeriesRecordAsync`：选中会议并切到会议页（Section=Notes；自检验证 current session = 该记录） | 一致 |
 
 ## 4. 资料复核（MaterialReviewSheet）
