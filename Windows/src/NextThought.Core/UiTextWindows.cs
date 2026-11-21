@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1292;
+    public const int Count = 1293;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1174,6 +1174,7 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["讲稿提示生成失败：%@"] = "Generating the script hint failed: %@",
         ["用户手动联网"] = "Manual web lookup",
         ["联网搜索未配置"] = "Web search is not configured",
         ["未完成"] = "Not finished",
