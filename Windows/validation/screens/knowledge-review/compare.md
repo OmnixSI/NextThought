@@ -80,3 +80,14 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
 4. 资料复核：无 QuickLook 内嵌原件预览；「打开完整文本」打开的是解析 JSON（Windows 无归档 Markdown 路径）；截断说明/80k 预览已对照。
 5. 无 Mac 对应视图截图（KnowledgeReviewSection/WorkspaceRecordsTab/MaterialReviewSheet 均无 docs 截图），本轮截图仅 Windows 自检取证；按口径状态最多「已实现、未验证」。
 6. 记录标签的排序跟随当前历史排序（Mac 按 startedAt 倒序），差异小但未逐项对齐。
+
+## task-62 / E18 闭环：知识复核与资料复核（2026-11-21，阶段 4 §6.7）
+
+- Mac 参照：`Sources/NextThought/KnowledgeReviewSection.swift`（知识/决定/行动候选卡）、`ProjectLibrarySupport.swift`（WorkspaceRecordsTab / MaterialReviewSheet）；macOS 无对应截图，按源码逐元素。
+- 本轮自检：`--self-test=knowledge-review` **passed**（`knowledge-review-check.json` 已更新入库，12 步全过）。
+- 截图（本目录，本轮隔离数据目录重拍）：`series-change-light.png`（系列页「待确认」变更卡）、`series-knowledge-light.png`（知识候选标签）、`material-review-light.png` / `material-review-dark.png`（资料复核窗口浅/深）。
+- 本轮修掉的 3 个真实问题（E18 阻塞的根因，全部在系列/Workspace 范围）：
+  1. **`WorkspaceStore.Save` 丢 `sessionIds`**：`WorkspaceSeries.SessionIds` 是 `[JsonIgnore]`（Windows 分组状态），旧实现直接序列化 series，保存后 `sessionIds` 不落盘，`Load()` 读回 0 条记录 → 系列「记录」标签与知识复核自检都变空。现 Save 显式把 `sessionIds` 写入每个 series 文件与 legacy `Workspace/workspace.json`（`SerializeSeries`/`SerializeData`），Load 原有 `ReadSessionIds` 读回；新增 `WorkspaceSessionRoundTripTests` 2/2 锁定往返。
+  2. **demo 切页清空选中系列**：`ApplyDemoStage(Library)` 在自定义 workspace（自检/真实非 demo 数据）里找不到 demo 面试系列时把 `SelectedSeries = null`；现在找到才赋值，不再覆盖用户/自检选择（`AppState.Demo.cs` 3 处）。
+  3. **`FocusSeriesForCheck` 选中不触发刷新**：`RefreshSeries()` 已默认选中同一行，再赋同值不触发 `OnSelectedSeriesChanged`，导致记录/变更列表不重建；现在显式刷新 lessons/meetings/skills/changes/stats（`AppState.Series.cs`）。
+- 逐元素结论沿用上表：知识候选卡、决定/行动候选卡、匹配问题/近似经验对照、保留旧版、忽略路径均**一致**；仍记为部分/缺口的是「收集本地候选」「收集已核实决定与行动」两个按钮未放到页面（数据层 `CollectKnowledgeCandidates`/`CollectSeriesChangeCandidates` 已实现）、AISoft 卡片底色（视觉近似）、以及真实资料复核窗口的人工确认流程（自检只覆盖警告/预览/备注写入）。这些不影响本轮 E18 验收，已在表中逐条标注。

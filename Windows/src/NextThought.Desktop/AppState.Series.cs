@@ -420,7 +420,13 @@ public partial class AppState
     {
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == seriesId);
+        // Assigning the row that RefreshSeries already selected does not fire OnSelectedSeriesChanged,
+        // so rebuild the per-series lists explicitly (self-check path).
         RefreshSeriesLessons();
+        RefreshSeriesMeetings();
+        RefreshSeriesSkills();
+        RefreshSeriesChanges();
+        RefreshSeriesStats();
     }
 
     /// <summary>Reloads workspace.json the way a new launch would.</summary>

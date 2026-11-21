@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
@@ -490,7 +491,7 @@ public sealed class WorkspaceStore
         {
             var name = StableSeriesId(series.Id) + ".json";
             keep.Add(name);
-            AtomicWrite(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
+            AtomicWrite(Path.Combine(seriesDirectory, name), SerializeSeries(series));
         }
         // Delete only files that were read successfully and are no longer present in memory.
         // Unreadable or unknown files stay untouched; they may be hand-edited Mac data.
@@ -503,7 +504,34 @@ public sealed class WorkspaceStore
         SyncSessionMetaFiles(data);
         SaveDocumentIds(data);
         // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
-        AtomicWrite(path, JsonSerializer.Serialize(data, Options));
+        AtomicWrite(path, SerializeData(data));
+    }
+
+    /// <summary>
+    /// SessionIds is [JsonIgnore] (it is Windows grouping state, not part of the Mac model), but the
+    /// archive still has to keep it: Load() reads "sessionIds" back through ReadSessionIds. Write the
+    /// field explicitly so a save/load round trip keeps a series' meetings.
+    /// </summary>
+    private static string SerializeSeries(WorkspaceSeries series)
+    {
+        var node = JsonSerializer.SerializeToNode(series, Options)!.AsObject();
+        node["sessionIds"] = new JsonArray(series.SessionIds.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
+        return node.ToJsonString(Options);
+    }
+
+    private static string SerializeData(WorkspaceData data)
+    {
+        var node = JsonSerializer.SerializeToNode(data, Options)!.AsObject();
+        if (node["series"] is JsonArray seriesNodes)
+        {
+            for (var index = 0; index < seriesNodes.Count && index < data.Series.Count; index++)
+            {
+                if (seriesNodes[index] is not JsonObject seriesNode) continue;
+                seriesNode["sessionIds"] = new JsonArray(data.Series[index].SessionIds
+                    .Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
+            }
+        }
+        return node.ToJsonString(Options);
     }
 
     /// <summary>A6/§4.3: the on-disk identifier spelling is upper-case with hyphens.</summary>

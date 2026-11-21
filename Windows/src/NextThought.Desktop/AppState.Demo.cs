@@ -80,7 +80,7 @@ public partial class AppState
         RefreshSkillRows();
         // Series page and the history's series grouping.
         RefreshSeries();
-        SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+        if (SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id) is { } demoSeries) SelectedSeries = demoSeries;
         RefreshSeriesMeetings();
         RefreshSeriesLessons();
         RefreshSeriesSkills();
@@ -132,7 +132,7 @@ public partial class AppState
             MeetingTitle = demo.Draft.Title;
             SelectedMode = MeetingMode.Interview;
             OnPropertyChanged(nameof(SelectedScene));
-            SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+            if (SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id) is { } demoSeries) SelectedSeries = demoSeries;
         }
         else if (plan.Page == DemoPage.Meetings && plan.Defaults.TryGetValue("demoNotes", out var notes) && notes == "work")
         {
@@ -216,7 +216,7 @@ public partial class AppState
             case "library":
                 ApplyDemoStage(DemoStages.Library);
                 MeetingTitle = "";
-                SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+                if (SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id) is { } demoSeries) SelectedSeries = demoSeries;
                 break;
             case "settings":
                 ApplyDemoStage(DemoStages.Settings);

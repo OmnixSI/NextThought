@@ -216,6 +216,11 @@ public partial class MainWindow
             reviewWindow.Show();
             await Task.Delay(600);
             CaptureVisual(reviewWindow, Path.Combine(directory, "material-review-light.png"));
+            Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(350);
+            CaptureVisual(reviewWindow, Path.Combine(directory, "material-review-dark.png"));
+            Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(250);
             reviewWindow.Close();
             await Task.Delay(200);
             passed = steps.All(step => (bool)step.GetType().GetProperty("passed")!.GetValue(step)!);
