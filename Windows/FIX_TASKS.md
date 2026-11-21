@@ -9,6 +9,7 @@ Nov 20, 2026 · @Homing
 
 ## 执行状态（windows/parity，2026-11-21；对照基准 Mac v3.4.0 `f015e8c6`）
 
+> 状态规则按 `C:\Users\Thunderobot\Downloads\WINDOWS_FINAL_DECISIONS.md` §1 更新：只剩「接受」/「第二批」差别的任务可标「已实现、未验证」；「已验证」需本机实测记录。对照文档结论见 `ACCEPTED_DIFFERENCES.md`、`KNOWN_GAPS.md`。
 | 任务 | 状态 | 证据 | 未解决 |
 |---|---|---|---|
 | 0-1 | 已实现、未验证 | 分支 `windows/parity`、本文件 | 待逐元素对照或实机验证 |
@@ -180,10 +181,12 @@ Nov 20, 2026 · @Homing
 | K10 | 未做 | 未做：需先发布真实更新版本验证应用内更新，留给人 | 任务书 §9：应用内更新：见 §10.5（假发布源 windows-v0.9.1、发现/下载/校验/重启更新、SHA-256 错误拒绝） |
 | K11 | 未做 | 未做：需干净 Windows 沙盒系统，留给人 | 任务书 §9：干净系统：有 Windows 沙盒则安装并走完首次引导，检查衬线标题/中文字体；没有则写明留给人 |
 | K12 | 已验证 | 本机实测 2026-11-21：validation/realmachine/K12/audio-switch.json（8 设备中选择第二台，切换后 23 帧，error 空）；拔出/睡眠留给人（RELEASE.md §9） | 任务书 §9：切换与拔出音频设备、睡眠唤醒：有两台以上设备做切换；拔出和睡眠留给人 |
-| K13 | 未做 | 留给人：需真实会议软件（Zoom/Teams/腾讯会议）共享整屏验证防截屏 | 任务书 §9：会议软件里对方是否看得到窗口：需要第二台设备（人做） |
-| K14 | 未做 | 留给人：需真实回答服务端到端（回答流式/断网恢复/换服务） | 任务书 §9：真实手机：局域网与中转（人做） |
-| K15 | 未做 | 留给人：需在真实 Mac 上导入 win-export 并逐场打开核对 | 任务书 §9：多屏与不同缩放比例（人做） |
-| K16 | 未做 | 留给人：需真实发布后从旧版本升级/回退验证 | 任务书 §9：真实云端识别三家/联网搜索/回答服务账号（人做） |
+| K13 | 未做 | 留给人：需第二台设备，在真实会议软件（Zoom/Teams/腾讯会议）共享整屏，确认对方看不到主窗口/岛/字幕条/提词浮窗 | 任务书 §9：会议软件里对方是否看得到窗口：需要第二台设备（人做） |
+| K14 | 未做 | 留给人：真实手机在同一局域网与中转两种方式配对，验证问题/回答/状态同步 | 任务书 §9：真实手机：局域网与中转（人做） |
+| K15 | 未做 | 留给人：多屏与不同缩放比例（主屏 100%、副屏 150%），岛/字幕条/提词浮窗位置与大小正确 | 任务书 §9：多屏与不同缩放比例（人做） |
+| K16 | 未做 | 留给人：真实云端识别三家、联网搜索与回答服务账号的端到端验证 | 任务书 §9：真实云端识别三家/联网搜索/回答服务账号（人做） |
+| K17 | 未做 | — | 任务书决定文件 §6：PPTX 读屏跟页与讲稿要点：导入演示 PPTX，打开读屏并开始记录，前台翻页，确认跟页和讲稿要点随之变化（本机实测） |
+| K18 | 未做 | — | 任务书决定文件 §6：文档组件真实下载与校验：成功、取消、网络中断三种情况（本机实测） |
 | R1 | 已实现、未验证 | ReleaseIdentityTests 6/6；Desktop.csproj Version=0.9.0，安装标识 NextThought.Desktop | 任务书 §10：版本和产品标识：版本只在 NextThought.Desktop.csproj；构建号单调递增；产品名 NextThought；安装标识 NextThought.Desktop；安装到 %LOCALAPPDATA%\Programs\NextThought；界面不显示版本徽标；旧预览版标识检测/接管；用户数据不丢 |
 | R2 | 已实现、未验证 | release.ps1 -Ci 端到端 exit 0；payload 清洁审计 247 文件 PASS；安装包 82.6 MB | 任务书 §10：一条发布命令：Windows/release.ps1 -Version，整合 build_desktop/build_installer/run_release_checks/test_installer_lifecycle/test_release_smoke/write_release_manifest；干净工作区+分支+版本校验；verify 全量；发布 x64 自包含 ReadyToRun；生成安装包与 SHA256SUMS/update.json；跑安装与更新测试；产物放 artifacts/release/<版本>/；最后打印人的发布命令 |
 | R3 | 已实现、未验证 | artifacts/release/0.9.0 四件套（setup/RELEASE_NOTES/SHA256SUMS/update.json）；SHA-256 见最终回复 | 任务书 §10：产物：安装包 NextThought-0.9.0-windows-x64-setup.exe、SHA256SUMS.txt、update.json（标签/版本/构建号/文件名/SHA-256/提交/发布时间）、RELEASE_NOTES.md（中英） |
