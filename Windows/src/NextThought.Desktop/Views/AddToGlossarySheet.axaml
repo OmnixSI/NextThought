@@ -10,7 +10,7 @@
     <TextBlock Text="{loc:Tr 加入术语表}" Classes="section" />
     <TextBlock Text="{Binding GlossaryDraftLine}" Classes="caption" TextWrapping="Wrap" MaxLines="4"
                TextTrimming="CharacterEllipsis" />
-    <TextBlock Text="{loc:Tr 在这句里选中听错的词并复制（⌘C / Ctrl+C），再打开本窗口，会自动填入。}"
+    <TextBlock Text="{loc:Tr 在这句里选中听错的词并复制（⌘C），再打开本窗口，会自动填入。}"
                Classes="caption" FontSize="11" TextWrapping="Wrap" />
     <StackPanel Spacing="{DynamicResource D4Spacing_2}">
       <TextBlock Text="{loc:Tr 规范写法}" Classes="overline" />

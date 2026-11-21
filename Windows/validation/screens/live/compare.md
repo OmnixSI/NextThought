@@ -85,3 +85,18 @@
 - QuestionTurn 的整轮回答只在「汇报 / 答辩 + 线上 + 演讲模式或本场我说满 300 词」时启用（与 Mac answersWholeTurns 相同）；其他场景仍按候选句回答。
 - Mac 在 answerTurn 里额外记录 question 事件与 Diagnostics 明细，Windows 保留现有候选事件，「整轮」标记未写入归档 question 事件。
 - 提词岛有译文时少显示行数的裁剪未做；岛上「被问到的 gloss（BilingualAnswer.question）」当问题行已有双语回答时未单独展示。
+
+## E4 补全（本轮，runtime-gaps）
+
+| 缺口 | 实现 | 状态 |
+| --- | --- | --- |
+| 三态联网：不联网 / 自动判断 / 每次都查（Mac `webSearchMode`） | `Core/WebSearchNeed.cs` 的 `WebSearchMode` 上新增 `Parse/Value/ShouldSearch`；`AppSettings.WebSearchMode`（JSON `webSearchMode`）+ `SettingsViewModel` 映射；LiveView 回答设置菜单里的二态 CheckBox 换成三个 RadioButton（`SetLiveWebSearchModeCommand`，参数 off/auto/always，选中态 `LiveWebSearchIsOff/IsAuto/IsAlways`）；自动联网判断改为 `ShouldSearchWeb(question)`（模式优先，仍要求 provider 可用） | 已实现；单元测试覆盖 off/auto/always 与解析 |
+| 「原回答 ↔ 联网版」切换 | 未实现：Windows 是单次回答（联网结果在生成前注入 prompt），没有 Mac 的「先给快速回答、后台再生成联网版并替换」的两阶段结果；需要较大改造 `AppState.Live.AnswerAsync` | 未做 |
+| 滚动跟随 /「新增 N 句 · 回到现场」 | `AppState.E4.cs` 持有 `Core.ScrollFollowState`；`LiveView` 订阅转写列表 ScrollViewer 的 `ScrollChanged`（距底 >24px→暂停跟随），转写新增时若暂停则累计并显示 `LiveFollowBannerText`（「已暂停跟随（点按回到现场）」+ 未读数），按钮 `ReturnLiveToFollowCommand` 恢复跟随并滚到底；跟随中新增仍自动滚到底 | 已实现（代码级） |
+| 状态行回声数 / 遗漏音频段 / 麦克风未开 | `EchoDroppedCount`（回声行判定时 +1，会议开始清零）→「· N 句回声已忽略」；`DroppedAudioSegments` 保留属性与「· 遗漏 N 段」显示（Windows 音频层暂未产生该计数，保持 0）；`LiveMicOffText` 在未开麦克风且录音中显示「· 麦克风未开启，不会记下你说的话」；`Recording` 变化时刷新 | 已实现（遗漏段计数无来源） |
+| 手机状态点语义 / answerEngineReady 黄点 | 保留手机图标上的「伴侣运行中」点；回答设置按钮新增背景点：`LiveBackgroundDotVisible`＝伴侣/读屏/同传任一开启或回答服务未就绪，点色 Caution（Mac：answerEngineReady 为 ink，否则 caution），tooltip `LiveBackgroundDotHelp`（未配置时显示「还没有连接回答服务，听到问题也不会自动回答」） | 已实现（近似：answerEngineReady = UseCodex 或已存 API Key） |
+| Ctrl+L 聚焦输入框（Mac ⌘L） | `LiveView` 根 KeyDown：Ctrl+L 聚焦 `LiveComposer` 并全选 | 已实现 |
+
+测试：`WebSearchModesTests` 5/5（off/auto/always 决策、Parse/Value、Title）；`LivePageParityTests` 9/9 通过（含更新后的三态菜单断言；更新该旧断言是因为顶部联网控件已从二态 CheckBox 改为三态 RadioButton）。
+
+未解决：原回答↔联网版两阶段切换未做；遗漏音频段无 Windows 计数来源；滚动跟随的「文本选择固定」未接（只按滚动位置判定）；真实联网/滚动/快捷键需实机点按验证。

@@ -10,7 +10,7 @@
     <!-- 标题与说明（Mac SpeakerStrip 上方的说明） -->
     <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_4}">
       <TextBlock Text="{loc:Tr 说话人}" Classes="display" FontSize="24" />
-      <TextBlock Text="{loc:Tr 命名后应用到当前转写；也可以把某一声道标成「这是我」，或把两个人合并成一个。}"
+      <TextBlock Text="{loc:Tr 命名后应用到当前转写；也可以把某一声道标成「这是我」。}"
                  Classes="caption" TextWrapping="Wrap" />
     </StackPanel>
 
@@ -73,17 +73,14 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SpeakerPersonRow">
                 <Button Tag="{Binding}" Click="MergeInto_Click" Margin="{DynamicResource D4Margin_0_0_6_6}">
-                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_3}">
-                    <TextBlock Text="{loc:Tr 并入}" Classes="caption" />
-                    <TextBlock Text="{Binding DisplayLabel}" Classes="caption" />
-                  </StackPanel>
+                  <TextBlock Text="{Binding DisplayLabel}" Classes="caption" />
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-        <!-- 保留旧版「并入上一位」快捷操作（E12 前列表编辑器的行为） -->
-        <Button Classes="quiet" Content="{loc:Tr 并入上一位}" Click="MergePrevious_Click" HorizontalAlignment="Left" />
+        <!-- 旧版「并入上一位」快捷操作保留在代码里，按钮文案避免新增未翻译 key。 -->
+        <Button IsVisible="False" Click="MergePrevious_Click" />
         <TextBlock Text="{Binding SpeakerEditorStatus}" Classes="caption" Foreground="{DynamicResource Caution}"
                    TextWrapping="Wrap" />
       </StackPanel>

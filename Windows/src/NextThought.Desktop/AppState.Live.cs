@@ -175,6 +175,8 @@ public partial class AppState
             BeginLiveTranslation();
             BeginLiveMeetingTranslation();
             ApplyRememberedTranslatorForMeeting();
+            ResetLiveStatusCounters();
+            BeginLiveFollow();
             var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;
             LiveSpeechEngine? ownedEngine = null;
             if (settings.CloudStt.Length == 0)
@@ -403,6 +405,8 @@ public partial class AppState
             microphoneLiveTranslation?.Invalidate();
         }
         var echo = IsTextEcho(update, currentLines, meta.InPerson);
+        // E4/Mac echoDroppedCount: the status line reports how many microphone lines were ignored.
+        if (echo) NoteEchoDropped();
         // 术语表：识别错的写法改回正确写法（原话只在内存里更正，识别器本身的输出不动）。
         var text = Canonicalize(update.Text);
         var line = new TranscriptLine
@@ -553,7 +557,7 @@ public partial class AppState
             if (!check) { Sources.Clear(); }
             IReadOnlyList<WebResult> web = [];
 
-            if (!check && Settings.WebSearch && WebSearchNeed.Assess(question).NeedsSearch && WebSearch() is { } searchProvider)
+            if (!check && ShouldSearchWeb(question) && WebSearch() is { } searchProvider)
             {
                 // E14: the same question within 30 minutes reuses the earlier verification results.
                 var now = DateTimeOffset.UtcNow;

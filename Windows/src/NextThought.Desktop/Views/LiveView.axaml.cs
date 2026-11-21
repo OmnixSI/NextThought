@@ -17,11 +17,47 @@ namespace NextThought.Desktop.Views;
 public partial class LiveView : UserControl
 {
     private AppState? state;
+    private ScrollViewer? transcriptScroll;
+    private bool scrollingToLatest;
 
     public LiveView()
     {
         InitializeComponent();
         DataContextChanged += (_, _) => Attach();
+        // E4/Mac ⌘L 聚焦输入框: Ctrl+L focuses the composer.
+        KeyDown += OnLiveKeyDown;
+    }
+
+    private void OnLiveKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.L || e.KeyModifiers != KeyModifiers.Control) return;
+        var composer = this.FindControl<TextBox>("LiveComposer");
+        if (composer is null) return;
+        composer.Focus();
+        composer.SelectAll();
+        e.Handled = true;
+    }
+
+    private void OnTranscriptScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        if (state is null || transcriptScroll is null || scrollingToLatest) return;
+        var remaining = transcriptScroll.Extent.Height - transcriptScroll.Viewport.Height - transcriptScroll.Offset.Y;
+        if (remaining <= 24) state.LiveReachedLatest();
+        else state.LiveScrolledAway();
+    }
+
+    private void OnLiveFollowScrollRequested()
+    {
+        ScrollTranscriptToLatest();
+    }
+
+    private void ScrollTranscriptToLatest()
+    {
+        if (transcriptScroll is null) return;
+        scrollingToLatest = true;
+        try { transcriptScroll.ScrollToEnd(); }
+        catch { }
+        Dispatcher.UIThread.Post(() => scrollingToLatest = false, DispatcherPriority.Background);
     }
 
     private void Attach()
@@ -32,6 +68,8 @@ public partial class LiveView : UserControl
             state.TranscriptJumpRequested -= OnTranscriptJumpRequested;
             state.PropertyChanged -= OnStatePropertyChanged;
             state.CurrentAnswerHistory.CollectionChanged -= OnAnswerHistoryChanged;
+            state.LiveFollowScrollRequested -= OnLiveFollowScrollRequested;
+            if (transcriptScroll is not null) transcriptScroll.ScrollChanged -= OnTranscriptScrollChanged;
         }
         state = DataContext as AppState;
         if (state is not null)
@@ -40,10 +78,14 @@ public partial class LiveView : UserControl
             state.TranscriptJumpRequested += OnTranscriptJumpRequested;
             state.PropertyChanged += OnStatePropertyChanged;
             state.CurrentAnswerHistory.CollectionChanged += OnAnswerHistoryChanged;
+            state.LiveFollowScrollRequested += OnLiveFollowScrollRequested;
+            transcriptScroll = TranscriptList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+            if (transcriptScroll is not null) transcriptScroll.ScrollChanged += OnTranscriptScrollChanged;
             ShowRightTab(state.Settings.AutomaticAnswers);
             state.RefreshSessionAnswerHistory();
             state.RaiseLiveAnswerUi();
             state.RaiseLiveSceneUi();
+            state.RaiseWebSearchModeUi();
         }
     }
 
@@ -65,6 +107,9 @@ public partial class LiveView : UserControl
                 break;
             case nameof(AppState.CurrentSession):
                 state?.RefreshSessionAnswerHistory();
+                break;
+            case nameof(AppState.Recording):
+                state?.RaiseLiveStatusCountersUi();
                 break;
         }
     }
@@ -109,17 +154,14 @@ public partial class LiveView : UserControl
     private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (TranscriptList.ItemCount == 0) return;
-        Dispatcher.UIThread.Post(() =>
+        var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
+        if (state is not null && !state.LiveIsFollowingTranscript)
         {
-            try
-            {
-                TranscriptList.ScrollIntoView(TranscriptList.ItemCount - 1);
-            }
-            catch
-            {
-                // Scrolling is cosmetic; a stale item during a reset must not break recording.
-            }
-        }, DispatcherPriority.Background);
+            // E4/Mac ScrollFollowState: reading history keeps the viewport; the banner counts new lines.
+            state.LiveTranscriptGrew(added);
+            return;
+        }
+        ScrollTranscriptToLatest();
     }
 
     // ---- right column tabs (Mac RightColumn: 我的笔记 / 问答) -------------------------

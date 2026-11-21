@@ -17,6 +17,30 @@ public static class WebSearchModes
         WebSearchMode.Always => "每次都查",
         _ => "自动判断"
     };
+
+    /// <summary>E4/Mac UserDefaults "webSearchMode": off / auto / always (unknown falls back to auto).</summary>
+    public static WebSearchMode Parse(string? raw) => raw?.Trim().ToLowerInvariant() switch
+    {
+        "off" => WebSearchMode.Off,
+        "always" => WebSearchMode.Always,
+        _ => WebSearchMode.Auto
+    };
+
+    public static string Value(this WebSearchMode mode) => mode switch
+    {
+        WebSearchMode.Off => "off",
+        WebSearchMode.Always => "always",
+        _ => "auto"
+    };
+
+    /// <summary>Mode first, then the local rules; a configured provider (allowed) is required.</summary>
+    public static bool ShouldSearch(this WebSearchMode mode, bool allowed, bool rulesNeedSearch) =>
+        allowed && mode switch
+        {
+            WebSearchMode.Off => false,
+            WebSearchMode.Always => true,
+            _ => rulesNeedSearch
+        };
 }
 
 /// <summary>0…1; <c>NeedsSearch</c> at ≥ 0.6, <c>Uncertain</c> at 0.35–0.6.</summary>

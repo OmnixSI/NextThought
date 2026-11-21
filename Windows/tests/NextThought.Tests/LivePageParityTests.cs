@@ -62,7 +62,9 @@ public sealed class LivePageParityTests
         Assert.Contains("LiveModelChoices", live);
         Assert.Contains("LiveModel_SelectionChanged", live);
         Assert.Contains("LiveFastMode", live);
-        Assert.Contains("LiveWebSearchIsOn", live);
+        Assert.Contains("SetLiveWebSearchModeCommand", live);
+        Assert.Contains("{loc:Tr 自动判断}", live);
+        Assert.Contains("{loc:Tr 每次都查}", live);
         Assert.Contains("{loc:Tr 回答长度}", live);
         Assert.Contains("{loc:Tr 从下一个回答开始生效}", live);
         Assert.Contains("{loc:Tr 更多回答设置…}", live);

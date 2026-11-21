@@ -79,6 +79,9 @@
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
             <TextBlock Text="{StaticResource IconBoltFill}" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center" />
             <TextBlock Text="{Binding LiveAnswerModelLabel}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="110" />
+            <!-- E4/Mac bottom dot: anything running in the background, caution when no answer service. -->
+            <Ellipse Width="6" Height="6" Fill="{DynamicResource Caution}" VerticalAlignment="Center"
+                     IsVisible="{Binding LiveBackgroundDotVisible}" ToolTip.Tip="{Binding LiveBackgroundDotHelp}" />
           </StackPanel>
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight" Opened="AnswerSettings_Opened">
@@ -95,8 +98,15 @@
                           IsVisible="{Binding LiveFastModeAvailable}" FontSize="12" />
                 <Border Height="0.5" Background="{DynamicResource Hairline}" />
                 <TextBlock Text="{loc:Tr 联网}" Classes="overline" />
-                <CheckBox Content="{loc:Tr 联网搜索}" IsChecked="{Binding LiveWebSearchIsOn, Mode=TwoWay}" FontSize="12"
-                          ToolTip.Tip="{loc:Tr 需要最新信息时联网核实回答；不联网时只用资料和转写。}" />
+                <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                  <RadioButton GroupName="live-web-mode" Content="{loc:Tr 不联网}" FontSize="12"
+                               IsChecked="{Binding LiveWebSearchIsOff, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="off" />
+                  <RadioButton GroupName="live-web-mode" Content="{loc:Tr 自动判断}" FontSize="12"
+                               IsChecked="{Binding LiveWebSearchIsAuto, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="auto" />
+                  <RadioButton GroupName="live-web-mode" Content="{loc:Tr 每次都查}" FontSize="12"
+                               IsChecked="{Binding LiveWebSearchIsAlways, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="always" />
+                  <TextBlock Text="{loc:Tr 需要最新信息时联网核实回答；不联网时只用资料和转写。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
                 <CheckBox Content="{loc:Tr 语义检索}" IsChecked="{Binding Settings.UseSemanticRetrieval, Mode=TwoWay}" FontSize="12" />
                 <Border Height="0.5" Background="{DynamicResource Hairline}" />
                 <TextBlock Text="{loc:Tr 回答长度}" Classes="overline" />
@@ -246,6 +256,10 @@
           </ListBox>
 
           <StackPanel Grid.Row="2" Margin="{DynamicResource D4Margin_18_6_18_12}" Spacing="{DynamicResource D4Spacing_4}">
+            <!-- E4/Mac ScrollFollowState: reading history pauses follow; this returns to the live edge. -->
+            <Button Classes="quiet" Content="{Binding LiveFollowBannerText}" Command="{Binding ReturnLiveToFollowCommand}"
+                    IsVisible="{Binding HasLiveFollowBanner}" HorizontalAlignment="Center" FontSize="11"
+                    ToolTip.Tip="{loc:Tr 回到现场并恢复跟随}" />
             <!-- Candidate strip (Mac CandidateStrip): the question the detector is following. -->
             <Border IsVisible="{Binding HasLiveCandidate}"
                     BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_0_0_0_4}">
@@ -288,6 +302,12 @@
                 <TextBlock Text="{Binding LiveAudioEngineLabel}" Classes="caption" FontSize="11" />
                 <TextBlock Text="{loc:Tr 正在截屏读取屏幕…}" Classes="caption" FontSize="11"
                            Foreground="{DynamicResource Ai}" IsVisible="{Binding ScreenWatchCapturing}" />
+                <TextBlock Text="{Binding EchoDroppedText}" Classes="caption" FontSize="11"
+                           IsVisible="{Binding HasEchoDropped}" />
+                <TextBlock Text="{Binding DroppedSegmentsText}" Classes="caption" FontSize="11"
+                           Foreground="{DynamicResource Caution}" IsVisible="{Binding HasDroppedAudioSegments}" />
+                <TextBlock Text="{Binding LiveMicOffText}" Classes="caption" FontSize="11"
+                           Foreground="{DynamicResource Caution}" IsVisible="{Binding HasLiveMicOff}" />
               </StackPanel>
               <TextBlock Grid.Column="1" Text="{StaticResource IconLock}" FontFamily="{StaticResource IconFont}" FontSize="11"
                          Foreground="{DynamicResource Tertiary}" ToolTip.Tip="{loc:Tr 音频只在本机识别，不保存录音；文字与回答只保存在本机。}" />
@@ -354,16 +374,16 @@
                       <StackPanel Width="240" Spacing="{DynamicResource D4Spacing_2}">
                         <TextBlock Text="{loc:Tr 历史回答}" Classes="overline" />
                         <Button Classes="quiet" Content="{loc:Tr 实时对话}" Tag="Conversation" Click="ModuleWindow_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="{loc:Tr 问题}" Tag="Question" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 当前问题与候选}" Tag="Question" Click="ModuleWindow_Click" FontSize="12" />
                         <Button Classes="quiet" Content="{loc:Tr 建议回答}" Tag="Answer" Click="ModuleWindow_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="{loc:Tr 历史回答}" Tag="History" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 回答记录}" Tag="History" Click="ModuleWindow_Click" FontSize="12" />
                         <Button Classes="quiet" Content="{loc:Tr 屏幕与讲稿}" Tag="Insights" Click="ModuleWindow_Click" FontSize="12" />
                         <Border Height="0.5" Background="{DynamicResource Hairline}" />
-                        <Button Classes="quiet" Content="standard" Tag="Standard" Click="LayoutPreset_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="answer-first" Tag="AnswerFirst" Click="LayoutPreset_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="presenting" Tag="Presenting" Click="LayoutPreset_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="stacked" Tag="Stacked" Click="LayoutPreset_Click" FontSize="12" />
-                        <Button Classes="quiet" Content="answer-only" Tag="AnswerOnly" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 对话在左 · 回答在右（默认）}" Tag="Standard" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 回答在左 · 对话在右}" Tag="AnswerFirst" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 讲稿在左 · 回答在右（演讲 / 答辩）}" Tag="Presenting" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 单栏上下排列（小屏）}" Tag="Stacked" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 只看回答}" Tag="AnswerOnly" Click="LayoutPreset_Click" FontSize="12" />
                       </StackPanel>
                     </Flyout>
                   </Button.Flyout>
@@ -526,7 +546,7 @@
       <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
         <Border Classes="card" Padding="{DynamicResource D4Padding_10_6}">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-            <TextBox Text="{Binding QuestionInput}" PlaceholderText="{Binding LiveComposerPlaceholder}" AcceptsReturn="True"
+            <TextBox x:Name="LiveComposer" Text="{Binding QuestionInput}" PlaceholderText="{Binding LiveComposerPlaceholder}" AcceptsReturn="True"
                      MinHeight="{DynamicResource ControlLarge}" MaxHeight="110" TextWrapping="Wrap" BorderThickness="0"
                      Background="Transparent" KeyDown="Composer_KeyDown" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Bottom">

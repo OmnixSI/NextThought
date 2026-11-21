@@ -589,6 +589,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool autoTranslateForeign;
     /// <summary>E11/Mac UserDefaults "liveTranslation": null until the user touches 同声传译.</summary>
     [ObservableProperty] private bool? liveTranslation;
+    /// <summary>E4/Mac webSearchMode: off / auto / always.</summary>
+    [ObservableProperty] private string webSearchMode = "auto";
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "";
 
@@ -744,6 +746,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = settings.AnswerGloss;
         AutoTranslateForeign = settings.AutoTranslateForeign;
         LiveTranslation = settings.LiveTranslation;
+        WebSearchMode = settings.WebSearchMode;
         FollowSlides = settings.FollowSlides;
         InsightScreenWatch = settings.InsightScreenWatch;
         InsightScreenInterval = Math.Max(1, settings.InsightScreenInterval);
@@ -856,6 +859,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = AnswerGloss,
         AutoTranslateForeign = AutoTranslateForeign,
         LiveTranslation = LiveTranslation,
+        WebSearchMode = WebSearchMode,
         FollowSlides = FollowSlides,
         InsightScreenWatch = InsightScreenWatch,
         InsightScreenInterval = Math.Max(1, InsightScreenInterval),

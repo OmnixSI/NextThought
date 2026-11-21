@@ -233,6 +233,10 @@ public sealed record AppSettings
     /// <summary>E6: answer language: auto / zh / en.</summary>
     public string AnswerLanguage { get; set; } = "auto";
 
+    /// <summary>E4/Mac UserDefaults "webSearchMode": off / auto / always.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("webSearchMode")]
+    public string WebSearchMode { get; set; } = "auto";
+
     /// <summary>E6: attach a Chinese gloss to English answers (Mac default: on).</summary>
     public bool AnswerGloss { get; set; } = true;
 
