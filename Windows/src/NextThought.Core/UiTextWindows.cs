@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1291;
+    public const int Count = 1292;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1309,6 +1309,8 @@ internal static class UiTextWindowsEnglish
         // §3.3 live 9: archive save status row.
         ["确认缺失并继续保存"] = "Acknowledge missing items and keep saving",
         ["保存受阻 · 有 %lld 项未保存 · 重试"] = "Saving blocked · %lld unsaved · Retry",
+
+        ["第 %lld / %lld 页"] = "%lld / %lld",
 
     };
 }
