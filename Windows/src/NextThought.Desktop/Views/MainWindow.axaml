@@ -13,6 +13,11 @@
         ExtendClientAreaTitleBarHeightHint="52"
         WindowDecorations="BorderOnly"
         WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <Thickness x:Key="ShellMargin_0_0_12_0">0,0,12,0</Thickness>
+    <Thickness x:Key="ShellMargin_0_12_0_0">0,12,0,0</Thickness>
+    <Thickness x:Key="ShellMargin_0_2_0_0">0,2,0,0</Thickness>
+  </Window.Resources>
   <Window.Styles>
     <!-- §5.2: the capsule items; selected one is a white rounded block on the sunken capsule, and
          the background change runs on the snappy spring timing (Motion.snappy response 0.28). -->
@@ -248,7 +253,7 @@
                            Maximum="1" IsVisible="{Binding Working}" />
             </StackPanel>
             <!-- E4 / ContentView.swift LevelMeters: them (system audio) and me (microphone). -->
-            <viewsshell:LevelMeters Grid.Column="1" Width="11" Height="16" Margin="0,0,12,0"
+            <viewsshell:LevelMeters Grid.Column="1" Width="11" Height="16" Margin="{DynamicResource ShellMargin_0_0_12_0}"
                                     VerticalAlignment="Center" ToolTip.Tip="{Binding AudioLevelsText}" />
             <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 取消当前任务}" VerticalAlignment="Center"
                     Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
@@ -270,14 +275,14 @@
     </Grid>
 
     <!-- E4 / ContentView.swift ErrorBanner: caution triangle, the message, 关闭提示. -->
-    <Border Grid.RowSpan="2" ZIndex="30" MaxWidth="560" Margin="0,12,0,0" VerticalAlignment="Top"
+    <Border Grid.RowSpan="2" ZIndex="30" MaxWidth="560" Margin="{DynamicResource ShellMargin_0_12_0_0}" VerticalAlignment="Top"
             IsVisible="{Binding StatusIsError}" Background="{DynamicResource SurfaceRaised}"
             BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
             CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_12}"
             BoxShadow="{DynamicResource FloatShadow}">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <TextBlock Text="{StaticResource IconExclamationmarkTriangleFill}" FontFamily="{StaticResource IconFont}"
-                   FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                   FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Top" Margin="{DynamicResource ShellMargin_0_2_0_0}" />
         <SelectableTextBlock Grid.Column="1" Text="{Binding Status}" FontSize="13" TextWrapping="Wrap"
                              Foreground="{DynamicResource InkBrush}" />
         <Button Grid.Column="2" Classes="icon" Command="{Binding CloseStatusCommand}" ToolTip.Tip="{loc:Tr 关闭提示}">
