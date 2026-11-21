@@ -1,3 +1,17 @@
+## 2026-11-21 · 0.9.0 收尾 · 阶段 1：数据层（任务书 §4.1–4.7）
+改动：
+- **§4.1 往返测试**（`02bcf835`）：新增 `MacFixtureRoundTripTests.cs`（17 项，15 类夹具 + 四份真实 `.ntbackup` 解压后逐文件按真实类型/存储序列化选项读入→写出→逐键比较：无丢键、无加键、无改值、UUID 大小写不变；跳过 `__MACOSX/` 与 `._*`）与 `MacRevisionParityTests.cs`（4 项，两场会议每行六个修订号 + canonical bytes 与 Mac 逐字节相等）。首次提交时 10 个族失败，作为 §4.2–4.4 的失败清单。
+- **§4.2 修订号**（`f2103503`）：`TranscriptSourceRevision` 公共签名改为 `(SessionMeta, lines, corrections)`，用 `meta.voiceNames/meVoices` 生成说话人标签，生产调用处全部传真实 meta；`StructuredNotesRevision` 抽出 `StructuredNotesBytes`（紧凑、逐层键排序、斜杠不转义、秒级 ISO-8601），与 Mac `JSONLines.encoder()` 字节一致（逐字节断言）；其余三项逐值核对通过。
+- **§4.3 UUID 大写**（`62bbb117`、`a254e825`）：归档序列化统一 `UpperCaseGuidJsonConverter`；工作区文件名/会话目录名大写；标识比较先解析 `Guid`；端到端测试「导出→标识全小写→重导入」后系列/经验/题数量不变；`DocumentIds` 移到 `WindowsState/workspace-documents.json` 侧车（不进备份）。
+- **§4.4 去掉多写出的键**（`62bbb117`、`a254e825`）：系列 `effectiveMode/profile/retrievalDocuments/documentIds` 与空 `seriesItems`/`seriesChangeCandidates`；`summary.json` `storedFormats`；结构化纪要与 `user-content.json` `hasContent`；模板 `isBuiltIn`；`answers.jsonl` `isComplete`；`translations.jsonl` `revision`/`date`；`Glossary.isEmpty` 等计算属性全部 `[JsonIgnore]`；会议 meta 不写 platform/inPerson（补测试）。
+- **§4.5 真实备份导入导出（A16）**（`8b6c09a7`、`8a20b528`、`7d0585cd`）：四份备份正式导入并逐项核对数量与内容；ZIP 顶层/AppleDouble 处理；settings.plist apiPresets 解码；增量链 4 个恢复点逐个恢复会议数 1→2→3→4；导入 all-scenarios 后立即导出为 `Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup` 并附 README 逐文件比较（逐字节相同 21、仅键序/空白 7、元数据/格式 2、Windows 额外文件 3、缺失 0、实质差别 0）；修复导出 manifest 版本与 settings.plist XML 声明。
+- **§4.6 时区**（`8b493034`）：三处时间格式化显式传 `TimeZoneInfo`；新增 `LocalTime` 缝 + 仅测试程序集读取的 `NEXTTHOUGHT_TEST_TIMEZONE`；`verify.ps1` 增加 UTC 一遍 Core 测试（无需管理员）；调研见 `Windows/validation/timezone.md`。
+- **§4.7 校验工具**（`7c66c271`）：删除只查键名的 `MacCodecCheck`；`verify.ps1` 改为跑真实比较套件（40 项全绿）；夹具 README 与 `MAC_FIXTURE_REQUEST` 同步。
+测试：`verify.ps1` **PASS**——Core **1700/1700**、Core UTC **1700/1700**、Mac fixture 对比 **40/40**、NextThought.Tests **551/551**、D1 截图通过。
+状态：A6、A11、A15、A16、B24、H7 改为「已实现、未验证」；FIX_TASKS 当前 181 行：未做 83、已实现、未验证 97、已验证 0、本版不做 1。
+证据：提交 02bcf835、f2103503、baf00ed9、62bbb117、a254e825、8b6c09a7、8a20b528、7d0585cd、8b493034、7c66c271；`Windows/tests/Fixtures/win-export/`、`Windows/validation/timezone.md`、`validation/a16/compare.md`。
+未解决：Mac 侧导入 win-export 仍需人做；R1 定版后如需「发布版」win-export 可重生成；其余界面日期显示仍走 `ToLocalTime()`（当前 UTC 全量无失败）。
+
 ## 2026-11-21 · 0.5.145 → 0.9.0 收尾 · 阶段 0：合并 Mac v3.4.0 基准、重建跟踪文件
 改动：
 - **合并 Mac v3.4.0**：`origin/main`（`f015e8c6`，v3.4.0）合入 `windows/parity`（merge commit `fce653c7`，无冲突）。`Sources/`、`Tests/`、`Resources/` 现为 3.4.0 内容，仍只读；Mac Core 测试从 592 增至 **604**（新增 LiveNotesTests、UtteranceTextTests、SpeakerClustering 增补）。
