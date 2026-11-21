@@ -124,7 +124,9 @@
                   <MenuFlyout>
                     <MenuItem x:Name="MoreDetailedItem" Header="{loc:Tr 展开}" Tag="Detailed" Click="Refine_Click" />
                     <MenuItem x:Name="MoreStarItem" Header="{loc:Tr STAR}" Tag="Star" Click="Refine_Click" />
-                    <MenuItem x:Name="MoreChineseItem" Header="{loc:Tr 中文}" Tag="Chinese" Click="Refine_Click" />
+                    <MenuItem x:Name="MoreChineseItem" Header="{loc:Tr 中文版}" Tag="Chinese" Click="Refine_Click" />
+                    <MenuItem x:Name="MoreClarifyItem" Header="{loc:Tr 澄清问题}" Tag="Clarify" Click="Refine_Click" />
+                    <MenuItem x:Name="MoreFollowUpsItem" Header="{loc:Tr 我可以反问}" Tag="FollowUps" Click="Refine_Click" />
                     <Separator />
                     <MenuItem x:Name="MoreRegenerateItem" Header="{loc:Tr 重新生成}" Click="Regenerate_Click" />
                     <MenuItem x:Name="MoreLookupItem" Header="{loc:Tr 联网查一下}" Click="Lookup_Click" />
