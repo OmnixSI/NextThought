@@ -239,37 +239,11 @@
           <ContentControl x:Name="PageHost" />
         </Grid>
 
-        <!-- Status bar (hidden while recording: Mac FocusModeView keeps the window for the meeting alone). -->
-        <Border Grid.Row="1" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0"
-                Padding="{DynamicResource D4Padding_24_10_24_12}" IsVisible="{Binding !Recording}">
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-                <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
-                        Background="{DynamicResource Seal}" IsVisible="{Binding Recording}" />
-                <TextBlock Text="{Binding Status}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-              <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}"
-                           Maximum="1" IsVisible="{Binding Working}" />
-            </StackPanel>
-            <!-- E4 / ContentView.swift LevelMeters: them (system audio) and me (microphone). -->
-            <viewsshell:LevelMeters Grid.Column="1" Width="11" Height="16" Margin="{DynamicResource ShellMargin_0_0_12_0}"
-                                    VerticalAlignment="Center" ToolTip.Tip="{Binding AudioLevelsText}" />
-            <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 取消当前任务}" VerticalAlignment="Center"
-                    Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
-          </Grid>
-        </Border>
-
         <!-- Settings is an overlay, not a page (D10). -->
+        <!-- §3.6 settings-pages W1/W2: the settings window covers the shell (mac-screens/settings/window-*.png). -->
         <Grid Grid.Column="1" Grid.RowSpan="2" ZIndex="10" Background="{DynamicResource Paper}"
               IsVisible="{Binding OnSettings}">
-          <Grid RowDefinitions="Auto,*">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_32_14_32_0}">
-              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 完成}" HorizontalAlignment="Right" VerticalAlignment="Center"
-                      Command="{Binding NavigateCommand}" CommandParameter="Home" />
-            </Grid>
-            <views:SettingsView x:Name="SettingsOverlay" Grid.Row="1" />
-          </Grid>
+          <views:SettingsView x:Name="SettingsOverlay" />
         </Grid>
       </Grid>
     </Grid>

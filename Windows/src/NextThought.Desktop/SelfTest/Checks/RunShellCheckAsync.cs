@@ -75,6 +75,26 @@ public partial class MainWindow
             state.Recording = false;
             await Pump();
 
+            // LiveWindowMenu: the top-bar captions-bubble button opens the three-mode picker with
+            // the shortcut hint; screenshot the real flyout content, not a mock.
+            state.NavigateCommand.Execute("Live");
+            await Pump();
+            var menuButton = this.GetVisualDescendants().OfType<Button>()
+                .FirstOrDefault(button => button.Name == "LiveWindowMenuButton");
+            var flyout = menuButton?.Flyout as Flyout;
+            flyout?.ShowAt(menuButton!);
+            await Pump();
+            await Task.Delay(200);
+            var popup = flyout?.Content as Control;
+            Step("LiveWindowMenu：三项会中窗口 + 快捷键提示的弹出层",
+                popup is not null && state.ToggleLiveWindowHint.Length > 0,
+                state.ToggleLiveWindowHint);
+            if (popup is not null) CaptureVisual(popup, Path.Combine(directory, "live-window-menu-light.png"));
+            flyout?.Hide();
+            await Pump();
+            state.NavigateCommand.Execute("Home");
+            await Pump();
+
             // Debug-only component sample sheet.
 #if DEBUG
             var samples = new LiveComponentSamplesWindow();
