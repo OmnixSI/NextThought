@@ -156,6 +156,13 @@
         <Button Classes="quiet" Content="{loc:Tr 洞察}" Click="Insights_Click" FontSize="12" />
         <Button Classes="quiet" Content="{loc:Tr 说话人}" Click="Speakers_Click" FontSize="12" />
         <Button Classes="quiet" Content="{loc:Tr 补译}" Command="{Binding TranslateMissingCommand}" FontSize="12" />
+        <!-- E11/Mac LiveTranslationToggle: 同声传译开关；开启后译文显示在转写行与未定稿行下方。 -->
+        <Button Classes="quiet" Content="{Binding LiveTranslationButtonLabel}" Command="{Binding ToggleLiveTranslationCommand}"
+                ToolTip.Tip="{Binding LiveTranslationTooltip}" FontSize="12" />
+        <TextBlock Text="{Binding LiveTranslationStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                   Foreground="{DynamicResource Ai}" IsVisible="{Binding HasLiveTranslationStatus}" />
+        <TextBlock Text="{Binding LiveTranslationAutoNotice}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                   Foreground="{DynamicResource Caution}" IsVisible="{Binding HasLiveTranslationAutoNotice}" />
 
         <!-- End / start (Mac endSessionButton). -->
         <Button Classes="quiet" Content="{loc:Tr 结束}" Command="{Binding StopRecordingCommand}" IsVisible="{Binding Recording}" />
@@ -253,14 +260,23 @@
                 <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 回答这句}" Click="AnswerCandidate_Click" FontSize="11" />
               </Grid>
             </Border>
-            <!-- The two utterances still being recognised (Mac PartialLines). -->
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding SystemPartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <TextBlock Text="{loc:Tr 对方}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
-              <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" TextWrapping="Wrap" />
+            <!-- The two utterances still being recognised (Mac PartialLines): each lane shows its
+                 own provisional translation under the original. -->
+            <StackPanel Spacing="{DynamicResource D4Spacing_1}" IsVisible="{Binding SystemPartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <TextBlock Text="{loc:Tr 对方}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" TextWrapping="Wrap" />
+              </StackPanel>
+              <TextBlock Text="{Binding SystemPartialTranslationLine}" FontSize="12" Foreground="{DynamicResource Ai}"
+                         TextWrapping="Wrap" IsVisible="{Binding HasSystemPartialTranslation}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding MicrophonePartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <TextBlock Text="{loc:Tr 我}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
-              <TextBlock Text="{Binding MicrophonePartial}" Foreground="{DynamicResource Secondary}" FontSize="13" TextWrapping="Wrap" />
+            <StackPanel Spacing="{DynamicResource D4Spacing_1}" IsVisible="{Binding MicrophonePartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <TextBlock Text="{loc:Tr 我}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding MicrophonePartial}" Foreground="{DynamicResource Secondary}" FontSize="13" TextWrapping="Wrap" />
+              </StackPanel>
+              <TextBlock Text="{Binding MicrophonePartialTranslationLine}" FontSize="12" Foreground="{DynamicResource Ai}"
+                         TextWrapping="Wrap" IsVisible="{Binding HasMicrophonePartialTranslation}" />
             </StackPanel>
             <TextBlock Text="{loc:Tr 转写会显示在这里。也可以导入录音 WAV 验证。}"
                        Classes="caption" IsVisible="{Binding !HasTranscript}" Margin="{DynamicResource D4Margin_0_10_0_4}" />

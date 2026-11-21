@@ -68,7 +68,8 @@ public partial class TranscriptRow : ObservableObject
     }
 
     private string BuildTranslation() =>
-        TranslationRaw.Length == 0 ? "" : UiText.T(directionKey) + TranslationRaw;
+        // E11/Mac TranscriptLine: the row shows 译文：<translation> under the original.
+        TranslationRaw.Length == 0 ? "" : UiText.Format("译文：%@", TranslationRaw);
 }
 
 public sealed record CloudSttChoice(string Value, string Label)

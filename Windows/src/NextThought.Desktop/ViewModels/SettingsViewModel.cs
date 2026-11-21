@@ -587,6 +587,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         }
     }
     [ObservableProperty] private bool autoTranslateForeign;
+    /// <summary>E11/Mac UserDefaults "liveTranslation": null until the user touches 同声传译.</summary>
+    [ObservableProperty] private bool? liveTranslation;
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "";
 
@@ -741,6 +743,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerLanguage = settings.AnswerLanguage;
         AnswerGloss = settings.AnswerGloss;
         AutoTranslateForeign = settings.AutoTranslateForeign;
+        LiveTranslation = settings.LiveTranslation;
         FollowSlides = settings.FollowSlides;
         InsightScreenWatch = settings.InsightScreenWatch;
         InsightScreenInterval = Math.Max(1, settings.InsightScreenInterval);
@@ -852,6 +855,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerLanguage = AnswerLanguage,
         AnswerGloss = AnswerGloss,
         AutoTranslateForeign = AutoTranslateForeign,
+        LiveTranslation = LiveTranslation,
         FollowSlides = FollowSlides,
         InsightScreenWatch = InsightScreenWatch,
         InsightScreenInterval = Math.Max(1, InsightScreenInterval),

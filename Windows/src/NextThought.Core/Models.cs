@@ -223,6 +223,13 @@ public sealed record AppSettings
     /// <summary>E11: turn translation on automatically when the speech is mostly non-Chinese.</summary>
     public bool AutoTranslateForeign { get; set; }
 
+    /// <summary>
+    /// E11/Mac UserDefaults "liveTranslation": the user's remembered 同声传译 choice. Null until they
+    /// touch the switch; untouched, hearing English turns interpretation on for that meeting only.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("liveTranslation")]
+    public bool? LiveTranslation { get; set; }
+
     /// <summary>E6: answer language: auto / zh / en.</summary>
     public string AnswerLanguage { get; set; } = "auto";
 
