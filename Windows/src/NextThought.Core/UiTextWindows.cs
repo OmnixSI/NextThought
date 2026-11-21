@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1276;
+    public const int Count = 1273;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -246,7 +246,6 @@ internal static class UiTextWindowsEnglish
         ["删除系列「%@」？会议记录会保留。"] = "Delete series “%@”? Meeting records are kept.",
         ["删除选中"] = "Delete selected",
         ["删除选中的 %lld 场会议？此操作会移除归档目录。"] = "Delete %lld selected meetings? Their archive folders will be removed.",
-        ["刷新"] = "Refresh",
         ["刷新声音设备失败："] = "Refreshing audio devices failed: ",
         ["刷新应用列表"] = "Refresh apps",
         ["刷新网络地址"] = "Refresh addresses",
@@ -811,8 +810,6 @@ internal static class UiTextWindowsEnglish
         ["清除查询"] = "Clear query",
         ["清除读屏区域失败："] = "Clearing the screen-read area failed: ",
         ["演示数据 · 不会写入你的资料"] = "Demo data · nothing is written to your materials",
-        ["演示模式：内置样本数据，不会写入你的资料。"] = "Demo mode: built-in sample data, nothing is written to your materials.",
-        ["演示模式：未加载识别模型"] = "Demo mode: recognition model not loaded",
         ["火山方舟 豆包"] = "Volcengine Ark Doubao",
         ["点「开始记录」就能开会；也可以先到准备页补资料。"] = "Choose Start recording to begin; add materials on the prepare page first if you like.",
         ["点击查看原图"] = "Click to view the full image",
