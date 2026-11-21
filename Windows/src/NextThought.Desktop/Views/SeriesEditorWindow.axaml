@@ -198,22 +198,28 @@
         </StackPanel>
 
         <!-- 经验积累：KnowledgeTab + ReviewTab -->
-        <StackPanel x:Name="KnowledgeSection" Spacing="{DynamicResource D4Spacing_10}" IsVisible="False">
-          <TextBlock Text="{loc:Tr 经验库与题库}" Classes="section" />
+                <StackPanel x:Name="KnowledgeSection" Spacing="{DynamicResource D4Spacing_10}" IsVisible="False">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{loc:Tr 经验库与题库}" Classes="section" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Content="{Binding SeriesEditorKnowledgeModeLabel}"
+                    Click="ToggleKnowledgeEditing_Click" />
+          </Grid>
           <TextBlock Text="{Binding SeriesEditorStatistics}" Classes="caption" />
           <TextBlock Text="{loc:Tr 阶段复盘}" Classes="section" />
           <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap"
                    Height="100" IsReadOnly="{Binding IsSeriesEditorReadOnly}" />
           <TextBlock Text="{loc:Tr 经验}" Classes="section" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+          <TextBox Text="{Binding SeriesEditorLessonQuery}" PlaceholderText="{loc:Tr 经验}" />
           <TextBlock Text="{loc:Tr 还没有经验。}" Classes="caption" IsVisible="{Binding !HasSeriesLessons}" />
-          <ItemsControl ItemsSource="{Binding SeriesLessons}">
+          <ItemsControl ItemsSource="{Binding SeriesEditorLessonsShown}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:WorkspaceLesson">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
                       Margin="{DynamicResource D4Margin_0_0_0_4}">
                   <TextBlock Grid.Column="0" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap"
                              VerticalAlignment="Center" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}"
+                              IsVisible="{Binding $parent[UserControl].DataContext.SeriesEditorKnowledgeEditing}">
                     <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditLesson_Click" />
                     <Button Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="DeleteLesson_Click" />
                   </StackPanel>
@@ -222,8 +228,9 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Text="{loc:Tr 题库}" Classes="section" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+          <TextBox Text="{Binding SeriesEditorBankQuery}" PlaceholderText="{loc:Tr 搜索题库}" />
           <TextBlock Text="{loc:Tr 题库还空着。}" Classes="caption" IsVisible="{Binding !HasSeriesBank}" />
-          <ItemsControl ItemsSource="{Binding SeriesBank}">
+          <ItemsControl ItemsSource="{Binding SeriesEditorBankShown}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:QuestionBankRow">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
@@ -233,7 +240,8 @@
                     <TextBlock Text="{Binding Answer}" Classes="faint" FontSize="11" TextWrapping="Wrap"
                                IsVisible="{Binding HasAnswer}" MaxLines="2" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}"
+                              IsVisible="{Binding $parent[UserControl].DataContext.SeriesEditorKnowledgeEditing}">
                     <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditBankItem_Click" />
                     <Button Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="DeleteBankItem_Click" />
                   </StackPanel>
@@ -242,7 +250,6 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-
         <!-- 基本信息：WorkspaceBasicTab -->
         <StackPanel x:Name="BasicSection" Spacing="{DynamicResource D4Spacing_10}" IsVisible="False">
           <TextBlock Text="{Binding SeriesEditorModeTitle}" Classes="section" />
@@ -260,9 +267,17 @@
             </StackPanel>
           </Grid>
           <CheckBox Content="{loc:Tr 使用系列知识（经验与题库）}" IsChecked="{Binding SeriesEditorUseKnowledge}" />
+          <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding IsSeriesEditorCustomMode}">
+            <TextBlock Text="{loc:Tr 类型}" Classes="caption" />
+            <TextBox Text="{Binding SeriesEditorCustomTypeName}" />
+          </StackPanel>
+          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="{loc:Tr 备注}" Classes="caption" />
+            <TextBox Text="{Binding SeriesEditorNotes}" AcceptsReturn="True" TextWrapping="Wrap" Height="88" />
+          </StackPanel>
           <TextBlock Text="{loc:Tr 领域字段}" Classes="section" />
           <TextBlock Text="{Binding SeriesEditorRole}" Classes="caption" />
-          <ItemsControl ItemsSource="{Binding SeriesEditorFieldRows}">
+          <ItemsControl ItemsSource="{Binding SeriesEditorCoreFields}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SeriesEditorFieldRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_8}">
@@ -273,6 +288,19 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          <ItemsControl ItemsSource="{Binding SeriesEditorExtraFields}" IsVisible="{Binding SeriesEditorShowAllFields}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SeriesEditorFieldRow">
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                  <TextBlock Text="{Binding Title}" Classes="caption" />
+                  <TextBox Text="{Binding Value, Mode=TwoWay}" PlaceholderText="{Binding Placeholder}"
+                           AcceptsReturn="{Binding Long}" TextWrapping="Wrap" MinHeight="{Binding EditorHeight}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Classes="quiet" Content="{Binding SeriesEditorAllFieldsLabel}" Click="ToggleAllFields_Click"
+                  HorizontalAlignment="Left" IsVisible="{Binding HasSeriesEditorExtraFields}" />
           <TextBlock Text="{loc:Tr 这些字段会进入这个系列的准备页和回答提示；留空表示不用。}" Classes="caption" />
         </StackPanel>
 

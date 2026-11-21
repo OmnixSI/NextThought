@@ -72,6 +72,7 @@ public partial class AppState
         foreach (var document in series.Documents) SeriesEditorDocuments.Add(new SeriesDocumentRow(document));
         OnPropertyChanged(nameof(SeriesEditorDocumentsEmpty));
         RefreshSeriesPreparation(series);
+        RefreshSeriesEditorFieldGroups();
         OnPropertyChanged(nameof(SeriesEditorModeTitle));
         OnPropertyChanged(nameof(SeriesEditorRole));
         OnPropertyChanged(nameof(SeriesEditorReviewFocus));
@@ -80,6 +81,7 @@ public partial class AppState
 
     partial void OnSeriesEditorModeChanged(string value)
     {
+        RefreshSeriesEditorFieldGroups();
         OnPropertyChanged(nameof(SeriesEditorModeTitle));
         OnPropertyChanged(nameof(SeriesEditorRole));
         OnPropertyChanged(nameof(SeriesEditorReviewFocus));

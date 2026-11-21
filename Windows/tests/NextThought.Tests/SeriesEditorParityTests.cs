@@ -81,6 +81,13 @@ public sealed class SeriesEditorParityTests
         Assert.Contains("SeriesEditorDocuments", view);
         // Knowledge tab: KnowledgeTab + ReviewTab (stage review, lessons, question bank).
         Assert.Contains("SeriesEditorStageReview", view);
+        Assert.Contains("SeriesEditorKnowledgeEditing", view);
+        Assert.Contains("SeriesEditorLessonQuery", view);
+        Assert.Contains("SeriesEditorBankQuery", view);
+        Assert.Contains("SeriesEditorCustomTypeName", view);
+        Assert.Contains("SeriesEditorNotes", view);
+        Assert.Contains("SeriesEditorCoreFields", view);
+        Assert.Contains("SeriesEditorExtraFields", view);
         Assert.Contains("SeriesLessons", view);
         Assert.Contains("SeriesBank", view);
         // Skills section (WorkspaceSkillsSection) lives behind 配置.

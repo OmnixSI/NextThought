@@ -80,6 +80,12 @@ public partial class SeriesEditorWindow : Window
         if (DataContext is AppState state) state.LoadSeriesEditor();
         ShowSection("records");
     }
+    private void ToggleKnowledgeEditing_Click(object? sender, RoutedEventArgs e) =>
+        (DataContext as AppState)?.ToggleSeriesEditorKnowledgeEditing();
+
+    private void ToggleAllFields_Click(object? sender, RoutedEventArgs e) =>
+        (DataContext as AppState)?.ToggleSeriesEditorAllFields();
+
     internal void ShowSectionForCheck(string section) => ShowSection(section);
 
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
