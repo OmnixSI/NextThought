@@ -319,7 +319,8 @@ public partial class AppState
             voiceTagger?.Dispose(); voiceTagger = null;
             translator?.Dispose(); translator = null;
             ResetLiveTranslation();
-            if (meta != null) await Sessions.EndAsync(meta);
+            if (meta != null) await FlushArchiveQueueAsync();
+            await Sessions.EndAsync(meta);
             SetStatus(ex.Message, true);
         }
         finally
@@ -353,6 +354,7 @@ public partial class AppState
             translator?.Dispose(); translator = null;
             ResetLiveTranslation();
             voiceTagger?.Dispose(); voiceTagger = null;
+            await FlushArchiveQueueAsync();
             await Sessions.EndAsync(meta);
             if (!recordSessionsThisMeeting)
             {

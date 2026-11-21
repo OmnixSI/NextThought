@@ -161,6 +161,19 @@
           <TextBlock Text="{Binding RecordingElapsedText}" FontFamily="{StaticResource MonoFamily}" FontSize="14" FontWeight="Medium"
                      VerticalAlignment="Center" />
           <TextBlock Text="{Binding LiveListeningStatus}" Classes="caption" VerticalAlignment="Center" />
+          <!-- §3.3 live 9 (Mac archiveSaveStatus): 保存中 / 保存受阻 · N 项未保存 · 重试 / 确认缺失. -->
+          <Border IsVisible="{Binding HasSaveStatus}" CornerRadius="{DynamicResource D4CornerRadius_8}"
+                  Background="{DynamicResource Sunken}" Padding="{DynamicResource D4Padding_8_2}"
+                  Margin="{DynamicResource D4Margin_6_0_0_0}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{Binding SaveStatusText}" Classes="caption" FontSize="11"
+                         Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="quiet" Content="{loc:Tr 重试保存}" Command="{Binding RetryPersistenceCommand}"
+                      FontSize="11" Padding="{DynamicResource D4Padding_4_0}" IsVisible="{Binding SaveIsBlocked}" />
+              <Button Classes="quiet" Content="{loc:Tr 确认缺失并继续保存}" Command="{Binding AcknowledgeSaveLossCommand}"
+                      FontSize="11" Padding="{DynamicResource D4Padding_4_0}" IsVisible="{Binding CanAcknowledgeSaveLoss}" />
+            </StackPanel>
+          </Border>
         </StackPanel>
 
         <!-- SceneTag: pigment dot + scene name (Mac sceneTag). -->
