@@ -163,6 +163,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         documentProviderWasSelected = settings.DocumentProviderWasSelected;
         DocumentFallbackToVision = settings.OcrFallbackToVision;
         LocalOcrModelId = settings.LocalOcrModelId;
+        NotesReasoning = settings.NotesReasoning;
+        NotesLanguage = settings.NotesLanguage;
+        SelectedNotesLanguage = NotesLanguageChoices.FirstOrDefault(choice => choice.Value == NotesLanguage) ?? NotesLanguageChoices[0];
         SelectedLocalOcrModel = LocalOcrModelChoices.FirstOrDefault(choice => choice.Id == LocalOcrModelId) ?? LocalOcrModelChoices[0];
         CodexOcrModel = settings.CodexOcrModel;
         CodexOcrEffort = settings.CodexOcrEffort;
@@ -391,6 +394,28 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool autoSummarize = true;
     /// <summary>Mac key <c>recordSessions</c>: save the transcript and answers of each meeting.</summary>
     [ObservableProperty] private bool recordSessions = true;
+
+    /// <summary>§3.6 N3 / Mac NotesAdvanced: notes reasoning strength and language.</summary>
+    [ObservableProperty] private string notesReasoning = "high";
+    [ObservableProperty] private string notesLanguage = "auto";
+
+    public IReadOnlyList<string> NotesReasoningChoices => ["low", "medium", "high", "xhigh"];
+
+    public sealed record NotesLanguageChoice(string Value, string Title);
+
+    public IReadOnlyList<NotesLanguageChoice> NotesLanguageChoices =>
+    [
+        new("auto", UiText.T("自动 / 中英混说")),
+        new("zh", UiText.T("中文")),
+        new("en", "English")
+    ];
+
+    [ObservableProperty] private NotesLanguageChoice? selectedNotesLanguage;
+
+    partial void OnSelectedNotesLanguageChanged(NotesLanguageChoice? value)
+    {
+        if (value is not null) NotesLanguage = value.Value;
+    }
 
     /// <summary>Mac 高级 → 数据与维护: 减少视觉特效 / 工作台置顶.</summary>
     [ObservableProperty] private bool reducedEffects;
@@ -986,6 +1011,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         ActiveApiPresetId = selectedApiPreset?.Id ?? "",
         CodexFastMode = CodexFastMode ? true : null,
         UpdateRepository = GithubRepository.Trim(),
+        NotesReasoning = NotesReasoning,
+        NotesLanguage = SelectedNotesLanguage?.Value ?? NotesLanguage,
         // E23: how documents are read (Mac DocumentModelSettings keys).
         DocumentOcrProvider = SelectedDocumentProvider?.Value ?? "system",
         DocumentProviderWasSelected = documentProviderWasSelected,

@@ -314,6 +314,16 @@
           <TextBlock Name="AnchorNotesAdvanced" Text="{loc:Tr 纪要高级}" Classes="section" />
           <TextBlock Text="{loc:Tr 纪要模型（留空沿用回答模型）}" Classes="label" />
           <TextBox Text="{Binding Settings.NotesModel}" HorizontalAlignment="Stretch" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.NotesReasoningChoices}"
+                      SelectedItem="{Binding Settings.NotesReasoning}" Width="140" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 语言}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.NotesLanguageChoices}"
+                      SelectedItem="{Binding Settings.SelectedNotesLanguage}" Width="160" />
+          </StackPanel>
         </StackPanel>
       </Border>
 

@@ -135,6 +135,10 @@ public sealed record AppSettings
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";
     public string Model { get; set; } = "";
     public string NotesModel { get; set; } = "";
+
+    /// <summary>Mac keys <c>notesReasoning</c> (default high) and <c>notesLanguage</c> (default auto).</summary>
+    public string NotesReasoning { get; set; } = "high";
+    public string NotesLanguage { get; set; } = "auto";
     public string ReasoningEffort { get; set; } = "";
     public string LocalModel { get; set; } = "xasr480";
     public bool SecondPass { get; set; } = true;

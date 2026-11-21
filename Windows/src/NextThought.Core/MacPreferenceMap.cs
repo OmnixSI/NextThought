@@ -39,7 +39,7 @@ public static class MacPreferenceMap
         "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueSurface", "cueWidth", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
-        "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
+        "localStreamingModel", "microphoneEnabled", "notesModelID", "notesReasoning", "notesLanguage", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
         "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "keepOnTop", "textZoom", "textZoom",
@@ -66,6 +66,8 @@ public static class MacPreferenceMap
         "apiBaseURL" => settings.BaseUrl,
         "apiModel" => settings.Model,
         "notesModelID" => settings.NotesModel,
+        "notesReasoning" => settings.NotesReasoning,
+        "notesLanguage" => settings.NotesLanguage,
         "codexReasoning" => string.IsNullOrEmpty(settings.ReasoningEffort) ? "low" : settings.ReasoningEffort,
         "localStreamingModel" => settings.LocalModel,
         "secondPassEnabled" => settings.SecondPass,
@@ -143,6 +145,18 @@ public static class MacPreferenceMap
             case "apiBaseURL": settings.BaseUrl = AsString(normalized, settings.BaseUrl); break;
             case "apiModel": settings.Model = AsString(normalized, settings.Model); break;
             case "notesModelID": settings.NotesModel = AsString(normalized, settings.NotesModel); break;
+            case "notesReasoning":
+            {
+                var reasoning = AsString(normalized, settings.NotesReasoning);
+                settings.NotesReasoning = reasoning is "low" or "medium" or "high" or "xhigh" ? reasoning : settings.NotesReasoning;
+                break;
+            }
+            case "notesLanguage":
+            {
+                var language = AsString(normalized, settings.NotesLanguage);
+                settings.NotesLanguage = language is "auto" or "zh" or "en" ? language : settings.NotesLanguage;
+                break;
+            }
             case "codexReasoning": settings.ReasoningEffort = AsString(normalized, "low"); break;
             case "localStreamingModel": settings.LocalModel = AsString(normalized, settings.LocalModel); break;
             case "secondPassEnabled": settings.SecondPass = normalized is bool secondPass ? secondPass : settings.SecondPass; break;
