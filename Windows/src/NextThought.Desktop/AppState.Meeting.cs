@@ -161,7 +161,7 @@ public partial class AppState
     private void MoveHistoryHit(int delta)
     {
         if (HistoryHits.Count == 0) return;
-        HistoryHitIndex = (HistoryHitIndex + delta + HistoryHits.Count) % HistoryHits.Count;
+        
         OpenHistoryHitInMeeting(HistoryHits[HistoryHitIndex].Hit);
     }
 
