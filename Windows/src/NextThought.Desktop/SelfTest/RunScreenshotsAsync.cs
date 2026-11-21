@@ -44,7 +44,29 @@ public partial class MainWindow
                         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
                         await Task.Delay(250);
                         var suffix = (english ? "-en" : "") + (dark ? "-dark" : "-light") + ".png";
+                        if (section == AppSection.Home)
+                        {
+                            // Refresh the home lists before the shot: a theme switch can leave a page
+                            // visit in between, and the counts must be identical in both themes.
+                            state.RefreshHomeSeries();
+                            state.RefreshHomeRecent();
+                            state.RefreshHomeStats();
+                            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                            await Task.Delay(120);
+                        }
                         await CaptureWindowAsync(directory, textDirectory, name + suffix, english, englishInventory);
+                        if (section == AppSection.Home && PageHost.Content is Avalonia.Controls.Control homePage
+                            && homePage.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } homeScroll)
+                        {
+                            // J3 evidence: the statistics section sits below the visible 820 px; scroll
+                            // to the bottom for a second shot instead of relying on a taller window.
+                            homeScroll.Offset = new Avalonia.Vector(0, Math.Max(0, homeScroll.Extent.Height - homeScroll.Viewport.Height));
+                            await Dispatcher.UIThread.InvokeAsync(() => homePage.UpdateLayout(), DispatcherPriority.Background);
+                            await Task.Delay(120);
+                            await CaptureWindowAsync(directory, textDirectory, "home-stats" + suffix, english, englishInventory);
+                            homeScroll.Offset = new Avalonia.Vector(0, 0);
+                            await Dispatcher.UIThread.InvokeAsync(() => homePage.UpdateLayout(), DispatcherPriority.Background);
+                        }
                         if (section == AppSection.Notes
                             && PageHost.Content is Avalonia.Controls.Control notesPage
                             && notesPage.GetVisualDescendants().OfType<TabControl>().FirstOrDefault() is { } tabs)
@@ -150,27 +172,47 @@ public partial class MainWindow
             CaptureWindow(Path.Combine(directory, "onboarding-last.png"));
             state.OnboardingVisible = false;
 
-            // The current island has one implemented visual state; capture it as evidence until C5 adds five.
+            // §6.6 / C5–C9: every island presentation in the same light/dark matrix as the Mac
+            // reference screenshots (mac-screens/island). The island is always the dark notch
+            // surface, so the two themes differ only in the app around it — captured either way.
             state.Recording = true;
             state.DetectedQuestion = NextThought.Desktop.DemoContent.Question;
             var island = new CueIslandWindow(state);
             island.Show();
-            foreach (var islandState in new[] { "collapsed", "hearing", "listening", "cue", "launcher", "deck", "bilingual" })
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            await Task.Delay(250);
+            var islandStates = new[]
             {
-                island.ApplyStateForCheck(islandState);
-                await Task.Delay(250);
-                CaptureVisual(island, Path.Combine(directory, "island-" + islandState + ".png"));
-                await WriteInventoryAsync(island, textDirectory, "island-" + islandState);
+                "cue", "hearing", "listening", "deck", "launcher", "pinned", "autoend", "compact",
+                "open", "slide", "bilingual"
+            };
+            state.ApplyUiLanguage(false);
+            foreach (var dark in new[] { false, true })
+            {
+                if (Application.Current is { } islandApp)
+                    islandApp.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                foreach (var islandState in islandStates)
+                {
+                    island.ApplyStateForCheck(islandState);
+                    await Dispatcher.UIThread.InvokeAsync(island.UpdateLayout, DispatcherPriority.Background);
+                    await Task.Delay(180);
+                    var islandSuffix = (dark ? "-dark" : "-light") + ".png";
+                    CaptureVisual(island, Path.Combine(directory, "island-" + islandState + islandSuffix));
+                    await WriteInventoryAsync(island, textDirectory, "island-" + islandState + (dark ? "-dark" : "-light"));
+                }
             }
             // G9: the island is user facing too; audit it in English without adding screenshot files.
             state.ApplyUiLanguage(true);
-            foreach (var islandState in new[] { "launcher", "cue", "deck", "bilingual" })
+            foreach (var islandState in islandStates)
             {
                 island.ApplyStateForCheck(islandState);
                 await Task.Delay(120);
-                await WriteInventoryAsync(island, textDirectory, "island-" + islandState + "-en");
+                var rows = await WriteInventoryAsync(island, textDirectory, "island-" + islandState + "-en");
+                englishInventory["island-" + islandState + "-en"] = rows;
             }
             state.ApplyUiLanguage(false);
+            island.ClearStateForCheck();
+            island.AllowClose = true;
             island.Close();
             state.Recording = false;
             await File.WriteAllTextAsync(Path.Combine(textDirectory, "english-audit.json"),

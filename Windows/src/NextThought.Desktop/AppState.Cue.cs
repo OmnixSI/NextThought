@@ -194,10 +194,28 @@ public partial class AppState
     {
         get
         {
+            if (cueSeriesNameOverride is { Length: > 0 } overrideName) return overrideName;
             if (LiveSeriesName.Length > 0) return LiveSeriesName;
             if (CurrentSession?.WorkspaceName is { Length: > 0 } name) return name;
             return CurrentSession?.Title ?? UiText.T("会议");
         }
+    }
+
+    private string cueSeriesNameOverride = "";
+
+    /// <summary>Demo/self-check hook: the series name the island's deck shows (Mac workspace.name).</summary>
+    public void CueIslandDemoSeriesName(string? name)
+    {
+        cueSeriesNameOverride = name ?? "";
+        OnPropertyChanged(nameof(CueIslandSeriesName));
+    }
+
+    /// <summary>Demo/self-check hook: the candidate question the island offers while they speak.</summary>
+    public void CueIslandDemoCandidate(string? text)
+    {
+        liveCandidateOverride = text is { Length: > 0 } ? text : null;
+        OnPropertyChanged(nameof(CueIslandCandidateText));
+        OnPropertyChanged(nameof(CueIslandHasCandidate));
     }
 
     public string CueIslandSceneName => SceneTitle;
@@ -310,7 +328,7 @@ public partial class AppState
                      nameof(CurrentSlide), nameof(CueIslandHasSlide), nameof(CueIslandSlideHeader),
                      nameof(CueIslandSlideIsScript), nameof(CueIslandSlidePoints), nameof(CueIslandSlideTransition),
                      nameof(CueIslandSlideNotesGenerating), nameof(CueIslandSlidePrevEnabled),
-                     nameof(CueIslandSlideNextEnabled), nameof(SlidePointRows)
+                     nameof(CueIslandSlideNextEnabled), nameof(CueIslandSlidePage), nameof(CueIslandSlidePageCount), nameof(SlidePointRows)
                  })
             OnPropertyChanged(name);
     }
@@ -343,4 +361,46 @@ public partial class AppState
     public double CueIslandSystemLevel => systemLevel;
 
     public double CueIslandMicrophoneLevel => microphoneLevel;
+
+    // ---- the island's actions ---------------------------------------------------------------
+
+    /// <summary>Pages in the deck being presented, for the ear's "4/12" (CueIslandView.coachEar).</summary>
+    public int CueIslandSlidePageCount
+    {
+        get
+        {
+            if (CurrentSlide is not { } slide) return 0;
+            if (slide.PageCount > 0) return slide.PageCount;
+            return slides.Count > 0 ? slides.Count : slide.Number;
+        }
+    }
+
+    /// <summary>The page being presented, for the ear's "4/12".</summary>
+    public int CueIslandSlidePage => CurrentSlide?.Number ?? 0;
+
+    /// <summary>The slide strip's next/previous buttons (CueIslandView.slideStep).</summary>
+    public void StepSlideFromIsland(int delta) => StepSlide(delta);
+
+    /// <summary>The listening panel's "开启同声传译" (Mac liveTranslation.setEnabled(true)).</summary>
+    public void CueIslandEnableTranslation()
+    {
+        if (LiveTranslationEnabled) return;
+        LiveTranslationEnabled = true;
+        Settings.TranslateSpeech = true;
+        Settings.LiveTranslation = true;
+        liveTranslationAutoOpen.Remember(true);
+        LiveTranslationAutoNotice = "";
+        EnsureLiveTranslator();
+        try { _ = Settings.SaveAsync(); } catch { }
+    }
+
+    /// <summary>The launcher's scene chips (Mac state.startFromIsland(scene:)).</summary>
+    public void StartFromCueIsland(MeetingMode mode)
+    {
+        if (Recording || Working) return;
+        SelectedMode = mode;
+        OnPropertyChanged(nameof(SelectedScene));
+        OnSceneChanged();
+        if (StartRecordingCommand.CanExecute(null)) StartRecordingCommand.Execute(null);
+    }
 }
