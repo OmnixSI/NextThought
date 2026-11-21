@@ -16,6 +16,49 @@ public partial class SeriesEditorWindow : Window
 {
     public SeriesEditorWindow() => InitializeComponent();
 
+    /// <summary>WorkspaceEditor section switching: 记录/资料/经验积累 plus the 配置 sections.</summary>
+    private void ShowSection(string section)
+    {
+        if (RecordsSection is null) return;
+        var primary = section is "records" or "documents" or "knowledge";
+        RecordsSection.IsVisible = section == "records";
+        DocumentsSection.IsVisible = section == "documents";
+        KnowledgeSection.IsVisible = section == "knowledge";
+        BasicSection.IsVisible = section == "basic";
+        RequirementsSection.IsVisible = section == "requirements";
+        SkillsSection.IsVisible = section == "skills";
+        SetTab(RecordsTab, section == "records");
+        SetTab(DocumentsTab, section == "documents");
+        SetTab(KnowledgeTabButton, section == "knowledge");
+        EditActionsBar.IsVisible = section is "basic" or "requirements";
+        EditActionsLabel.Text = section == "basic" ? UiText.T("正在编辑系列信息") : UiText.T("正在编辑回答要求");
+        _ = primary;
+    }
+
+    private static void SetTab(Button tab, bool active) => tab.Classes.Set("active", active);
+
+    private void SectionRecords_Click(object? sender, RoutedEventArgs e) => ShowSection("records");
+    private void SectionDocuments_Click(object? sender, RoutedEventArgs e) => ShowSection("documents");
+    private void SectionKnowledge_Click(object? sender, RoutedEventArgs e) => ShowSection("knowledge");
+    private void SectionBasic_Click(object? sender, RoutedEventArgs e) => ShowSection("basic");
+    private void SectionRequirements_Click(object? sender, RoutedEventArgs e) => ShowSection("requirements");
+    private void SectionSkills_Click(object? sender, RoutedEventArgs e) => ShowSection("skills");
+
+    /// <summary>WorkspaceEditor.save in the draft bar: commit the basic/requirements edits.</summary>
+    private void SaveDraft_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.SaveSeriesEditorCommand.Execute(null);
+        ShowSection("records");
+    }
+
+    /// <summary>WorkspaceEditor.cancelDraft.</summary>
+    private void CancelDraft_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.LoadSeriesEditor();
+        ShowSection("records");
+    }
+    internal void ShowSectionForCheck(string section) => ShowSection(section);
+
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
 
     private void RemoveDocument_Click(object? sender, RoutedEventArgs e)

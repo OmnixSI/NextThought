@@ -241,7 +241,7 @@ public partial class AppState
             var title = string.IsNullOrWhiteSpace(meta.Title) ? (doc.Title.Length > 0 ? doc.Title : template.Name) : meta.Title.Trim();
             var markdown = NotesMarkdown.Render(doc, title, facts);
             SummaryText = markdown;
-            await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);
+            await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, doc, cancellation.Token);
             meta.SummaryState = "ready";
             // The template marks sections that carry into the series (NotesCarry): queue them for review.
             var (lessons, bank) = NotesKnowledge.Extract(doc, template);

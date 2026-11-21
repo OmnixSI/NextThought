@@ -345,6 +345,7 @@ public partial class AppState : ObservableObject
         OnPropertyChanged(nameof(HasFishboneDrawing));
         OnPropertyChanged(nameof(HasViewpointMatrix));
         OnPropertyChanged(nameof(ShowStructuredMarkdown));
+        RaiseFishboneLayout();
     }
     partial void OnStructuredMarkdownChanged(string value) => OnPropertyChanged(nameof(ShowStructuredMarkdown));
     public bool HasStructuredNotes => StructuredMarkdown.Length > 0;

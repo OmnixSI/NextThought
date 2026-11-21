@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "编辑器打开（记录为默认分区）",
+      "passed": true,
+      "detail": "ACL 2026 口头报告"
+    },
+    {
+      "step": "基本信息草稿操作条",
+      "passed": true,
+      "detail": "保存/取消"
+    }
+  ]
+}

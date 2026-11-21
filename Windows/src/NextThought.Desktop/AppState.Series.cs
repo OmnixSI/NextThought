@@ -172,6 +172,8 @@ public partial class AppState
         }
     }
 
+    public void RefreshSeriesSkillsForCheck() => RefreshSeriesSkills();
+
     private void ToggleSeriesSkill(SeriesSkillRow row)
     {
         if (SelectedSeries is null || workspace.Find(SelectedSeries.Id) is not { } series) return;

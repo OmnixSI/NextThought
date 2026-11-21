@@ -17,6 +17,7 @@ public partial class NotesView : UserControl
     {
         InitializeComponent();
         Fishbone.Jump += seconds => (DataContext as AppState)?.ShowNotesTranscriptAt(seconds);
+        FishboneTree.Jump += seconds => (DataContext as AppState)?.ShowNotesTranscriptAt(seconds);
         Viewpoints.Jump += seconds => (DataContext as AppState)?.ShowNotesTranscriptAt(seconds);
         Loaded += (_, _) =>
         {
@@ -30,6 +31,11 @@ public partial class NotesView : UserControl
         {
             if (DataContext is AppState state) state.NotesJumpRequested -= OnNotesJumpRequested;
         };
+    }
+
+    private void NotesStructured_SizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is AppState state) state.SetNotesStructuredWidth(e.NewSize.Width);
     }
 
     /// <summary>MeetingPage keeps the jump inside the page: switch to 转写 and scroll to the line.</summary>

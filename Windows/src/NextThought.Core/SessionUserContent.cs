@@ -17,6 +17,9 @@ public sealed record SessionSummary
     public IReadOnlyList<SummaryQuestion>? Questions { get; init; }
     public IReadOnlyList<string>? Lessons { get; init; }
     public IReadOnlyList<BankEntry>? Bank { get; init; }
+
+    /// <summary>Mac summary.notes: the generated template document the notes editor shows.</summary>
+    public StructuredNotesDoc? Notes { get; init; }
     public DateTimeOffset? GeneratedAt { get; init; }
 
     /// <summary>All structured views saved for this meeting (structuredAll).</summary>
@@ -156,7 +159,13 @@ public sealed record SessionUserContent
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.MinValue;
     public string PersonalNotes { get; init; } = "";
     public IReadOnlyList<SessionHighlight> Highlights { get; init; } = [];
-    public StructuredNotesPayload? EditedNotes { get; init; }
+    /// <summary>Mac editedNotes: the user's section/item version of the template notes.</summary>
+    [JsonPropertyName("editedNotes")]
+    public StructuredNotesDoc? EditedNotes { get; init; }
+
+    /// <summary>Windows-only: the user's version of one structured view (fishbone/outline/viewpoints).</summary>
+    [JsonPropertyName("editedStructuredViews")]
+    public StructuredNotesPayload? EditedStructuredViews { get; init; }
     public SessionSummary? EditedSummary { get; init; }
     public string? EditedMarkdown { get; init; }
     public DateTimeOffset? BasedOnGeneratedAt { get; init; }
@@ -165,7 +174,8 @@ public sealed record SessionUserContent
     [System.Text.Json.Serialization.JsonIgnore]
     public bool HasContent =>
         PersonalNotes.Trim().Length > 0 || Highlights.Count > 0 || EditedNotes is not null
-        || EditedSummary is not null || EditedMarkdown is not null || CorrectionDecisions.Count > 0;
+        || EditedStructuredViews is not null || EditedSummary is not null || EditedMarkdown is not null
+        || CorrectionDecisions.Count > 0;
 
     /// <summary>Model corrections can change with a template; explicit user decisions cannot.</summary>
     public IReadOnlyList<TranscriptCorrection> Corrections(
@@ -225,7 +235,18 @@ public sealed class SessionUserContentStore
     {
         var path = Path.Combine(directory, SessionUserContent.FileName);
         if (!File.Exists(path)) return new SessionUserContent();
-        var content = JsonSerializer.Deserialize<SessionUserContent>(File.ReadAllText(path), Options)
+        var json = File.ReadAllText(path);
+        // Old Windows files put a StructuredNotesPayload under editedNotes; Mac's editedNotes is the
+        // template document. Move the legacy shape to its own field before deserializing.
+        if (System.Text.Json.Nodes.JsonNode.Parse(json) is System.Text.Json.Nodes.JsonObject node
+            && node["editedNotes"] is System.Text.Json.Nodes.JsonObject legacy
+            && legacy.ContainsKey("format") && !legacy.ContainsKey("templateID"))
+        {
+            node["editedStructuredViews"] = legacy.DeepClone();
+            node.Remove("editedNotes");
+            json = node.ToJsonString();
+        }
+        var content = JsonSerializer.Deserialize<SessionUserContent>(json, Options)
                       ?? throw new InvalidDataException("无法读取用户内容。");
         if (content.SchemaVersion > 1) throw new InvalidDataException("用户内容格式比当前应用新。");
         return content;

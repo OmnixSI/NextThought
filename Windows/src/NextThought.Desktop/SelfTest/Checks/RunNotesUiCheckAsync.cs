@@ -105,6 +105,35 @@ public partial class MainWindow
             infoWindow.Close();
             await Task.Delay(200);
 
+            // ① Mac MeetingNotesEditor: sections/items with time captions and 「我已核实」.
+            var structuredDoc = new StructuredNotesDoc("interview-review", "面试复盘", "zh", "后端二面",
+            [
+                new NotesSectionResult("impression", "一句话印象", NotesSectionKind.OneLine, false,
+                    [new NotesItem { Text = "项目部分讲得扎实、有数字。", Time = "00:10" }]),
+                new NotesSectionResult("questions", "逐题回放", NotesSectionKind.Questions, false,
+                [
+                    new NotesItem { Text = "如果删除缓存失败了怎么办？", Time = "18:22", Uncertain = true,
+                        Answer = "重试队列 + binlog 异步删除。", Verdict = "good", Better = "先给结论。" },
+                    new NotesItem { Text = "热点 key 过期时请求打到数据库怎么办？", Time = "27:05" }
+                ])
+            ]);
+            state.ShowStructuredNotesEditorForCheck(structuredDoc);
+            var structuredEditor = new NotesEditorWindow { DataContext = state };
+            structuredEditor.Show();
+            await Task.Delay(700);
+            Step("结构化纪要逐条编辑与已核实", state.NotesEditorStructured
+                && state.NotesEditorSections.Count == 2 && state.NotesEditorSections[1].Items.Count == 2
+                && state.NotesEditorSections[1].Items[0].Uncertain,
+                "sections=" + state.NotesEditorSections.Count);
+            CaptureVisual(structuredEditor, Path.Combine(directory, "notes-editor-light.png"));
+            Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(400);
+            CaptureVisual(structuredEditor, Path.Combine(directory, "notes-editor-dark.png"));
+            Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(250);
+            structuredEditor.Close();
+            await Task.Delay(200);
+
             // 重新整理 asks before overwriting edited notes (NotesRegeneration.swift).
             var folder = store.Folder(meta.Id);
             var content = SessionUserContentStore.Load(folder);

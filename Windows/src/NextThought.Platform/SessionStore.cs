@@ -313,7 +313,12 @@ public sealed class SessionStore(AppPaths paths)
         }
         finally { gate.Release(); }
     }
-    public async Task SaveSummaryAsync(SessionMeta meta, string markdown, string model, CancellationToken ct = default)
+    public Task SaveSummaryAsync(SessionMeta meta, string markdown, string model, CancellationToken ct = default) =>
+        SaveSummaryAsync(meta, markdown, model, null, ct);
+
+    /// <summary>Mac summary.notes keeps the generated template document for the notes editor.</summary>
+    public async Task SaveSummaryAsync(SessionMeta meta, string markdown, string model,
+        StructuredNotesDoc? notes, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -332,6 +337,7 @@ public sealed class SessionStore(AppPaths paths)
             summary["markdown"] = markdown;
             summary["generatedAt"] = DateTimeOffset.UtcNow.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
             summary["model"] = model;
+            if (notes is not null) summary["notes"] = JsonSerializer.SerializeToNode(notes, JsonDefaults.ArchiveOptions);
             if (summary["questions"] is not System.Text.Json.Nodes.JsonArray { Count: > 0 })
             {
                 // Mac fills questions from the model summary; Windows has answer records, which are

@@ -22,8 +22,35 @@
       <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_12}">
         <Grid>
           <TextBox Text="{Binding NotesEditorText}" AcceptsReturn="True" TextWrapping="Wrap"
-                   IsVisible="{Binding !NotesEditorShowOriginal}" FontSize="13" Background="Transparent"
+                   IsVisible="{Binding NotesEditorPlainText}" FontSize="13" Background="Transparent"
                    BorderThickness="0" VerticalContentAlignment="Top" />
+          <ScrollViewer IsVisible="{Binding NotesEditorStructured}" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding NotesEditorSections}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:NotesEditorSectionRow">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                    <TextBlock Text="{Binding Title}" Classes="section" />
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:NotesEditorItemRow">
+                          <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                            <TextBox Text="{Binding Text, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                                     FontSize="13" />
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                              <TextBlock Text="{Binding Time}" Classes="caption" FontSize="11"
+                                         IsVisible="{Binding HasTime}" VerticalAlignment="Center" />
+                              <Button Classes="quiet" Content="{loc:Tr 我已核实}" Tag="{Binding}"
+                                      IsVisible="{Binding Uncertain}" Click="ConfirmNoteItem_Click" />
+                            </StackPanel>
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
           <ScrollViewer IsVisible="{Binding NotesEditorShowOriginal}" VerticalScrollBarVisibility="Auto">
             <SelectableTextBlock Text="{Binding NotesEditorOriginalText}" Classes="body" TextWrapping="Wrap" />
           </ScrollViewer>

@@ -79,7 +79,7 @@ public sealed class SessionUserContentTestsParityTests : IDisposable
         {
             PersonalNotes = "下次验证消融实验",
             Highlights = [new SessionHighlight { LineId = line, OffsetSeconds = 5, Quote = "导师的建议" }],
-            EditedNotes = new StructuredNotesPayload(NotesFormat.Outline, outline: new OutlineNotes(
+            EditedStructuredViews = new StructuredNotesPayload(NotesFormat.Outline, outline: new OutlineNotes(
                 Sections: [new OutlineSection("研究进展", Points: [new OutlinePoint("确认过的结论", 5)])]))
         };
         var saved = SessionUserContentStore.Save(content, directory);
@@ -90,8 +90,8 @@ public sealed class SessionUserContentTestsParityTests : IDisposable
         var reopened = SessionUserContentStore.Load(directory);
         Assert.Equal(saved.Revision, reopened.Revision);
         Assert.Equal(saved.PersonalNotes, reopened.PersonalNotes);
-        Assert.Equal("确认过的结论", reopened.EditedNotes!.Outline!.Sections[0].Points[0].Text);
-        Assert.Equal(5, reopened.EditedNotes.Outline.Sections[0].Points[0].At!.Value);
+        Assert.Equal("确认过的结论", reopened.EditedStructuredViews!.Outline!.Sections[0].Points[0].Text);
+        Assert.Equal(5, reopened.EditedStructuredViews.Outline.Sections[0].Points[0].At!.Value);
         Assert.Equal(line, reopened.Highlights[0].LineId);
         Assert.True(reopened.HasContent);
         Assert.Throws<SessionUserContentStore.ChangedElsewhereException>(
