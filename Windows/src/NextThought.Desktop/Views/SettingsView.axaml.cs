@@ -30,14 +30,12 @@ public partial class SettingsView : UserControl
     {
         if (e.PropertyName != nameof(AppState.LanguageGeneration)) return;
         RefreshScreens();
-        BuildShortcutRows();
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
         RefreshScreens();
-        BuildShortcutRows();
         BuildSkillRows();
         ShowPage(currentPage);
     }
@@ -127,6 +125,36 @@ public partial class SettingsView : UserControl
         if (page == "General" && DataContext is AppState state) state.RefreshPermissions();
         // E23: installed document components can change from another page while the app runs.
         if (page is "Answer" or "Advanced" && DataContext is AppState documentState) documentState.RefreshDocumentComponents();
+    }
+
+    /// <summary>Evidence batch: scroll the settings column to the bottom (shortcut row / UpdateAdvanced).</summary>
+    public void ScrollToBottom()
+    {
+        var maximum = Math.Max(0, SettingsScroll.Extent.Height - SettingsScroll.Viewport.Height);
+        SettingsScroll.Offset = new Avalonia.Vector(0, maximum);
+    }
+
+    public void ScrollToTop() => SettingsScroll.Offset = new Avalonia.Vector(0, 0);
+
+    /// <summary>Evidence batch: put the UpdateAdvanced card (更新渠道 + GitHub 访问) at the top.</summary>
+    public void ScrollToUpdateAdvanced()
+    {
+        if (this.FindControl<Avalonia.Controls.TextBlock>("AnchorAdvancedUpdate") is not { } anchor) return;
+        var y = anchor.TranslatePoint(new Avalonia.Point(0, 0), SettingsScroll)?.Y ?? 0;
+        SettingsScroll.Offset = new Avalonia.Vector(0, Math.Max(0, SettingsScroll.Offset.Y + y - 16));
+    }
+
+    /// <summary>Evidence batch: expand the 快捷键… row (Mac ShortcutsSettingsRow) before the shot.</summary>
+    public bool ExpandShortcutsRow()
+    {
+        var row = this.GetVisualDescendants().OfType<ShortcutsSettingsRow>().FirstOrDefault();
+        row?.SetExpanded(true);
+        return row is not null;
+    }
+
+    public void CollapseShortcutsRow()
+    {
+        this.GetVisualDescendants().OfType<ShortcutsSettingsRow>().FirstOrDefault()?.SetExpanded(false);
     }
 
     /// <summary>
@@ -394,126 +422,6 @@ public partial class SettingsView : UserControl
             && Avalonia.Controls.TopLevel.GetTopLevel(this) is MainWindow main)
             main.MoveTeleprompterTo(placement);
     }
-
-    private string? recordingShortcutId;
-
-    /// <summary>G4: one row per Mac hotkey action; click the binding to record a key combination.</summary>
-    private void BuildShortcutRows()
-    {
-        if (DataContext is not AppState state) return;
-        ShortcutRecorderPanel.Children.Clear();
-        var bindings = state.ShortcutText.Replace("\r\n", "\n").Split('\n')
-            .Select(line => line.Split('=', 2))
-            .Where(parts => parts.Length == 2)
-            .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim(), StringComparer.OrdinalIgnoreCase);
-        foreach (var action in NextThought.Core.ShortcutKeys.Actions)
-        {
-            var grid = new Avalonia.Controls.Grid
-            {
-                ColumnDefinitions = new Avalonia.Controls.ColumnDefinitions("*,Auto,Auto,Auto")
-            };
-            grid.Children.Add(new Avalonia.Controls.TextBlock
-            {
-                Text = UiText.T(action.Label), FontSize = 11, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            });
-            var value = new Avalonia.Controls.Button
-            {
-                Content = bindings.TryGetValue(action.Id, out var text)
-                    ? text
-                    : NextThought.Core.ShortcutKeys.Format(action.DefaultModifiers, action.DefaultKey),
-                Tag = action.Id,
-                FontFamily = new Avalonia.Media.FontFamily("Consolas,monospace"),
-                FontSize = 11,
-                MinWidth = 140
-            };
-            value.Click += (_, _) => BeginShortcutRecording(action.Id, value);
-            value.AddHandler(Avalonia.Input.InputElement.KeyDownEvent, ShortcutRecorder_KeyDown,
-                Avalonia.Interactivity.RoutingStrategies.Tunnel);
-            Avalonia.Controls.Grid.SetColumn(value, 1);
-            grid.Children.Add(value);
-            var clear = new Avalonia.Controls.Button { Content = UiText.T("清除"), Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
-            clear.Click += (_, _) => ApplyShortcut(action.Id, action.DefaultModifiers, action.DefaultKey);
-            Avalonia.Controls.Grid.SetColumn(clear, 2);
-            grid.Children.Add(clear);
-            var restore = new Avalonia.Controls.Button { Content = UiText.T("默认"), Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
-            restore.Click += (_, _) => ApplyShortcut(action.Id, action.DefaultModifiers, action.DefaultKey);
-            Avalonia.Controls.Grid.SetColumn(restore, 3);
-            grid.Children.Add(restore);
-            ShortcutRecorderPanel.Children.Add(grid);
-        }
-    }
-
-    private void BeginShortcutRecording(string id, Avalonia.Controls.Button button)
-    {
-        recordingShortcutId = id;
-        button.Content = UiText.T("按下组合键…");
-        button.Focus();
-        ShortcutRecorderStatus.Text = UiText.T("按下带 Ctrl/Alt/Shift/Win 的组合键；Esc 取消。");
-    }
-
-    private void ShortcutRecorder_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
-    {
-        if (sender is not Avalonia.Controls.Button { Tag: string id } button || recordingShortcutId != id) return;
-        e.Handled = true;
-        if (e.Key == Avalonia.Input.Key.Escape && e.KeyModifiers == Avalonia.Input.KeyModifiers.None)
-        {
-            recordingShortcutId = null;
-            ShortcutRecorderStatus.Text = "";
-            BuildShortcutRows();
-            return;
-        }
-        var modifiers = 0u;
-        if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control)) modifiers |= NextThought.Core.ShortcutKeys.ControlModifier;
-        if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Alt)) modifiers |= NextThought.Core.ShortcutKeys.AltModifier;
-        if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift)) modifiers |= NextThought.Core.ShortcutKeys.ShiftModifier;
-        if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Meta)) modifiers |= NextThought.Core.ShortcutKeys.WindowsModifier;
-        var key = ToVirtualKey(e.Key);
-        if (key == 0) { ShortcutRecorderStatus.Text = UiText.T("这个键不能用作全局快捷键。"); return; }
-        if (modifiers == 0)
-        {
-            ShortcutRecorderStatus.Text = UiText.T("快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。");
-            return;
-        }
-        ApplyShortcut(id, modifiers, key);
-        ShortcutRecorderStatus.Text = UiText.T("已改为 ") + NextThought.Core.ShortcutKeys.Format(modifiers, key) + UiText.T("，立即生效。");
-    }
-
-    private void ApplyShortcut(string id, uint modifiers, uint key)
-    {
-        if (DataContext is not AppState state) return;
-        recordingShortcutId = null;
-        var lines = state.ShortcutText.Replace("\r\n", "\n").Split('\n').ToList();
-        var replacement = id + "=" + NextThought.Core.ShortcutKeys.Format(modifiers, key);
-        var index = lines.FindIndex(line => line.TrimStart().StartsWith(id + "=", StringComparison.OrdinalIgnoreCase));
-        if (index >= 0) lines[index] = replacement; else lines.Add(replacement);
-        state.ShortcutText = string.Join("\n", lines);
-        state.SaveShortcutsCommand.Execute(null);
-        BuildShortcutRows();
-    }
-
-    private static uint ToVirtualKey(Avalonia.Input.Key key) => key switch
-    {
-        Avalonia.Input.Key.OemComma => 0xBC,
-        Avalonia.Input.Key.OemPeriod => 0xBE,
-        Avalonia.Input.Key.OemQuestion => 0xBF,
-        Avalonia.Input.Key.OemMinus => 0xBD,
-        Avalonia.Input.Key.OemPlus => 0xBB,
-        Avalonia.Input.Key.OemOpenBrackets => 0xDB,
-        Avalonia.Input.Key.OemCloseBrackets => 0xDD,
-        Avalonia.Input.Key.OemBackslash => 0xDC,
-        Avalonia.Input.Key.OemSemicolon => 0xBA,
-        Avalonia.Input.Key.OemQuotes => 0xDE,
-        Avalonia.Input.Key.Enter or Avalonia.Input.Key.Return => 0x0D,
-        Avalonia.Input.Key.Escape => 0x1B,
-        Avalonia.Input.Key.Space => 0x20,
-        Avalonia.Input.Key.PageUp => 0x21,
-        Avalonia.Input.Key.PageDown => 0x22,
-        Avalonia.Input.Key.Left => 0x25,
-        Avalonia.Input.Key.Up => 0x26,
-        Avalonia.Input.Key.Right => 0x27,
-        Avalonia.Input.Key.Down => 0x28,
-        _ => NextThought.Core.ShortcutKeys.Parse(key.ToString(), 0)
-    };
 
     /// <summary>E28: one editor per skill, with create/delete/install-demo.</summary>
     private void BuildSkillRows()

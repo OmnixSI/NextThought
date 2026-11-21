@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:views="using:NextThought.Desktop.Views"
+             x:Class="NextThought.Desktop.Views.ShortcutsSettingsRow"
+             x:DataType="local:AppState">
+  <UserControl.Styles>
+    <!-- Same flat section vocabulary as SettingsView (the row must not reintroduce a raised card). -->
+    <Style Selector="Border.settings-section">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0,0,0,0.5" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+  </UserControl.Styles>
+  <!-- Mac SettingsPresenter.swift ShortcutsSettingsRow: a 快捷键… row that expands the editor in place. -->
+  <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+    <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+      <Button Classes="quiet" Click="Toggle_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{loc:Tr 快捷键…}" Classes="label" VerticalAlignment="Center" />
+          <TextBlock x:Name="Chevron" Grid.Column="1" Text="{StaticResource IconChevronRight}"
+                     FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+      <views:ShortcutSettingsView x:Name="Editor" IsVisible="False" />
+      <TextBlock Text="{Binding ShortcutConflicts}" IsVisible="{Binding HasShortcutConflicts}"
+                 Foreground="{DynamicResource Caution}" FontSize="11" TextWrapping="Wrap" />
+    </StackPanel>
+  </Border>
+</UserControl>
