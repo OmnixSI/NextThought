@@ -100,3 +100,40 @@ Windows 最新批次：`validation/screens/current/notes-*.png`、`transcript-*.
 - 逐图核对：转写标签的说话人行、时间、译文/原文切换、问题徽章与 Mac transcript 图一致（`notes/current/transcript-light.png` 对照）；纪要标签的标题、决策/待办/风险分组沿用原表结论。
 - 差异/缺口（未改，记录）：Mac 的「回顾纪要」与「工作会议纪要」两个模板页在 Windows 批次里没有对应截图（Windows 用 `review/work` 两个 Demo 模板页，标签页存在但截图循环未覆盖）；Mac 3.4 的标签顺序与 Windows 四标签（纪要/转写/回答/个人笔记）见 E15/E16 的原表，本轮 mac 图不改变判定。
 - Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+
+## task-62 / E15：阶段 4 §6.7 Mac 3.4 会后纪要页逐元素复核（2026-11-21）
+
+- Mac 3.4 参考图：[review-light](../../mac-screens/notes/review-light.png) / [review-dark](../../mac-screens/notes/review-dark.png)、[work-light](../../mac-screens/notes/work-light.png) / [work-dark](../../mac-screens/notes/work-dark.png)、[transcript-light](../../mac-screens/notes/transcript-light.png) / [transcript-dark](../../mac-screens/notes/transcript-dark.png)。
+- Windows 截图（本目录）：`notes-page-{light,dark}.png`（复盘标签首屏）、`notes-mine-{light,dark}.png`（我的笔记）、`notes-transcript-{light,dark}.png`（转写）、`notes-corrected-{light,dark}.png`（校对结果）。`validation/screens/current/` 的同名产物不入库。
+- 本轮按 §6.3 重做页面骨架；结论只能「逐条一致」或逐条列差，下面逐条列出。
+
+| # | Mac 3.4 元素（NotesPageView / 截图） | Windows 现状 | 结论 |
+|---|---|---|---|
+| 1 | 面包屑「所有会议 › 会议标题 › 复盘」 | `NotesBreadcrumb`（本轮新增，`所有会议 › 标题 › 复盘`，`›` 分隔）+ 页头第一行 | 逐条一致 |
+| 2 | 右上「复制纪要」primary（复制笔记 Markdown） | `复制纪要` primary + `CopyNotesCommand`（新增，走 shell 的剪贴板 writer） | 逐条一致 |
+| 3 | 「编辑纪要」「…」等次级动作 | 编辑纪要/重新整理/导出…/详细信息（+ 默认按钮「整理这场会议」） | 逐条一致（Mac 的「…」更多菜单合并为平铺按钮；记录） |
+| 4 | 衬线大标题 + 事实行：日期（本地化长格式）· 时长 · 线上/线下 · 已校对 N 处 | `NotesMeetingTitle`（Serif 30）+ `NotesFactsLine`（`yyyy-MM-dd HH:mm · N min · 线上/线下`）；**未带“已校对 N 处”**，日期是数字格式 | 不一致：事实行缺校对计数、日期格式未本地化（记录） |
+| 5 | 旧内容提示「部分旧内容未记录来源版本…」 | 未显示 | 不一致：未做（compare 旧节已记） |
+| 6 | 模板下拉 +「模板：…」 | 模板 ComboBox + 按模板整理 + 校对转写 + 结束后自动整理 | 逐条一致（放在第二行，Mac 在面包屑行；记录） |
+| 7 | 格式分段「复盘 / 提纲 / 鱼骨图 / 观点对照」（白色块选中） | 同名同序 chip（本轮改名/换序：复盘/提纲/鱼骨图/观点对照） | 逐条一致 |
+| 8 | 标签「复盘 / 转写 / 我的笔记 / 会中回答」（会中回答无内容时隐藏） | 同名同序四标签（本轮改名/换序；会中回答按 `HasSessionAnswers` 隐藏） | 逐条一致 |
+| 9 | 「一句话印象」AI 卡片（一句话 + 复制按钮） | 卡片保留（本轮改标题 + AI 图标，绑定 `CoachSummaryText`）；演示数据没有教练摘要时整卡隐藏，截图里看不到 | 部分一致：标题/图标一致；演示数据未补，Mac 截图的示例句没有对应 demo 数据（记录） |
+| 10 | 「逐题回放」：题号 + 问题 + [时间] + 答得好/待改进 chip + 我答 + 更好的答法卡 | 未实现；当前以 Markdown「问题清单」呈现问题/我的回答要点 | 不一致：逐题回放/反馈 chip 未做（最大剩余差距，记录） |
+| 11 | 复盘内容按模板段落渲染（标题/摘要/一句话印象/问题清单等） | Markdown 纪要卡（模板生成）+ 右侧「证据」常驻卡 | 部分不一致：Mac 是结构化段落 + 复盘中不常驻证据；Windows 证据卡常驻（E18 设计），记录 |
+| 12 | 顶部标题区无「会后纪要」大页头 | 已移除旧「会后纪要」页头/说明，改成面包屑+标题+事实行 | 逐条一致 |
+
+### 动作记录（2026-11-21，--demo + 隔离数据目录）
+
+1. 打开会议复盘：面包屑/标题/事实行/复制纪要/编辑纪要/重新整理/导出/详细信息/整理这场会议均可见；格式 chip 复盘选中。
+2. 切换格式：复盘/提纲/鱼骨图/观点对照 依次切换内容（复用原有 NotesFormat 逻辑）。
+3. 标签：复盘/转写/我的笔记/会中回答（无回答时隐藏）；我的笔记为空/有内容时的 MeetingUserNotes 与之前一致。
+4. 复制纪要：有 Clipboard writer 时复制 Markdown；shell 未注入时静默返回（自检环境）。
+5. 校对结果：`notes-corrected-{light,dark}.png` 为 E17 校对结果视图当前状态（逐元素见 CorrectedTranscript/compare.md，task-62 后续补）。
+
+### 未解决（task-62 后续步骤）
+
+- 逐题回放与答得好/待改进 chip、旧内容提示、事实行校对计数/本地化日期；
+- 一句话印象的演示数据（Mac demo 有示例句）；
+- 「…」更多菜单合并、模板下拉在面包屑行；
+- 复盘结构化段落 vs Markdown 卡、证据卡常驻；
+- work（工作会议纪要）演示模板截图的 Mac 对照（Windows 用 `--demo` 默认模板，未单独拍 work 变体）。

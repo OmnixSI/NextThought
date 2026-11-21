@@ -1,0 +1,92 @@
+using Xunit;
+
+namespace NextThought.Tests;
+
+/// <summary>
+/// task-62/E15: the Mac 3.4 NotesPageView header, format selector and tab order. The page skeleton
+/// was checked element by element against mac-screens/notes/review-light.png and the Mac source;
+/// these assertions keep the new structure from regressing.
+/// </summary>
+public sealed class NotesPageStage4Tests
+{
+    private static string Root()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml")))
+                return directory.FullName;
+            directory = directory.Parent;
+        }
+        throw new DirectoryNotFoundException("repository root not found");
+    }
+
+    private static string Read(params string[] parts) =>
+        File.ReadAllText(Path.Combine([Root(), "Windows", "src", "NextThought.Desktop", .. parts]));
+
+    [Fact]
+    public void TheHeaderHasTheMacBreadcrumbTitleFactsAndCopyAction()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding NotesMeetingTitle}", view);
+        Assert.Contains("{loc:Tr 所有会议}", view);
+        Assert.Contains("{loc:Tr 复盘}", view);
+        Assert.Contains("{Binding NotesFactsLine}", view);
+        Assert.Contains("{loc:Tr 复制纪要}", view);
+        Assert.Contains("CopyNotesCommand", view);
+        Assert.Contains("FontSize=\"30\"", view);
+        var state = Read("AppState.NotesPage.cs");
+        Assert.Contains("NotesBreadcrumb", state);
+        Assert.Contains("NotesMeetingTitle", state);
+        Assert.Contains("CopyNotesAsync", state);
+        Assert.Contains("RefreshNotesHeader", state);
+    }
+
+    [Fact]
+    public void TheTabsAreTheMacThreePointFourOrder()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        var order = new[] { "{loc:Tr 复盘}", "{loc:Tr 转写}", "{loc:Tr 我的笔记}", "{loc:Tr 会中回答}" };
+        var indexes = order.Select(label => view.IndexOf(label, StringComparison.Ordinal)).ToArray();
+        Assert.All(indexes, index => Assert.True(index >= 0));
+        for (var i = 1; i < indexes.Length; i++) Assert.True(indexes[i - 1] < indexes[i], order[i] + " must follow " + order[i - 1]);
+        Assert.DoesNotContain("<TabItem Header=\"{loc:Tr 回答}\"", view);
+        Assert.DoesNotContain("<TabItem Header=\"{loc:Tr 个人笔记}\"", view);
+    }
+
+    [Fact]
+    public void TheFormatSelectorUsesTheMacLabelsInTheMacOrder()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        var order = new[] { "{loc:Tr 复盘}", "{loc:Tr 提纲}", "{loc:Tr 鱼骨图}", "{loc:Tr 观点对照}" };
+        // 复盘 appears in the breadcrumb too; compare the last occurrence of the four format chips.
+        var positions = new List<int>();
+        var start = view.IndexOf("notesformat", StringComparison.Ordinal);
+        Assert.True(start > 0);
+        var tail = view[start..];
+        foreach (var label in order) positions.Add(tail.IndexOf(label, StringComparison.Ordinal));
+        Assert.All(positions, position => Assert.True(position >= 0));
+        for (var i = 1; i < positions.Count; i++) Assert.True(positions[i - 1] < positions[i]);
+        Assert.DoesNotContain("{loc:Tr 文字纪要}", view);
+        Assert.DoesNotContain("{loc:Tr 要点大纲}", view);
+        Assert.DoesNotContain("NotesFormatIsFishbone", tail[..Math.Max(0, positions[1])]);
+    }
+
+    [Fact]
+    public void TheImpressionCardUsesTheMacThreePointFourLabel()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{loc:Tr 一句话印象}", view);
+        Assert.Contains("IconSparkles", view);
+        Assert.DoesNotContain("{loc:Tr 教练小结}", view);
+    }
+
+    [Fact]
+    public void EveryNewHeaderStringIsLocalized()
+    {
+        var table = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "UiTextWindows.cs"));
+        Assert.Contains("[\"一句话印象\"]", table);
+        var wording = File.ReadAllText(Path.Combine(Root(), "Windows", "WORDING.md"));
+        Assert.Contains("一句话印象", wording);
+    }
+}
