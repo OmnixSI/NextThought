@@ -50,13 +50,17 @@ public sealed class GapClosureTests
     }
 
     [Fact]
-    public void TheDemoVoicesSwitchIsADemoOnlyStartupFlag()
+    public void TheDemoWalkthroughDataFollowsTheMacEnvironmentSwitches()
     {
         var startup = Read("StartupOptions.cs");
         Assert.Contains("DemoVoices", startup);
-        Assert.Contains("--demo-voices", startup);
+        Assert.Contains("NEXTTHOUGHT_DEMO_VOICES", startup);
         Assert.Contains("DemoChurn", startup);
-        Assert.Contains("--demo-churn=", startup);
+        Assert.Contains("NEXTTHOUGHT_DEMO_CHURN", startup);
+        // §2.5: the production package exposes only --demo / --screenshots / --self-test.
+        Assert.DoesNotContain("--demo-voices", startup);
+        Assert.DoesNotContain("--demo-churn", startup);
+        Assert.DoesNotContain("--voices", startup);
         var content = Read("DemoContent.cs");
         Assert.Contains("DemoScript.Create(DateTimeOffset.Now, StartupOptions.DemoVoices)", content);
         var demo = Read("AppState.Demo.cs");
