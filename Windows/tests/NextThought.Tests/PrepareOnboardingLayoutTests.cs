@@ -3,8 +3,10 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>
-/// E2/E3 structure tests: the prepare page keeps the Mac layout pieces and the first-run guide is a
-/// dedicated view (the old inline overlay in MainWindow.axaml is gone).
+/// E2/E3 structure tests: the prepare page follows Mac PrepareView.swift 3.4.0 and the first-run
+/// guide follows Onboarding.swift; both are dedicated views (the old inline overlay in
+/// MainWindow.axaml is gone). The per-element visual comparison lives in
+/// validation/screens/{prepare,onboarding}/compare.md.
 /// </summary>
 public sealed class PrepareOnboardingLayoutTests
 {
@@ -31,19 +33,29 @@ public sealed class PrepareOnboardingLayoutTests
         Assert.Contains("Animated=\"False\"", xaml, StringComparison.Ordinal);
         Assert.Contains("SceneGlyph", xaml, StringComparison.Ordinal);
         Assert.Contains("Size=\"44\"", xaml, StringComparison.Ordinal);
-        // Mac PrepareComposer / TypePicker / SeriesCarryCard / SeriesBriefingPanel / Materials / CheckCard / StartBar.
+        // Mac PrepareComposer / VenuePicker / TypePicker, top to bottom.
         foreach (var element in new[]
                  {
                      "这场会议叫什么", "这是什么会", "根据标题选好了，可以改", "自定义…", "线上", "线下",
-                     "DraftVenueHint", "系列与资料", "系列简报", "带入资料", "带入题库", "带入经验", "带入上一场转写",
-                     "PrepareCarrySummary", "PrepareMaterialsRows", "PrepareMaterialsLine", "PrepareAudioReady",
-                     "SystemAudioLevelPercent", "MicrophoneAudioLevelPercent", "VoiceTest_Click",
-                     "PrepareInsightHeading", "PrepareInsightActionCommand", "CancelMaterialsInsightCommand",
-                     "PrepareAnswerLine", "PrepareEngineStateLabel", "PrepareEngineActionLabel", "PrepareMicLine",
-                     "ImportPreparedDocumentsCommand", "ContinueWithoutMicrophoneCommand", "UseMicrophoneAgainCommand",
-                     "TestAnswerEngineCommand", "DragDrop.AllowDrop", "CancelDraftCommand", "开始记录"
+                     "DraftVenueIndex", "DraftSceneChips", "DraftPromise", "DraftSummary", "DraftMomentRows",
+                     "PrepaiView", "prepareSectionTitle"
                  })
             Assert.Contains(element, xaml, StringComparison.Ordinal);
+        // Mac sections between hairlines: 这场用什么 / 接着上一场 / 这次新加的资料 / 开始前检查.
+        foreach (var element in new[]
+                 {
+                     "这场用什么", "不用的可以关掉", "恢复这个场景的默认", "始终开启",
+                     "实时转写", "自动回答", "实时纪要", "同声传译", "区分说话人",
+                     "DraftCarryHasMaterials", "DraftCarryHasReview", "DraftCarryHasLessons", "DraftCarryHasTranscript",
+                     "接着上一场", "系列简报", "这次新加的资料", "可跳过",
+                     "PrepareMaterialsRows", "把文件拖到这里", "PrepareInsightActionCommand",
+                     "开始前检查", "PrepareAudioTone", "PrepareAiTone", "PrepareMicLine",
+                     "TestAnswerEngineCommand", "VoiceTest_Click"
+                 })
+            Assert.Contains(element, xaml, StringComparison.Ordinal);
+        foreach (var element in new[] { "PrepareStartDetail", "PrepareStartLabel", "CancelDraftCommand", "StartPreparedMeetingCommand" })
+            Assert.Contains(element, xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("系列与资料", xaml, StringComparison.Ordinal);
         var state = File.ReadAllText(Path.Combine(Desktop, "AppState.Prepare.cs"));
         Assert.Contains("PreparedMaterialCount", state, StringComparison.Ordinal);
         Assert.Contains("ImportPreparedDocumentsAsync", state, StringComparison.Ordinal);
@@ -89,18 +101,24 @@ public sealed class PrepareOnboardingLayoutTests
                  {
                      "OnboardingIsScene", "OnboardingIsSound", "OnboardingIsAnswers", "OnboardingIsStart",
                      "OnboardingPosition", "OnboardingStepTitle", "OnboardingStepTime", "稍后继续",
-                     "看一场示例会议", "OnboardingSampleToggle", "提词岛示意", "提词岛示意", "设置清单",
+                     "OnboardingProgressCapsules", "OnboardingSceneChips", "OnboardingSceneMomentRows",
+                     "OnboardingSampleToggle", "OnboardingSampleVisibleLines", "OnboardingSampleVisibleTakeaways",
+                     "OnboardingSampleProgress", "OnboardingSampleSuggestionQuestion", "OnboardingSampleSuggestionAnswer",
+                     "ReplayOnboardingSampleCommand", "实时转写", "面试记录", "重播",
+                     "OnboardingVenueDetail", "OnboardingOnline", "OnboardingOffline",
+                     "OnboardingMicrophoneDetail", "OnboardingMicrophoneRecordsMe", "OnboardingMicrophoneOnlyOther",
+                     "OnboardingRecognitionDetail", "OnboardingDataRouteSummary",
+                     "OnboardingAnswerProviders", "OnboardingAnswerServiceTitle", "OnboardingModelLine",
+                     "OnboardingTestAnswerHint", "ToggleAnswerOptionsCommand", "ToggleRecognitionOptionsCommand",
+                     "OnboardingCueIslandQuestion", "OnboardingCueIslandAnswer", "OnboardingCuePoint1", "OnboardingCuePoint2",
                      "先看看", "开始第一场", "回到声音"
                  })
             Assert.Contains(element, xaml, StringComparison.Ordinal);
-        // task-34: 示例会议面板（Mac OnboardingSampleMeeting）逐元素。
-        foreach (var element in new[]
-                 {
-                     "OnboardingSampleVisibleLines", "OnboardingSampleVisibleTakeaways", "OnboardingSampleProgress",
-                     "OnboardingSampleSuggestionQuestion", "OnboardingSampleSuggestionAnswer",
-                     "ReplayOnboardingSampleCommand", "实时转写", "面试记录", "重播"
-                 })
-            Assert.Contains(element, xaml, StringComparison.Ordinal);
+        // Mac frame: header 32/32, content 720 wide, footer 32/16 with the actions on the right.
+        Assert.Contains("Width=\"720\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Margin=\"32,32,32,12\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Margin=\"32,16\"", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("设置清单", xaml, StringComparison.Ordinal);
         var sample = File.ReadAllText(Path.Combine(Desktop, "OnboardingSample.cs"));
         Assert.Contains("OnboardingSampleLine", sample, StringComparison.Ordinal);
         Assert.Contains("OnboardingSampleTakeaway", sample, StringComparison.Ordinal);
@@ -113,7 +131,7 @@ public sealed class PrepareOnboardingLayoutTests
         Assert.Contains("Phase = TimeSpan.FromMilliseconds(460)", motion, StringComparison.Ordinal);
         var guideCode = File.ReadAllText(Path.Combine(Desktop, "Views", "OnboardingView.axaml.cs"));
         Assert.Contains("AnimatePageAsync", guideCode, StringComparison.Ordinal);
-        // 设置清单挂在 Mac 的通用页。
+        // 设置清单挂在 Mac 的通用页, not in the guide.
         var settings = File.ReadAllText(Path.Combine(Desktop, "Views", "SettingsView.axaml"));
         Assert.Contains("SettingsSetupChecklist", settings, StringComparison.Ordinal);
         Assert.Contains("Tag=\"General\"", settings, StringComparison.Ordinal);

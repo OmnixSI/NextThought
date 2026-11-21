@@ -170,11 +170,13 @@ public partial class AppState
             BeginAutoEnd(meta);
             var generation = ++epoch;
             SetStatus("正在加载本地语音模型…");
-            if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
+            if (settings.SeparateSpeakers && ActiveMeetingFeatures.Speakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
             BeginLiveTranslation();
             BeginLiveMeetingTranslation();
             ApplyRememberedTranslatorForMeeting();
+            // J2: the four switches chosen on the preparation page decide what this meeting runs.
+            ApplyActiveMeetingFeatures();
             ResetLiveStatusCounters();
             BeginLiveFollow();
             var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;

@@ -287,6 +287,8 @@ public partial class AppState
         OnPropertyChanged(nameof(PrepareAudioReady));
         OnPropertyChanged(nameof(PrepareAnswerReady));
         OnPropertyChanged(nameof(PreparePhoneReady));
+        // J2/§6.7: the reworked page's blocks (chips, carry card, feature picker, start bar) re-read.
+        RaisePrepareLayout();
     }
 
     // ---- commands ---------------------------------------------------------------------

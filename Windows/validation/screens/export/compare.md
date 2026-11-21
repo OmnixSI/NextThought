@@ -2,7 +2,7 @@
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/SessionExportUI.swift`（SessionExportSheet）
 - Windows 代码：`Windows/src/NextThought.Desktop/Views/SessionExportSheet.axaml(.cs)`、`AppState.SessionExport.cs`
-- Windows 截图（本目录）：`export-light.png`（`--self-test session-export` 产出的真实会议 SRT 源文本预览；深色版待补）
+- Windows 截图（本目录）：`export-light.png` / `export-dark.png`（`--self-test windows` 用真实归档会议复现 SRT 源文本预览，浅/深各一张）
 - 证据生成：`--self-test windows`
 
 | # | Mac 元素（顺序） | 值 | Windows 现状 | 结论 |

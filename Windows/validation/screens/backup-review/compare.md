@@ -2,7 +2,7 @@
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/BackupRestoreReview.swift`
 - Windows 代码：`Windows/src/NextThought.Desktop/Views/BackupRestoreReviewView.axaml(.cs)`、宿主 `BackupSettingsSection`/`RunBackupUiCheck`
-- Windows 截图：**待补**（初版实现逐条对照已完成；`--self-test backup-ui` 与 `--self-test windows` 的取图步骤在本次会话末尾崩溃，需另跑一次补浅/深两张）
+- Windows 截图（本目录）：`backup-review-light.png` / `backup-review-dark.png`（真实恢复点 → `PrepareBackupImportAsync` → 复核窗口；`--self-test backup-ui` 与 `--self-test windows` 均 passed，两套图一致）
 - 证据生成：`--self-test windows`（真实恢复点 → `PrepareBackupImportAsync` → 复核窗口）
 
 | # | Mac 元素（顺序） | 值 | Windows 现状 | 结论 |
@@ -22,5 +22,5 @@
 
 ## 差异 / 未解决
 
-1. Mac 的取消按钮样式为 SecondaryButtonStyle，Windows 用默认按钮（视觉略差，交互一致）。
+1. 取消按钮已按 Mac SecondaryButtonStyle 实现（32 pt、hairline 边、surface 底、hover sunken），与 Mac 一致。
 2. 截图使用临时恢复点数据（新增 1 场、无冲突/模板）；冲突行的视觉由同一模板渲染，数据取决于真实备份内容。

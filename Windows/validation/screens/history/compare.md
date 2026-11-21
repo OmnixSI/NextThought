@@ -133,3 +133,48 @@ Windows 最新批次：`validation/screens/current/history-light.png` / `history
 - 逐图核对：Windows 历史页的筛选（日期/长度/排序）、行标题/场景/时间/状态、右键菜单与 E18 原表一致；与 Mac 图能对照的只有导航位置和会议页视觉，无法逐像素对照列表行（Mac 批次缺口）。
 - 差异：Mac 3.4 历史页在「所有记录」标签内、左侧可选系列；Windows 历史页是同页顶部导航内的独立页面（E18 结构），细节差异见原表。
 - Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+
+---
+
+## §6.7 E1 重做（2026-11-21，runtime-gaps）
+
+Mac 没有「所有记录」独立截图：标准为 `Sources/NextThought/HistoryView.swift`（`HistoryView.body`、`sessionList`、`filterBar`、`MeetingArchiveOverview`、`SessionRow`）。本轮把 Windows 页按 Swift 重做成两栏并重新截浅/深图（本目录 `history-light.png` / `history-dark.png` / `history-overview-light.png` / `history-overview-dark.png`，由 `--self-test=history-e1` 生成，1120×820）。
+
+### 左侧会话栏（270pt）
+
+| Mac 元素 | Windows 现状 | 一致性 |
+|---|---|---|
+| 标题 `所有记录`（section 19 衬线）+ 副标题「自动保存 · 不保存录音」 | 同位置同字号/字重/颜色/文案 | 一致（默认状态；记录关闭态/系列作用域未接） |
+| 右上 ellipsis → 删除全部会议记录 | 同菜单 | 一致 |
+| 搜索框「搜索全部转写、纪要、笔记」 | 同占位/绑定 | 一致 |
+| 日期/时长/排序三个 `HistoryFilterPicker` | 三个 §6.1 `MenuPicker`，同绑定 | 一致 |
+| `\(searchScopeLabel) · \(resultCount)` 作用域行 | `HistorySummary`（N 场会议 · 共 M 场） | 不一致：格式仍是旧摘要 |
+| 系列分组头（名称 + 会议数 + 管理菜单） | 名称 Button + 行数；管理菜单在右栏 | 部分一致 |
+| `SessionRow`：场景色点、标题、右侧时间、下行 `MeetingOutcome.line`、ready sparkle/pending/failed 图标、命中摘录、选中 Sunken | 全部实现（`ModeTintBrush`/`TimeText`/`Details`/三类图标/`Classes.selected`）；英文副标题 Wrap MaxLines=2，英文去掉末尾 ready 词 | 一致（active 红点、行间 Hairline、focus ring 未做） |
+| 空态（无记录/无匹配/清除按钮/读取失败） | 仅两条静态空态文案 | 不一致：分态与清除按钮未移植 |
+| 批量删除：批量删除/已选 N 个系列/全选当前结果/删除所选/完成 | 右栏「会议系列」段四个 ControlButtonBody + 计数 | 一致 |
+
+### 右侧归档概览
+
+| Mac 元素 | Windows 现状 | 一致性 |
+|---|---|---|
+| 面包屑栏 52 高、底 Hairline、maxWidth 720；非根显示「所有记录 > 名称」 | 高 52 + 底 Hairline；选中会议时显示「所有记录 > 会议标题」，根状态留空（Mac 根无面包屑） | 一致 |
+| 大标题 `Typo.display` 30 衬线「所有记录」，容器给足宽度（英文不截断） | display 标题 + MinWidth 120，改 Stretch 容器 | 一致 |
+| 副标题「本机记录 · 当前匹配 N 场会议、M 个系列 · 系列按最近匹配会议排序」 | `HistoryOverviewSubtitle` 同文案/格式 | 一致 |
+| 统计行「N 场会议」「M 个系列」 | `HistoryOverviewStats` 同格式（选中会议时显示 SessionFacts） | 部分一致（系列内「篇已整理」不适用） |
+| 「会议系列」section + 批量删除 + 系列卡片列表 | 同 section + 批量按钮 + 系列行（名称/场数/管理菜单） | 部分一致（缺模式/未整理计数与卡片样式） |
+| 选中会议显示内嵌 `MeetingPage` | 保留「归档概览」卡片（标题/事实/错误/截图/回答），点击行导航到会议页 | 不一致：架构差异（避免与会中页 owner 冲突） |
+| 读取失败通知/重试 | 未移植 | 不一致 |
+
+### 交互
+
+行点击/右键菜单：一致。筛选即时搜索/命中导航：一致（系列作用域、读取失败、清除筛选未做）。选中动画：未做。键盘 focus ring：未做。
+
+### 未解决（明确列差）
+
+1. 没有 Mac 的 workspace/系列作用域状态（标题不随系列变、无系列层级面包屑、无「系列中的会议」空态/清除筛选）。
+2. 右栏选中会议用归档概览卡片，未内嵌完整 MeetingPage（导航架构，留给会中页 owner）。
+3. 内容搜索读取失败提示、清除搜索/筛选按钮、搜索进度分态未移植。
+4. 行间 Hairline、focus ring、选中 snappy 动画未做。
+5. 系列卡片缺模式/未整理计数。
+6. 英文截断修复：行副标题（`0fc45f05`）与标题容器（`278f2e4d`）；英文扫描用的 `history-en-light/dark.png` 由 localization 批次生成（本目录的 `history-e1-check.json` 记录自检 4/4 通过）。
