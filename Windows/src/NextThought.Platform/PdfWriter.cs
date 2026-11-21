@@ -18,15 +18,34 @@ public static class PdfWriter
 
     public static void Write(string markdown, string path, string? title = null)
     {
-        var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+        var full = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(full);
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-        using var stream = File.Create(path);
-        using var document = SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata
+        // Mac SessionDocumentRenderer writes a temporary file and renames it, so a failed render
+        // never leaves half a PDF at the destination.
+        var temporary = full + ".tmp-" + Guid.NewGuid().ToString("N");
+        try
         {
-            Title = title ?? "NextThought meeting",
-            Creator = "NextThought",
-            Producer = "NextThought / SkiaSharp"
-        });
+            using (var stream = File.Create(temporary))
+            using (var document = SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata
+                   {
+                       Title = title ?? "NextThought meeting",
+                       Creator = "NextThought",
+                       Producer = "NextThought / SkiaSharp"
+                   }))
+            {
+                Render(markdown, document);
+            }
+            File.Move(temporary, full, overwrite: true);
+        }
+        finally
+        {
+            try { if (File.Exists(temporary)) File.Delete(temporary); } catch { }
+        }
+    }
+
+    private static void Render(string markdown, SKDocument document)
+    {
         using var regular = LoadCjkFont();
         using var mono = LoadMonoFont();
         using var paint = new SKPaint { IsAntialias = true, Color = SKColors.Black };

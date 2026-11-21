@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "导出会话准备",
+      "passed": true,
+      "detail": "E19 自检导出 / 缓存: 复盘"
+    },
+    {
+      "step": "逐个导出的格式全部成功",
+      "passed": true,
+      "detail": "成功 30/30"
+    },
+    {
+      "step": "转写版本与语言影响导出",
+      "passed": true,
+      "detail": "原始记录无译文=True；双语文有译文=True"
+    }
+  ]
+}
