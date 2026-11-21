@@ -18,7 +18,7 @@
     <Style Selector="Button.pillnav">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
-      <Setter Property="Padding" Value="{DynamicResource D4Padding_12_8}" />
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_12_0}" />
       <Setter Property="Height" Value="28" />
       <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_16}" />
       <Setter Property="FontSize" Value="13" />
