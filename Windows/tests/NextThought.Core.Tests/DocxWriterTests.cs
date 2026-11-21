@@ -23,6 +23,7 @@ public sealed class DocxWriterTests
             using var archive = ZipFile.OpenRead(path);
             Assert.Contains(archive.Entries, entry => entry.FullName == "word/document.xml");
             Assert.Contains(archive.Entries, entry => entry.FullName == "word/styles.xml");
+            Assert.Contains(archive.Entries, entry => entry.FullName == "word/numbering.xml");
             Assert.Contains(archive.Entries, entry => entry.FullName == "[Content_Types].xml");
             using var reader = new StreamReader(archive.GetEntry("word/document.xml")!.Open());
             var xml = reader.ReadToEnd();
@@ -30,7 +31,12 @@ public sealed class DocxWriterTests
             Assert.Contains("Heading1", xml);
             Assert.Contains("摘要", xml);
             Assert.Contains("正文 &amp; &lt;x&gt;", xml);
-            Assert.Contains("• 条目", xml);
+            // E19: lists use the Mac numbering.xml instead of hand-written bullet characters, and
+            // quotes use the Mac 360 twip indent (SessionDocumentRenderer.documentXML).
+            Assert.Contains("<w:numPr>", xml);
+            Assert.Contains("<w:ind w:left=\"360\"/>", xml);
+            using var numbering = new StreamReader(archive.GetEntry("word/numbering.xml")!.Open());
+            Assert.Contains("w:abstractNumId=\"0\"", numbering.ReadToEnd());
         }
         finally { File.Delete(path); }
     }
