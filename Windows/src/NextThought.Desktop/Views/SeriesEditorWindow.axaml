@@ -356,12 +356,12 @@
     <Border Grid.Row="0" Grid.RowSpan="5" IsVisible="{Binding ShowSeriesEditorUnsavedPrompt}"
             Background="#8A000000">
       <Border Classes="card" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
-              Padding="24" Background="{DynamicResource Paper}">
-        <StackPanel Spacing="12">
+              Padding="{DynamicResource D4Padding_24}" Background="{DynamicResource Paper}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 有未保存的修改}" Classes="section" />
           <TextBlock Text="{loc:Tr 保存后继续刚才的操作；放弃更改会丢弃本次草稿。}" Classes="caption"
                      TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right">
             <Button Classes="primary" Content="{loc:Tr 保存更改}" Click="SaveUnsavedSeries_Click" />
             <Button Classes="quiet" Content="{loc:Tr 放弃更改}" Click="DiscardUnsavedSeries_Click" />
             <Button Classes="quiet" Content="{loc:Tr 继续编辑}" Click="KeepEditingSeries_Click" />
