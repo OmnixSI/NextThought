@@ -178,3 +178,26 @@ Mac 没有「所有记录」独立截图：标准为 `Sources/NextThought/Histor
 4. 行间 Hairline、focus ring、选中 snappy 动画未做。
 5. 系列卡片缺模式/未整理计数。
 6. 英文截断修复：行副标题（`0fc45f05`）与标题容器（`278f2e4d`）；英文扫描用的 `history-en-light/dark.png` 由 localization 批次生成（本目录的 `history-e1-check.json` 记录自检 4/4 通过）。
+---
+
+## §6.7 E1 列差收口（2026-11-21 第二轮，`--self-test=history-e1`）
+
+本轮补齐上一节列出的差异并重拍截图（`history-light/dark.png`、`history-overview-light/dark.png`、`history-series-light.png`，自检 6/6 通过，报告 `history-e1-check.json`）。
+
+### 已补齐（与 Mac 逐条一致）
+
+1. **workspace/系列作用域**：`HistorySeriesFilter` + `IsHistoryScoped`；左栏标题/副标题随作用域切换（系列名 / 「这个系列中的会议记录」），右栏 `HistoryOverviewTitle/Subtitle/Stats` 按作用域生成；系列行与组头点击 `OpenHistorySeriesCommand` 进入作用域，`ShowAllHistoryCommand` 返回根；面包屑显示「所有记录 > 系列名」（根状态无面包屑，与 Mac 一致）。
+2. **空态与清除**：根「还没有会议」、系列「这个系列还没有会议」+「返回所有记录」、过滤空「没有符合条件的记录」+「清除搜索与筛选」（`ClearHistoryFiltersCommand`，保留系列作用域）；`HistoryNoMatchDetail` 分作用域文案。
+3. **内容搜索进度**：`HistoryChecked/Total/Unreadable` + `HistoryContentSearchProgress`（「已检查 N / M 场；完成后才会确定没有匹配项。」）已接；读取失败提示 UI 存在（`HistoryReadIssueText`）。
+4. **行视觉**：每行 0.5px `Ink.hairline` 分隔；`Button.recent:focus-visible` 2px Ink 焦点环；选中底色 0.14s BrushTransition（snappy 近似）；左栏 seriesGroupHeader 只保留名称+场数（模式/整理数在右栏系列卡片）。
+5. **系列卡片**：`ModeTitle` + `CountsText`（N 场会议 · M 篇已整理）。
+
+### 仍不一致（明确列差）
+
+1. **内嵌 MeetingPage**：Mac 在右栏内嵌完整会议页；Windows 仍用「归档概览」卡片 + 导航到会议页（导航架构差异，需 live owner 协调）。
+2. **内容读取失败**：Windows `Sessions.SearchContentHits` 未暴露逐场读取失败计数，`HasHistoryReadIssues` 恒 false，Mac 的「N 场内容无法完整读取」警示不会出现（API 缺口）。
+3. **搜索进度确定性**：Windows 搜索一次性返回（无逐场进度回调），`HistoryChecked` 只在完成后设为总数；Mac 扫描中显示递增进度。
+4. **行 focus 键盘导航**：有 focus-visible 环，但没有 Mac 的上下键在行间移动 + `.focused` 状态；
+5. **选中动画**：0.14s BrushTransition 近似 snappy，非真弹簧（Motion.snappy 由 D5 弹簧实现，按钮过渡仍用 Avalonia BrushTransition）。
+6. **根/系列 overview 的「N 篇已整理」系列内统计**：已按 Mac 显示 `%lld 篇已整理`；根统计 `N 场会议 · M 个系列` 一致。
+7. Mac 无该窗口截图，所以证据是 Swift 源码元素表 + 本页浅/深截图；未做像素级对照。

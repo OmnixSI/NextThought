@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
 using NextThought.Platform;
 
@@ -255,11 +255,12 @@ public partial class AppState
 
     public bool CueIslandCoachEnabled => coach is not null && Recording;
 
-    /// <summary>The coach's nudge (Mac state.coach.nudge); empty while the coach is quiet.</summary>
-    public string CueIslandCoachHint => CoachHint;
+    /// <summary>The coach's nudge (Mac state.coach.nudge); empty while the coach is quiet. The
+    /// eye-contact cue (Mac state.coach.shouldLookUp) outranks nudges while it applies.</summary>
+    public string CueIslandCoachHint => GazeShouldLookUp ? UiText.T("看镜头") : CoachHint;
 
     /// <summary>The symbol of the last nudge, so the ear says what kind of hint it is.</summary>
-    public string CueIslandCoachSymbol => lastNudge switch
+    public string CueIslandCoachSymbol => GazeShouldLookUp ? "eye" : lastNudge switch
     {
         CoachNudge.WrapUp => "moon.zzz",
         CoachNudge.SlowDown => "tortoise",

@@ -11,7 +11,7 @@ Mac 参照：`Windows/validation/mac-screens/settings-pages/{scenes,answers,pres
   快速设置：[quick-settings-light](../../mac-screens/settings/quick-settings-light.png) / [quick-settings-dark](../../mac-screens/settings/quick-settings-dark.png)、
   主窗口设置：[window-light](../../mac-screens/settings/window-light.png) / [window-dark](../../mac-screens/settings/window-dark.png)。
 
-Windows 截图：本目录 `settings-{scene,answer,coach,notes,general,advanced}-{light,dark}.png`、`quick-settings-{light,dark}.png`；`Windows/validation/screens/settings/settings-{light,dark}.png`（主窗口内设置覆盖层）。
+Windows 截图：本目录 `settings-{scene,answer,coach,notes,general,advanced}-{light,dark}.png`、`settings-coach-shortcuts-{light,dark}.png`（快捷键行展开）、`settings-advanced-update-{light,dark}.png`（更新高级卡）、`quick-settings-{light,dark}.png`；`Windows/validation/screens/settings/settings-{light,dark}.png`（主窗口内设置覆盖层）。
 Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / SettingsSearch）、`SettingsPages.swift`（SceneSettingsPage / SceneRow / AnswerSettings）、`SettingsGeneralData.swift`（GeneralSettings / BackupSettingsSection / PermissionSettingsSection / UpdateSettings）、`SettingsPresenter.swift`、`SettingsAdvanced.swift`、`QuickSettings.swift`。
 
 ## 全局结构（六页共用）
@@ -56,7 +56,7 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 | P3 | 「临场教练」：语速/发言占比、眼神检测 | Windows 无临场教练（E10 未做） | **不一致**（E10 未做） |
 | P4 | 「屏幕共享」：自动收回刘海、排除本应用窗口、共享可见性测试 | Windows 有排除本应用窗口、共享可见性测试；无自动收回刘海选项 | 部分一致 |
 | P5 | 「字幕条」：字号滑杆、恢复默认位置、说明 | 字幕条卡（字号/位置/说明） | 一致 |
-| P6 | 「快捷键…」行 | 全局快捷键卡（键位录制；冲突只在此页显示） | 一致（呈现为独立卡） |
+| P6 | 「快捷键…」行（右侧箭头，展开后是 ShortcutSettingsView：每个动作一行、键位按钮可录入、底部「恢复默认快捷键」） | `ShortcutsSettingsRow` 可折叠行 + `ShortcutSettingsView` 编辑器（R6 从原全局快捷键卡拆出）：点击展开/收起、箭头旋转、逐动作录入/清除/默认、恢复默认、冲突只在本页；证据 `settings-coach-shortcuts-{light,dark}.png` | **一致** |
 | P7 | §6.7：同声传译 + 字幕在提词与教练页 | `同声传译` + `字幕条` 卡均在 Coach 页（本轮从说话人与翻译卡拆出） | **一致** |
 | P8 | §6.7：声纹在通用页 | 「区分说话人」已移到 General | **一致** |
 
@@ -78,7 +78,7 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 | E4 | 「记录每次会议」开关 + 说明 | Windows 无此开关（无 recordSessions 消费 UI） | **不一致**（已知缺口） |
 | E5 | 「备份与恢复」：导出全部数据…/导入…/立即备份 + 说明 | General 页 BackupSettingsSection（E30） | 一致 |
 | E6 | 「权限」：录屏与系统音频/麦克风/摄像头 + 状态 | General 页权限卡：麦克风/摄像头（无屏幕录制，Windows 无对应） | 部分一致（允许的差异） |
-| E7 | 「更新」：版本 + 构建 + 检查更新 + 自动检查更新 | General 页更新卡：版本、渠道、检查更新、自动检查 | 一致 |
+| E7 | 「更新」：版本 + 构建 + 检查更新 + 自动检查更新 | General 页更新卡：版本、检查更新、自动检查（渠道 picker 按 Mac 归到高级页 UpdateAdvanced，已移出） | 一致 |
 | E8 | §6.7：术语和人名、声纹、备份在通用页 | 三者现均在 General | **一致** |
 
 ## 高级页（advanced-*.png ↔ settings-advanced-*.png）
@@ -86,9 +86,10 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 | # | Mac 元素 | Windows 现状 | 结论 |
 |---|---|---|---|
 | V1 | 声音与识别（声音来源/本机识别/云端/手机伴侣） | Advanced 页对应卡 | 一致（术语已迁出本机识别卡） |
-| V2 | 回答服务（Codex 推理强度/快速模式/GitHub） | E27 Codex 卡 | 一致 |
+| V2 | 回答服务（Codex 推理强度/快速模式） | E27 Codex 卡（GitHub 访问已按 Mac 移到下面的更新高级卡） | 一致 |
 | V3 | 资料组件（本机模型/共用组件/语义检索/扫描本机组件） | E23 资料组件卡；Mac「扫描本机已有组件/选择目录」未移植 | 部分一致（缺口见 E23 compare） |
 | V4 | 纪要/提词高级、更新、数据与维护（设置清单、减少视觉特效、置顶、签名） | 设置清单（E3，通用页）、数据与关于（Windows 附加）、屏幕与讲稿（E9） | 部分一致（数据与维护分组未逐项对齐） |
+| V6 | 「更新（高级）」UpdateAdvanced：更新渠道 picker（正式/预览）+ 说明 + GitHub 访问（仓库、访问令牌、保存并检查/清除、去 GitHub 创建令牌、gh auth login 说明、令牌权限步骤、钥匙串说明） | 高级页新增「更新（高级）」卡（R6）：更新渠道 picker + Mac 说明句 + GitHub 访问全部控件（从 Codex 卡移出）；本版只有正式通道，选项即「正式版本」（§2.8/§10.4「本版不做」）；证据 `settings-advanced-update-{light,dark}.png` | **一致（渠道选项按本版裁剪）** |
 | V5 | 快捷键冲突只在快捷键页标注 | 快捷键页显示冲突；底部常驻冲突条已删（E1） | 一致 |
 
 ## 快速设置（mac-screens/settings/quick-settings-*.png ↔ quick-settings-*.png）
@@ -109,7 +110,7 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 
 ## 结论
 
-- **本轮已一致**：§6.7 三条归属全部落地（声纹/术语/备份→通用；技能/资料/联网→回答与资料；同声传译/字幕→提词与教练）；26 个设置卡改为 Mac 平铺 section 样式（透明底、hairline 分隔、无衬线 17 semibold section 标题）；设置页英文两处截断修复（标题药丸 6d60d37c、TAVILY 标签换行 386f6630）；结构测试 `SettingsStructureTests` 4/4。
+- **本轮已一致**：§6.7 三条归属全部落地（声纹/术语/备份→通用；技能/资料/联网→回答与资料；同声传译/字幕→提词与教练）；26 个设置卡改为 Mac 平铺 section 样式（透明底、hairline 分隔、无衬线 17 semibold section 标题）；设置页英文两处截断修复（标题药丸 6d60d37c、TAVILY 标签换行 386f6630）；三个 Mac 设置视图落地（R6：`ShortcutsSettingsRow` + `ShortcutSettingsView` 可折叠快捷键编辑器，`UpdateAdvanced` 更新高级卡含渠道与 GitHub 访问）；结构测试 `SettingsStructureTests`/`SettingsViewComponentsTests` 全绿。
 - **仍不一致（逐条）**：G1 顶栏三段式；G2 侧栏图标/选中块；A1 API/Codex 分段控件；A5 联网搜索独立 section + 三态下拉；P3 临场教练（E10）；N3 纪要高级分组；E3 术语 UI 弹窗化；E4 记录每次会议开关；V3/V4 资料/数据维护分组；W1/W2 覆盖层遮罩/圆角/顶栏。
 - 截图：六页浅/深 + 快速设置 + 英文浅/深 + 主窗口设置覆盖层（1120×820，隔离数据目录）随本目录与 `validation/screens/settings/` 入库。
 - 未解决：上面列出的不一致项按 Mac 继续逐项改（顶栏/侧栏/分段控件优先）；临场教练（E10）、联网三态下拉控件分属其它任务组。

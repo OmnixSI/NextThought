@@ -100,6 +100,28 @@ public partial class MainWindow
                                 await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
                                 await Task.Delay(120);
                                 await CaptureWindowAsync(directory, textDirectory, "settings-" + page.ToLowerInvariant() + suffix, english, englishInventory);
+                                // R6: the 快捷键… row and the UpdateAdvanced card sit below the
+                                // visible 820 px; capture their real state at the bottom of the page.
+                                if (page == "Coach")
+                                {
+                                    settings.ExpandShortcutsRow();
+                                    settings.ScrollToBottom();
+                                    await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
+                                    await Task.Delay(150);
+                                    await CaptureWindowAsync(directory, textDirectory, "settings-coach-shortcuts" + suffix, english, englishInventory);
+                                    settings.CollapseShortcutsRow();
+                                    settings.ScrollToTop();
+                                    await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
+                                }
+                                if (page == "Advanced")
+                                {
+                                    settings.ScrollToUpdateAdvanced();
+                                    await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
+                                    await Task.Delay(150);
+                                    await CaptureWindowAsync(directory, textDirectory, "settings-advanced-update" + suffix, english, englishInventory);
+                                    settings.ScrollToTop();
+                                    await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
+                                }
                             }
                         }
                     }

@@ -235,18 +235,8 @@
         </StackPanel>
       </Border>
 
-      <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
-      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
-        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorGeneral2" Text="{loc:Tr 全局快捷键（Ctrl+Alt + 按键）}" Classes="section" />
-          <TextBlock Text="{loc:Tr 点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。}"
-                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding ShortcutConflicts}" IsVisible="{Binding HasShortcutConflicts}"
-                     Foreground="{DynamicResource Caution}" FontSize="11" TextWrapping="Wrap" />
-          <StackPanel x:Name="ShortcutRecorderPanel" Spacing="{DynamicResource D4Spacing_6}" />
-          <TextBlock x:Name="ShortcutRecorderStatus" Classes="caption" FontSize="11" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
+      <!-- E25 / Mac SettingsPresenter.swift ShortcutsSettingsRow: a collapsible 快捷键… row. -->
+      <views:ShortcutsSettingsRow />
 
       <!-- E29: 会议自动收尾 — Mac 纪要页 (AutoEndViews.swift AutoEndSettingsSection) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
@@ -492,7 +482,7 @@
         </StackPanel>
       </Border>
 
-      <!-- E27: Codex 推理强度 / 快速模式 / GitHub 访问（Mac 高级→回答服务 / 高级→更新） -->
+      <!-- E27: Codex 推理强度 / 快速模式（Mac 高级→回答服务；GitHub 访问在下面的 UpdateAdvanced 卡） -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 回答服务（Codex）}" Classes="section" />
@@ -506,6 +496,19 @@
           <TextBlock Text="{loc:Tr 当前模型或 Codex 版本不支持 Fast。}" Classes="caption" FontSize="11"
                      IsVisible="{Binding !Settings.CodexFastAvailable}" />
           <TextBlock Text="{loc:Tr Fast 回答更快，但会消耗更多 ChatGPT 套餐用量。}" Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- R6 / Mac SettingsView.swift UpdateAdvanced: 更新渠道 + GitHub 访问 on the 高级 page. -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Name="AnchorAdvancedUpdate" Text="{loc:Tr 更新（高级）}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="{loc:Tr 更新渠道}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr 启动后及每 6 小时检查；有新版本时在后台下载。更新前会自动备份，并校验安装包。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <TextBlock Text="{loc:Tr GitHub 访问}" Classes="label" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="{loc:Tr 仓库}" Classes="label" VerticalAlignment="Center" />
@@ -616,7 +619,6 @@
                      Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <CheckBox Content="{loc:Tr 启动后自动检查更新（每 6 小时）}" IsChecked="{Binding Settings.AutoCheckUpdates}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
             <Button Content="{loc:Tr 检查更新}" Command="{Binding CheckUpdateCommand}" />
             <Button Content="{loc:Tr 下载并安装}" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdateInApp}" />
             <Button Content="{loc:Tr 打开下载页}" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
