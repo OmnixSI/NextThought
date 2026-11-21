@@ -6,6 +6,8 @@ Windows 侧已经能读写 Mac 的键名、ISO-8601 日期和枚举值，但真�
 
 `Mac 导出 → Windows 导入 → Windows 再导出 → Mac 重新打开`
 
+> 2026-11-21 一到四节已完成：整包在 `Windows/tests/Fixtures/mac-backup/`，说明和 SHA-256 见该目录的 README.md。
+
 ## 一、运行自检（必须先做）
 
 在 Mac 上打开终端，从 app 包内运行；`SelfTest` 要求在 `NextThought.app` 内启动：
