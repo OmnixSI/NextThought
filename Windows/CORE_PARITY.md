@@ -149,7 +149,7 @@ WorkspaceArchiveOwnership、WorkspaceDeletionTransaction。
 - 校对结果写入 `user-content.json`，不再「原子重写 transcript.jsonl」。
 - 更新不是「只打开下载页」：已有更新安装、回滚和签名白名单逻辑；系统信任仍由签名证书决定。
 - 提词器模式已接通，不是「未接通」；独立提词窗与穿透恢复控制条已存在。
-- 当前 Windows Core 文件 **154** 个；`core_usage.py` 改为按「文件声明的类型是否被 Windows/src 或 tests 引用（含其它 Core 文件）」统计，复算 **未被程序用到 = 0**。旧的文件名启发式口径（40）已废弃。
+- 当前 Windows Core 文件 **156** 个；`core_usage.py` 改为按「文件声明的类型是否被 Windows/src 或 tests 引用（含其它 Core 文件）」统计，复算 **未被程序用到 = 0**。旧的文件名启发式口径（40）已废弃。
 - 新增三列是**按文件名匹配**的当前统计，不是 Mac 测试逐项翻译数；迁移完成前统一以「部分」为准。
 - J9 定稿后：604 项测试的逐文件数字见下面 B22 表，用 `Windows/scripts/core_test_parity.py` 复算（同名核对与历史遗留见「J9」一节）。
 
@@ -220,6 +220,28 @@ Mac 这些逻辑写在 app target（`Sources/NextThought/SpeakerID.swift`、`App
 voiceNames/meVoices、voices.jsonl 的 id/voice、user-content.json correctionDecisions 的
 lineID/original/corrected/reverted）、写出再读入往返、`SessionSummaryPrompt.TranscriptText(EffectiveLines)`
 与 A11 的 `TranscriptSourceRevision` 使用改后文字。
+
+## J2：这场用什么（系列功能选择持久化，J9 604 之外的新增测试）
+
+Mac 的持久化在 `Sources/NextThought/LiveNotesEngine.swift:151-178`：每个系列在 `UserDefaults` 的
+`"meetingFeatures." + seriesID.uuidString` 下存一个 `MeetingFeatures` 的 JSON（四个 Bool：
+`answers` / `liveNotes` / `translation` / `speakers`），`resetMeetingFeatures()` 删键回到场景默认；
+它**不在** Workspace/系列文件里，也不进备份。「实时转写」在 `PrepareView.swift` 的 FeaturePicker 里是
+`isOn: nil` 的「始终开启」只读行，没有持久化字段（不发明）。默认值 = `standard(prompting:
+SceneSettings.liveMode == .prompting && !isOfflineMeeting, speakers: speakers.enabled && modelAvailable)`。
+
+| Mac 参照 | C# Core | 语义 |
+|---|---|---|
+| UserDefaults key `"meetingFeatures.<uuidString>"`（LiveNotesEngine.swift:151） | `MeetingFeatureChoices.KeyFor` / sidecar 根键 | UUID 统一大写；seriesID 大小写不敏感 |
+| `meetingFeatures` getter：保存值 else `standardMeetingFeatures`（:161-167） | `MeetingFeatureChoices.ForSeries(seriesID, prompting, speakers)` | 下一场沿用；未设置时场景默认 |
+| setter（:168-171） | `Set(seriesID, features)` / `Save(path)` | 写 Windows 自有 sidecar `meeting-features.json`（不进备份、不进系列文件） |
+| `resetMeetingFeatures()`（:175-178） | `Remove(seriesID)` / `Reset(seriesID)` | 删该系列的键，回到默认 |
+| `standard(prompting:speakers:)`（LiveNotes.swift:188-191） | `MeetingFeatures.Standard`（J1 已有，签名不改） | answers=prompting、liveNotes=!prompting、translation=true、speakers 入参 |
+
+测试 `MeetingFeatureChoicesTests.cs` 7 项（不计入 Mac 604 项；Swift Core 没有这些 app 层测试）：
+场景默认、Mac 同名键（含 UUID 大写归一）、未设置/沿用/逐系列删除、写出再读入一致、sidecar JSON 根键就是
+Mac key 且只有 4 个字段（不含 transcription）、损坏文件不报错，以及保存 sidecar 不碰系列文件、
+Mac `workspace.json` 夹具经 Core 类型往返不新增键。
 
 ## B22：Swift 测试文件逐行翻译进度
 
@@ -322,6 +344,7 @@ python Windows/scripts/core_usage.py
 - J9 第二批新增 `WorkspaceSameNameTests`（20 项）与 `LocalModelReuseParityTests` 新增 4 项；第三批新增
   `DocumentJobSQLiteParityTests`（2 项，测试工程限定 SQLite 依赖）。J7 的 `TextZoomTests`（7 项）也通过。
 - J6 Core 新增 `SessionLineEditsTests`（11 项，说话人改派 + 整句改字，见「J6」一节；不计入 Mac 604 项）。
-- 最近一次全量 Core 测试（J6 提交时）：**1767 项，1763 通过，4 项失败**。失败的 4 项属 localization
+- J2 Core 新增 `MeetingFeatureChoicesTests`（7 项，系列功能选择持久化，见「J2」一节；不计入 Mac 604 项）。
+- 最近一次全量 Core 测试（J2 提交时）：**1769 项，1764 通过，5 项失败**。失败的 5 项属 localization
   任务进行中的 G8/G9/G10 测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`、
   `WordingTableTests`），不在本表 604 项范围内。
