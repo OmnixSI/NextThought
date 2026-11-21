@@ -151,13 +151,6 @@
                 <TextBlock Text="{loc:Tr 系列}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
-            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="{loc:Tr 资料库}">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="{StaticResource IconFolder}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="{loc:Tr 资料库}" VerticalAlignment="Center" />
-              </StackPanel>
-            </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="{loc:Tr 设置}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">

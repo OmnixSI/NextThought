@@ -32,6 +32,20 @@
         <TextBlock Text="{Binding NotesMeetingTitle}" FontFamily="{StaticResource SerifFamily}" FontSize="30"
                    FontWeight="Medium" Foreground="{DynamicResource InkBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
         <TextBlock Text="{Binding NotesFactsLine}" Classes="caption" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    IsVisible="{Binding HasNotesStaleHint}">
+          <TextBlock Text="{StaticResource IconQuestionCircle}" FontFamily="{StaticResource IconFont}"
+                     FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding NotesStaleHintText}" Classes="caption"
+                     Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    IsVisible="{Binding HasAiNewVersion}">
+          <TextBlock Text="{loc:Tr AI 整理出了新版本。现在显示的仍是你改过的版本。}"
+                     Classes="caption" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Button Classes="quiet" Content="{loc:Tr 查看新版}" Command="{Binding ViewNewAiVersionCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 保留我的修订}" Command="{Binding KeepMyNotesRevisionCommand}" />
+        </StackPanel>
         <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding Working}">
           <TextBlock Text="{Binding Status}" Classes="caption" />
           <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />

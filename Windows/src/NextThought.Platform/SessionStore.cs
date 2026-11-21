@@ -547,6 +547,35 @@ public sealed class SessionStore(AppPaths paths)
         var json = node.ToJsonString(JsonDefaults.ArchiveOptions);
         return AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "meta.json"), json, ct);
     }
+    /// <summary>§3.3 live 9: append one already-serialized JSONL line (the archive write queue flush path).</summary>
+    public async Task AppendRawAsync(Guid session, string fileName, byte[] data, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var folder = Folder(session);
+            Directory.CreateDirectory(folder);
+            await using var stream = new FileStream(Path.Combine(folder, fileName), FileMode.Append, FileAccess.Write, FileShare.Read);
+            await stream.WriteAsync(data, ct).ConfigureAwait(false);
+            await stream.FlushAsync(ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>Keeps meta counters truthful for lines written through the queue.</summary>
+    public async Task IncrementMetaCountAsync(Guid session, string kind, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var current = ReadMeta(session);
+            if (kind == "transcript") current.TranscriptCount++;
+            else if (kind == "answers") current.AnswerCount++;
+            else if (kind == "questions") current.QuestionCount++;
+            await WriteMetaAsync(current, ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
     private static Task AppendAsync<T>(string path, T item, CancellationToken ct) => File.AppendAllTextAsync(path, JsonSerializer.Serialize(item, JsonDefaults.ArchiveOptions) + "\n", new UTF8Encoding(false), ct);
     private static IReadOnlyList<T> ReadLines<T>(string file, out int skipped)
     {

@@ -6,6 +6,17 @@ namespace NextThought.Desktop;
 /// <summary>A row in the recent-meetings list: a saved meeting plus its compact summary line.</summary>
 public sealed record SeriesRow(string Id, string Name, int Count, int LessonCount, string LastTitle, string LastLesson, int PendingCount = 0, int DocumentCount = 0)
 {
+    /// <summary>§3.5: scene shown by the left row and used for its glyph.</summary>
+    public MeetingMode Mode { get; init; } = MeetingMode.General;
+
+    public int QuestionCount { get; init; }
+
+    public string ModeTitle => UiText.T(SessionModes.Parse(Mode == MeetingMode.Custom ? "custom" : char.ToLowerInvariant(Mode.ToString()[0]) + Mode.ToString()[1..]).Title());
+
+    /// <summary>WorkspacesView row: "N 份资料 · N 题 · N 场会议".</summary>
+    public string StatsLine =>
+        UiText.Materials(DocumentCount) + " · " + UiText.Format("%lld 题", (long)QuestionCount) + " · " + UiText.Meetings(Count);
+
     public string Meta
     {
         get

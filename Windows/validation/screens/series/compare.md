@@ -51,3 +51,17 @@
 - `Windows/tests/NextThought.Tests/HomeStage4Tests.cs`（系列页「开下一场」、J4 文案/无「资料夹」）。
 - `Windows/tests/NextThought.Tests/SeriesTests.cs`、`SeriesEditorTests.cs`（E20 结构/动作）。
 - `Windows/tests/NextThought.Core.Tests/MeetingStatsTests.cs`（`SeriesLine` 文案）。
+
+---
+
+## §5 证据重拍与结论（2026-11-21，task-77）
+
+截图来自 `--self-test=series-page` 同一次构建：`series-light.png`、`series-dark.png`（1120×820）；自检 5/5 通过（页面加载、左栏搜索与排序、三段标签、场景行、搜索过滤）。旧的 `light.png/dark.png/en-*.png` 已按 §5 删除。
+
+**结论：逐条一致。**
+
+§3.5 series 的四条均已修：
+1. 左栏搜索与排序：`SeriesQuery` 搜索「搜索系列或资料」（匹配名称/场景/笔记/资料名），`MenuPicker` 排序「最近活动 / 名称」；过滤后列表 `SeriesShownRows`。
+2. 左栏行：`SceneGlyph`（场景色图标块）+ 名称 + 「N 份资料 · N 题 · N 场会议」（Mac WorkspaceRow 顺序）。
+3. 三段标签：右栏改为「记录 / 资料 / 经验积累」下划线 TabControl；记录=会议列表，资料=系列资料（只读，导入/移除在系列编辑器），经验积累=决定/待办、经验、知识候选、题库。
+4. 记录行：时间（`TimeText`）+ 结果摘要（`Details` = `MeetingOutcome.line`）+ 有纪要 chip，点击打开会议页。

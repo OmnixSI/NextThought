@@ -20,3 +20,16 @@
 ## 自动验证
 
 - `tests/NextThought.Tests/MacScreensIndexTests.cs` 校验本文件与 README 索引存在。
+
+---
+
+## §5 结论（2026-11-21，task-77，decisions §3.5 library）
+
+**结论：逐条一致（页面已按决议移除）。**
+
+Mac 3.4.0 没有独立的资料页，资料在系列详情里。Windows 的「资料库」页因此不再可达：
+- 左侧导航删除「资料库」入口（`MainWindow.axaml`）；
+- `AppSection.Library` 路由到系列页（`ShowSection`），设置自查清单里的入口改为「系列」；
+- 资料库视图模型里的打开动作改为进入系列页；
+- 资料内容保留在系列详情「资料」标签（E20 实现），导入/移除在系列编辑器「资料」分区。
+旧的 library 截图不再适用（§5：页面已不存在）。

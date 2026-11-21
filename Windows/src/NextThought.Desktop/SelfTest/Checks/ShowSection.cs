@@ -27,7 +27,8 @@ public partial class MainWindow
                 AppSection.Notes => new NotesView(),
                 AppSection.History => new HistoryView(),
                 AppSection.Series => new SeriesView(),
-                AppSection.Library => new LibraryView(),
+                // §3.5: Mac 3.4 has no separate library page; materials live in the series detail.
+                AppSection.Library => new SeriesView(),
                 AppSection.Settings => new SettingsView(),
                 _ => new HomeView()
             };

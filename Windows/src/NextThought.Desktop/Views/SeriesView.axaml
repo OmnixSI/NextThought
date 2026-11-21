@@ -3,19 +3,27 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
+             xmlns:c="using:NextThought.Desktop.Controls"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.SeriesView"
              x:DataType="local:AppState">
   <UserControl.Styles>
-    <!-- Fluent's tab headers are far larger than the rest of this page's type scale. -->
+    <!-- WorkspacesView detail sections: 记录 / 资料 / 经验积累 as 13px underline tabs. -->
     <Style Selector="TabItem">
       <Setter Property="FontSize" Value="13" />
       <Setter Property="MinHeight" Value="34" />
-      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="Padding" Value="8,10" />
+      <Setter Property="BorderThickness" Value="0,0,0,2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
-    <Style Selector="TabItem /template/ ContentPresenter">
-      <Setter Property="FontSize" Value="13" />
+    <Style Selector="TabItem:selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="TabItem:pointerover /template/ Border#PART_SelectedPipe">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
     </Style>
   </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
@@ -30,256 +38,307 @@
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="330,*" ColumnSpacing="16" Margin="{DynamicResource D4Margin_0_18_0_16}">
-      <!-- 系列列表 -->
+      <!-- 系列列表：WorkspaceList 的搜索框、排序与场景图标行。 -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_8}">
-        <Grid RowDefinitions="*,Auto">
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <ListBox Name="SeriesList" ItemsSource="{Binding SeriesRows}" Background="Transparent"
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_4_4_4_6}">
+            <TextBlock Grid.Column="0" Text="{loc:Tr 系列}" Classes="section" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding SeriesSummary}" Classes="caption" FontSize="11"
+                       VerticalAlignment="Center" Foreground="{DynamicResource Secondary}" />
+          </Grid>
+          <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_4_0_4_8}">
+            <TextBox Text="{Binding SeriesQuery}" PlaceholderText="{loc:Tr 搜索系列或资料}" MinHeight="{DynamicResource Control}" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Grid.Column="0" Text="{loc:Tr 排序}" Classes="caption" VerticalAlignment="Center" />
+              <c:MenuPicker Grid.Column="1" ItemsSource="{Binding SeriesSortOptions}" SelectedItem="{Binding SeriesSort}"
+                            HorizontalAlignment="Stretch" FontSize="12" />
+            </Grid>
+          </StackPanel>
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ListBox Name="SeriesList" ItemsSource="{Binding SeriesShownRows}" Background="Transparent"
                      SelectionChanged="Series_SelectionChanged">
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_8}" />
+                </Style>
+                <Style Selector="ListBoxItem:selected">
+                  <Setter Property="Background" Value="{DynamicResource Sunken}" />
+                </Style>
+              </ListBox.Styles>
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="local:SeriesRow">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_3}" Margin="{DynamicResource D4Margin_0_6}">
-                    <TextBlock Text="{Binding Name}" Classes="title" FontSize="14" />
-                    <TextBlock Text="{Binding Meta}" Classes="caption" FontSize="11" />
-                    <TextBlock Text="{Binding Preview}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}"
+                        Margin="{DynamicResource D4Margin_8_8}">
+                    <controls:SceneGlyph Grid.Column="0" Mode="{Binding Mode}" Size="28" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" Classes="title" FontSize="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                      <TextBlock Text="{Binding StatsLine}" Classes="caption" FontSize="11"
+                                 Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </StackPanel>
+                  </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
           </ScrollViewer>
-          <TextBlock Grid.Row="1" Text="{loc:Tr 还没有系列。上面的输入框新建一个，再把会议放进来。}"
+          <TextBlock Grid.Row="3" Text="{loc:Tr 还没有系列。上面的输入框新建一个，再把会议放进来。}"
                      Classes="caption" Margin="{DynamicResource D4Margin_8_8_8_4}" IsVisible="{Binding SeriesIsEmpty}" TextWrapping="Wrap" />
         </Grid>
       </Border>
 
-      <!-- 选中的系列 -->
+      <!-- 选中系列详情：WorkspacesView 的 记录 / 资料 / 经验积累 三段。 -->
       <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_22_16}">
-        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
-          <Grid RowDefinitions="Auto,Auto" RowSpacing="{DynamicResource D4Spacing_8}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
-                         FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding SelectedSeriesStatsLine}" Classes="caption" FontSize="11"
-                         Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasSelectedSeriesStats}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <!-- Mac keeps the actions on the title row; the narrower Windows detail column wraps them
-                 onto their own row instead of squeezing the title into one character per line. -->
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right">
-              <Button Content="{loc:Tr 开下一场}" Command="{Binding OpenNextMeetingInSeriesCommand}" />
-              <Button Content="{loc:Tr 编辑系列}" Click="EditSeries_Click" />
-              <Button Content="{loc:Tr 把这场景加入}" Command="{Binding AssignCurrentToSeriesCommand}" />
-              <Button Content="{loc:Tr 移出}" Command="{Binding RemoveCurrentFromSeriesCommand}" />
-            </StackPanel>
-          </Grid>
-
-          <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_14_0_0}">
-            <TextBlock Text="{loc:Tr 会议}" Classes="overline" />
-            <ScrollViewer MaxHeight="88" VerticalScrollBarVisibility="Auto">
-              <ItemsControl ItemsSource="{Binding SeriesMeetings}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="local:RecentMeetingRow">
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_3}">
-                      <TextBlock Text="{Binding Meta.Title}" Classes="label" />
-                      <Border Classes="chip" IsVisible="{Binding HasSummary}">
-                        <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
-                      </Border>
-                    </StackPanel>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-            <TextBlock Text="{loc:Tr 附着技能}" Classes="overline" />
-            <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
-              <ItemsControl ItemsSource="{Binding SeriesSkills}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="local:SeriesSkillRow">
-                    <CheckBox IsChecked="{Binding IsAttached}" Content="{Binding Name}" />
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-            <TextBlock Text="{loc:Tr 勾选的技能只加入这个系列的回答；全局技能仍然生效。}" Classes="caption" FontSize="11" />
+        <Grid RowDefinitions="Auto,Auto,*">
+          <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
+                       FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}"
+                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding SelectedSeriesStatsLine}" Classes="caption" FontSize="11"
+                       Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasSelectedSeriesStats}"
+                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                      HorizontalAlignment="Right" Margin="{DynamicResource D4Margin_0_10_0_0}">
+            <Button Content="{loc:Tr 开下一场}" Command="{Binding OpenNextMeetingInSeriesCommand}" />
+            <Button Content="{loc:Tr 编辑系列}" Click="EditSeries_Click" />
+            <Button Content="{loc:Tr 把这场景加入}" Command="{Binding AssignCurrentToSeriesCommand}" />
+            <Button Content="{loc:Tr 移出}" Command="{Binding RemoveCurrentFromSeriesCommand}" />
           </StackPanel>
 
-          <!-- 决定 / 待办：KnowledgeReviewSection.swift SeriesChangeCandidateCard -->
-          <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12}" Margin="{DynamicResource D4Margin_0_8_0_0}"
-                  IsVisible="{Binding HasSeriesChanges}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="{Binding SeriesChangesHeader}" Classes="overline" />
-              <TextBlock Text="{Binding SeriesChangesHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
-              <Button Classes="quiet" Content="{Binding CollectSeriesChangesLabel}" Click="CollectSeriesChanges_Click"
-                      IsVisible="{Binding CanCollectSeriesChanges}" HorizontalAlignment="Left" />
-              <ItemsControl ItemsSource="{Binding SeriesChangeRows}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="local:SeriesChangeRow">
-                    <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
-                      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />
-                          <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 忽略}" Tag="{Binding}"
-                                  Click="RejectSeriesChange_Click" />
+          <TabControl Grid.Row="2" Background="Transparent" Padding="{DynamicResource D4Padding_0}"
+                      Margin="{DynamicResource D4Margin_0_6_0_0}">
+            <!-- 记录：每行场景点、标题、时间与结果摘要，点击打开会议。 -->
+            <TabItem Header="{loc:Tr 记录}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_8_0_0}">
+                  <ItemsControl ItemsSource="{Binding SeriesMeetings}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:RecentMeetingRow">
+                        <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                Tag="{Binding}" Click="OpenSeriesRecord_Click" Padding="{DynamicResource D4Padding_8_6}">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+                            <Border Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                                    Background="{Binding ModeTintBrush}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+                              <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding Details}" Classes="caption" FontSize="11"
+                                         TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                                        VerticalAlignment="Center">
+                              <Border Classes="chip" IsVisible="{Binding HasSummary}">
+                                <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
+                              </Border>
+                              <TextBlock Text="{Binding TimeText}" Classes="caption" FontSize="11"
+                                         Foreground="{DynamicResource Secondary}" TextWrapping="NoWrap" />
+                            </StackPanel>
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{loc:Tr 还没有记录。从这个系列开始一场会议，记录会出现在这里。}" Classes="caption"
+                             IsVisible="{Binding !HasSeriesRecords}" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- 资料：系列资料（Mac WorkspaceDocumentsTab 的只读侧），导入/移除在系列编辑器里。 -->
+            <TabItem Header="{loc:Tr 资料}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_8_0_0}">
+                  <ItemsControl ItemsSource="{Binding SelectedSeriesDocuments}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:SeriesDocumentRow">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
+                              Margin="{DynamicResource D4Margin_0_0_0_6}">
+                          <TextBlock Grid.Column="0" Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}"
+                                     FontSize="13" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_1}">
+                            <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                              <TextBlock Text="{Binding MetaText}" Classes="faint" FontSize="11" />
+                              <TextBlock Text="{Binding Category}" Classes="faint" FontSize="11" />
+                            </StackPanel>
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Text="{Binding FormatLabel}" Classes="faint" FontSize="11"
+                                     VerticalAlignment="Center" />
                         </Grid>
-                        <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
-                        <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding IsAction}">
-                          <TextBlock Text="{Binding ActionHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
-                          <TextBox Text="{Binding Owner, Mode=TwoWay}" PlaceholderText="{Binding OwnerPlaceholder}" />
-                          <TextBox Text="{Binding Due, Mode=TwoWay}" PlaceholderText="{Binding DuePlaceholder}" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding SourceLine}" Classes="caption" TextWrapping="Wrap"
-                                   IsVisible="{Binding HasSourceQuote}" />
-                        <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding IsStale}">
-                          <TextBlock Text="{loc:Tr 原话或负责人/期限已变化；此建议不能接受。}" Classes="caption"
-                                     Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
-                          <Button Classes="quiet" Content="{loc:Tr 忽略过期建议}" Tag="{Binding}"
-                                  Click="RejectSeriesChange_Click" HorizontalAlignment="Left" />
-                        </StackPanel>
-                        <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding IsCurrent}">
-                          <TextBlock Text="{Binding UpdateHeading}" Classes="caption" FontSize="11"
-                                     IsVisible="{Binding HasMatchingItems}" />
-                          <ItemsControl ItemsSource="{Binding MatchingItems}">
-                            <ItemsControl.ItemTemplate>
-                              <DataTemplate x:DataType="local:SeriesTargetRow">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
-                                      Margin="{DynamicResource D4Margin_0_2}">
-                                  <TextBlock Grid.Column="0" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap"
-                                             MaxLines="2" TextTrimming="CharacterEllipsis" />
-                                  <Button Grid.Column="1" Classes="quiet" Content="{Binding UpdateLabel}"
-                                          Tag="{Binding $parent[ItemsControl].DataContext}" Click="ReplaceSeriesChange_Click"
-                                          DataContext="{Binding}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{loc:Tr 还没有资料。点「编辑系列」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。}" Classes="caption"
+                             IsVisible="{Binding !HasSelectedSeriesDocuments}" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- 经验积累：决定/待办、经验、知识候选与题库。 -->
+            <TabItem Header="{loc:Tr 经验积累}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_8_0_0}">
+                  <Border Classes="card" Padding="{DynamicResource D4Padding_12}" IsVisible="{Binding HasSeriesChanges}">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+                      <TextBlock Text="{Binding SeriesChangesHeader}" Classes="overline" />
+                      <TextBlock Text="{Binding SeriesChangesHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                      <Button Classes="quiet" Content="{Binding CollectSeriesChangesLabel}" Click="CollectSeriesChanges_Click"
+                              IsVisible="{Binding CanCollectSeriesChanges}" HorizontalAlignment="Left" />
+                      <ItemsControl ItemsSource="{Binding SeriesChangeRows}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="local:SeriesChangeRow">
+                            <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />
+                                  <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 忽略}" Tag="{Binding}" Click="RejectSeriesChange_Click" />
                                 </Grid>
-                              </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                          </ItemsControl>
-                          <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}"
-                                  Click="AcceptSeriesChange_Click" HorizontalAlignment="Left"
-                                  Padding="{DynamicResource D4Padding_14_0}" MinHeight="{DynamicResource Control}" />
-                        </StackPanel>
-                      </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-          </Border>
-
-          <TabControl Name="Tabs" Grid.Row="3" SelectedIndex="{Binding SeriesSelectedTab}" Margin="{DynamicResource D4Margin_0_10_0_0}" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
-            <TabItem Header="{Binding SeriesLessonsHeader}">
-              <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
-                  <ItemsControl ItemsSource="{Binding SeriesLessons}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="core:WorkspaceLesson">
-                        <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_3}">
-                          <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
-                          <Button Grid.Column="1" Content="{loc:Tr 删除}" Classes="ghost" Tag="{Binding}"
-                                  Click="RemoveLesson_Click" />
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                  <TextBlock Text="{loc:Tr 还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。}" Classes="caption"
-                             IsVisible="{Binding !HasSeriesLessons}" TextWrapping="Wrap" />
-                </StackPanel>
-              </ScrollViewer>
-            </TabItem>
-
-            <TabItem Header="{Binding SeriesCandidatesHeader}">
-              <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
-                  <TextBlock Text="{loc:Tr 知识候选}" Classes="section" />
-                  <TextBlock Text="{loc:Tr 候选先保留在待审阅区；确认后才会影响后续回答。}" Classes="caption" TextWrapping="Wrap" />
-                  <Button Classes="quiet" Content="{Binding CollectKnowledgeLabel}" Click="CollectKnowledge_Click"
-                          IsVisible="{Binding CanCollectKnowledgeCandidates}" HorizontalAlignment="Left" />
-                  <ItemsControl ItemsSource="{Binding SeriesCandidates}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="local:KnowledgeCandidateRow">
-                        <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_6_0_8}">
-                          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                            <Grid ColumnDefinitions="*,Auto">
-                              <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />
-                              <Button Grid.Column="1" Classes="quiet" Content="{Binding RejectLabel}" Tag="{Binding}"
-                                      Click="RejectCandidate_Click" />
-                            </Grid>
-                            <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
-                            <!-- 题库已有相似问题：显示当前问题/答法与本次建议 -->
-                            <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowQuestionMatching}">
-                              <TextBlock Text="{Binding CurrentQuestionLabel}" Classes="caption" FontSize="11" />
-                              <TextBlock Text="{Binding MatchingQuestionText}" Classes="body" TextWrapping="Wrap" />
-                              <TextBlock Text="{Binding CurrentAnswerLabel}" Classes="caption" FontSize="11" />
-                              <TextBlock Text="{Binding MatchingAnswerText}" Classes="body" TextWrapping="Wrap" />
-                              <TextBlock Text="{Binding ProposedAnswerLabel}" Classes="caption" FontSize="11" />
-                              <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
-                              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                                <Button Classes="quiet" Content="{Binding KeepExistingLabel}" Tag="{Binding}"
-                                        Click="KeepCandidate_Click" />
-                                <Button Classes="primary" Content="{Binding ReplaceAnswerLabel}" Tag="{Binding}"
-                                        Click="ReplaceCandidate_Click" Padding="{DynamicResource D4Padding_14_0}"
-                                        MinHeight="{DynamicResource Control}" />
+                                <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                                <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding IsAction}">
+                                  <TextBlock Text="{Binding ActionHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                                  <TextBox Text="{Binding Owner, Mode=TwoWay}" PlaceholderText="{Binding OwnerPlaceholder}" />
+                                  <TextBox Text="{Binding Due, Mode=TwoWay}" PlaceholderText="{Binding DuePlaceholder}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding SourceLine}" Classes="caption" TextWrapping="Wrap"
+                                           IsVisible="{Binding HasSourceQuote}" />
+                                <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding IsCurrent}">
+                                  <TextBlock Text="{Binding UpdateHeading}" Classes="caption" FontSize="11"
+                                             IsVisible="{Binding HasMatchingItems}" />
+                                  <ItemsControl ItemsSource="{Binding MatchingItems}">
+                                    <ItemsControl.ItemTemplate>
+                                      <DataTemplate x:DataType="local:SeriesTargetRow">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                              Margin="{DynamicResource D4Margin_0_2}">
+                                          <TextBlock Grid.Column="0" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap"
+                                                     MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                          <Button Grid.Column="1" Classes="quiet" Content="{Binding UpdateLabel}"
+                                                  Tag="{Binding $parent[ItemsControl].DataContext}" Click="ReplaceSeriesChange_Click"
+                                                  DataContext="{Binding}" />
+                                        </Grid>
+                                      </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                  </ItemsControl>
+                                  <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}"
+                                          Click="AcceptSeriesChange_Click" HorizontalAlignment="Left"
+                                          Padding="{DynamicResource D4Padding_14_0}" MinHeight="{DynamicResource Control}" />
+                                </StackPanel>
                               </StackPanel>
-                            </StackPanel>
-                            <!-- 新问题 -->
-                            <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowAddNewQuestion}">
-                              <TextBlock Text="{Binding NewAnswerLabel}" Classes="caption" FontSize="11" />
-                              <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
-                              <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}"
-                                      Click="AcceptCandidate_Click" HorizontalAlignment="Left"
-                                      Padding="{DynamicResource D4Padding_14_0}" MinHeight="{DynamicResource Control}" />
-                            </StackPanel>
-                            <!-- 经验 -->
-                            <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowLesson}">
-                              <TextBlock Text="{Binding MatchingLessonLine}" Classes="caption" TextWrapping="Wrap"
-                                         IsVisible="{Binding HasMatchingLesson}" />
-                              <Button Classes="quiet" Content="{Binding KeepExistingLabel}" Tag="{Binding}"
-                                      Click="KeepCandidate_Click" IsVisible="{Binding HasMatchingLesson}"
-                                      HorizontalAlignment="Left" />
-                              <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}"
-                                      Click="AcceptCandidate_Click" IsVisible="{Binding ShowAddNewLesson}"
-                                      HorizontalAlignment="Left" Padding="{DynamicResource D4Padding_14_0}"
-                                      MinHeight="{DynamicResource Control}" />
-                            </StackPanel>
-                          </StackPanel>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                  <TextBlock Text="{loc:Tr 没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。}"
-                             Classes="caption" IsVisible="{Binding !HasSeriesCandidates}" TextWrapping="Wrap" />
-                </StackPanel>
-              </ScrollViewer>
-            </TabItem>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
 
-            <TabItem Header="{Binding SeriesBankHeader}">
-              <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
-                  <ItemsControl ItemsSource="{Binding SeriesBank}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="local:QuestionBankRow">
-                        <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
-                          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                            <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                            <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap"
-                                       IsVisible="{Binding HasAnswer}" />
-                            <TextBlock Text="{Binding Meta}" Classes="faint" FontSize="11" />
-                          </StackPanel>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                  <TextBlock Text="{loc:Tr 题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。}"
-                             Classes="caption" IsVisible="{Binding !HasSeriesBank}" TextWrapping="Wrap" />
+                  <TabControl Background="Transparent" Padding="{DynamicResource D4Padding_0}">
+                    <TabItem Header="{Binding SeriesLessonsHeader}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                        <ItemsControl ItemsSource="{Binding SeriesLessons}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="core:WorkspaceLesson">
+                              <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_3}">
+                                <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                                <Button Grid.Column="1" Content="{loc:Tr 删除}" Classes="ghost" Tag="{Binding}"
+                                        Click="RemoveLesson_Click" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{loc:Tr 还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。}" Classes="caption"
+                                   IsVisible="{Binding !HasSeriesLessons}" TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_8_0_0}">
+                          <TextBox Text="{Binding NewLessonText}" PlaceholderText="{loc:Tr 一句话经验，例如：先说结论，再说依据}"
+                                   MinHeight="{DynamicResource Control}" />
+                          <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}"
+                                  Padding="{DynamicResource D4Padding_16_0}" MinHeight="{DynamicResource Control}"
+                                  Command="{Binding AddLessonCommand}">
+                            <TextBlock Text="{loc:Tr 记下}" Foreground="{DynamicResource OnInk}" FontSize="13" />
+                          </Button>
+                        </Grid>
+                      </StackPanel>
+                    </TabItem>
+
+                    <TabItem Header="{Binding SeriesCandidatesHeader}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                        <TextBlock Text="{loc:Tr 知识候选}" Classes="section" />
+                        <TextBlock Text="{loc:Tr 候选先保留在待审阅区；确认后才会影响后续回答。}" Classes="caption" TextWrapping="Wrap" />
+                        <Button Classes="quiet" Content="{Binding CollectKnowledgeLabel}" Click="CollectKnowledge_Click"
+                                IsVisible="{Binding CanCollectKnowledgeCandidates}" HorizontalAlignment="Left" />
+                        <ItemsControl ItemsSource="{Binding SeriesCandidates}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:KnowledgeCandidateRow">
+                              <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_6_0_8}">
+                                <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                                  <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Classes="quiet" Content="{Binding RejectLabel}" Tag="{Binding}"
+                                            Click="RejectCandidate_Click" />
+                                  </Grid>
+                                  <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowQuestionMatching}">
+                                    <TextBlock Text="{Binding CurrentQuestionLabel}" Classes="caption" FontSize="11" />
+                                    <TextBlock Text="{Binding MatchingQuestionText}" Classes="body" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding CurrentAnswerLabel}" Classes="caption" FontSize="11" />
+                                    <TextBlock Text="{Binding MatchingAnswerText}" Classes="body" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ProposedAnswerLabel}" Classes="caption" FontSize="11" />
+                                    <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
+                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                                      <Button Classes="quiet" Content="{Binding KeepExistingLabel}" Tag="{Binding}" Click="KeepCandidate_Click" />
+                                      <Button Classes="primary" Content="{Binding ReplaceAnswerLabel}" Tag="{Binding}"
+                                              Click="ReplaceCandidate_Click" Padding="{DynamicResource D4Padding_14_0}"
+                                              MinHeight="{DynamicResource Control}" />
+                                    </StackPanel>
+                                  </StackPanel>
+                                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowAddNewQuestion}">
+                                    <TextBlock Text="{Binding NewAnswerLabel}" Classes="caption" FontSize="11" />
+                                    <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
+                                    <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}" Click="AcceptCandidate_Click"
+                                            HorizontalAlignment="Left" Padding="{DynamicResource D4Padding_14_0}"
+                                            MinHeight="{DynamicResource Control}" />
+                                  </StackPanel>
+                                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding ShowLesson}">
+                                    <TextBlock Text="{Binding MatchingLessonLine}" Classes="caption" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasMatchingLesson}" />
+                                    <Button Classes="quiet" Content="{Binding KeepExistingLabel}" Tag="{Binding}"
+                                            Click="KeepCandidate_Click" IsVisible="{Binding HasMatchingLesson}" HorizontalAlignment="Left" />
+                                    <Button Classes="primary" Content="{Binding AddLabel}" Tag="{Binding}" Click="AcceptCandidate_Click"
+                                            IsVisible="{Binding ShowAddNewLesson}" HorizontalAlignment="Left"
+                                            Padding="{DynamicResource D4Padding_14_0}" MinHeight="{DynamicResource Control}" />
+                                  </StackPanel>
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{loc:Tr 没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。}"
+                                   Classes="caption" IsVisible="{Binding !HasSeriesCandidates}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </TabItem>
+
+                    <TabItem Header="{Binding SeriesBankHeader}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                        <ItemsControl ItemsSource="{Binding SeriesBank}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:QuestionBankRow">
+                              <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                                <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                                  <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                                  <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" IsVisible="{Binding HasAnswer}" />
+                                  <TextBlock Text="{Binding Meta}" Classes="faint" FontSize="11" />
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{loc:Tr 题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。}"
+                                   Classes="caption" IsVisible="{Binding !HasSeriesBank}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </TabItem>
+                  </TabControl>
                 </StackPanel>
               </ScrollViewer>
             </TabItem>
           </TabControl>
-
-          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
-            <TextBox Text="{Binding NewLessonText}" PlaceholderText="{loc:Tr 一句话经验，例如：先说结论，再说依据}" MinHeight="{DynamicResource Control}" />
-            <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}" Padding="{DynamicResource D4Padding_16_0}" MinHeight="{DynamicResource Control}"
-                    Command="{Binding AddLessonCommand}">
-              <TextBlock Text="{loc:Tr 记下}" Foreground="{DynamicResource OnInk}" FontSize="13" />
-            </Button>
-          </Grid>
         </Grid>
       </Border>
     </Grid>

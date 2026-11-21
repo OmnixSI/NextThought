@@ -71,6 +71,17 @@ public partial class SeriesView : UserControl
             state.ReviewSeriesChange(candidate, NextThought.Core.WorkspaceSeriesChangeDecision.Replace, target);
     }
 
+    /// <summary>WorkspaceRecordsTab: open one record of the selected series.</summary>
+    private async void OpenSeriesRecord_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
+            await state.OpenSeriesRecordAsync(row);
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
     private async void EditSeries_Click(object? sender, RoutedEventArgs e)
     {
         try

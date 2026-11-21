@@ -113,6 +113,7 @@ public partial class AppState
         SaveWorkspace();
         RefreshSeries();
         RefreshSeriesChanges();
+        RefreshSeriesPanel();
         RefreshSeriesLessons();
         SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == selected.Id);
         SetStatus(decision == WorkspaceSeriesChangeDecision.Reject
@@ -148,6 +149,7 @@ public partial class AppState
         RefreshSeriesLessons();
         RefreshSeriesSkills();
         RefreshSeriesChanges();
+        RefreshSeriesPanel();
         AssignCurrentToSeriesCommand.NotifyCanExecuteChanged();
         AddLessonCommand.NotifyCanExecuteChanged();
     }
@@ -210,7 +212,11 @@ public partial class AppState
                 .OrderByDescending(meta => meta!.StartedAt)
                 .FirstOrDefault();
             SeriesRows.Add(new SeriesRow(series.Id, series.Name, series.SessionIds.Count, series.Lessons.Count,
-                last?.Title ?? UiText.T("还没有会议"), series.Lessons.LastOrDefault()?.Text ?? "", series.PendingCandidates.Count, series.Documents.Count));
+                last?.Title ?? UiText.T("还没有会议"), series.Lessons.LastOrDefault()?.Text ?? "", series.PendingCandidates.Count, series.Documents.Count)
+            {
+                Mode = series.EffectiveMode,
+                QuestionCount = series.QuestionBank.Count
+            });
         }
         OnPropertyChanged(nameof(HasSeries));
         OnPropertyChanged(nameof(SeriesIsEmpty));
@@ -218,6 +224,7 @@ public partial class AppState
         AssignCurrentToSeriesCommand.NotifyCanExecuteChanged();
         AddLessonCommand.NotifyCanExecuteChanged();
         SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == selectedId) ?? SeriesRows.FirstOrDefault();
+        RefreshSeriesShown();
     }
 
     private void RefreshSeriesMeetings()
@@ -457,6 +464,7 @@ public partial class AppState
         RefreshSeriesMeetings();
         RefreshSeriesSkills();
         RefreshSeriesChanges();
+        RefreshSeriesPanel();
         RefreshSeriesStats();
     }
 

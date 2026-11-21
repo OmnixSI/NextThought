@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1273;
+    public const int Count = 1275;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1289,6 +1289,10 @@ internal static class UiTextWindowsEnglish
         ["摄像头打不开；本机没有可用摄像头。"] = "The camera will not open; no camera is available on this computer.",
         ["先打开「留意眼神」并允许摄像头。"] = "Turn on “Watch eye contact” and allow the camera first.",
         ["没有看清眼睛，请正对摄像头再试一次。"] = "Couldn't see your eyes. Face the camera and try again.",
+
+        // §3.3 live 9: archive save status row.
+        ["确认缺失并继续保存"] = "Acknowledge missing items and keep saving",
+        ["保存受阻 · 有 %lld 项未保存 · 重试"] = "Saving blocked · %lld unsaved · Retry",
 
     };
 }

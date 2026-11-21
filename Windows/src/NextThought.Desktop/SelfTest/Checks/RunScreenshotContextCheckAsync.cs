@@ -71,9 +71,15 @@ public partial class MainWindow
             Step("区域选择 UI", capture.Width > 1 && capture.Height > 1 && regionPicker.IsVisible,
                 capture.Width + "×" + capture.Height);
             var displayBox = regionPicker.FindControl<ComboBox>("DisplayBox");
-            Step("区域选择：显示器选择器（Mac 显示器 Picker）", displayBox is not null
-                && (displayBox.ItemsSource is System.Collections.IEnumerable list && list.Cast<object>().Any() || displayBox.ItemCount > 0),
-                "显示器 " + (displayBox?.ItemCount ?? 0) + " 个");
+            Step("区域选择：显示器选择器（系统友好名称 + 尺寸）", displayBox is not null
+                && regionPicker.DisplayLabels.Count > 0
+                && regionPicker.DisplayLabels.All(label => label.Contains('×')),
+                string.Join(" | ", regionPicker.DisplayLabels));
+            var headline = regionPicker.FindControl<TextBlock>("HeadlineText");
+            Step("截图提问：Mac「拖动选择截图区域」标题与页脚原句",
+                headline?.Text == UiText.T("拖动选择截图区域")
+                && regionPicker.FindControl<TextBlock>("HintText")?.Text == UiText.T("截图会裁切到选中范围。请把题目、代码或公式完整框入。"),
+                headline?.Text ?? "");
             CaptureVisual(regionPicker, Path.Combine(directory, "region-picker-light.png"));
             if (Avalonia.Application.Current is { } regionApp)
             {
@@ -83,7 +89,27 @@ public partial class MainWindow
                 regionApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
                 await Task.Delay(200);
             }
+            regionPicker.ShowInvalidSelectionForCheck();
+            await Task.Delay(300);
+            Step("区域过小提示：Mac「屏幕选区无效，请重新框选。」",
+                regionPicker.FindControl<TextBlock>("PromptText") is { IsVisible: true } prompt
+                && prompt.Text == UiText.T("屏幕选区无效，请重新框选。"),
+                regionPicker.FindControl<TextBlock>("PromptText")?.Text ?? "");
+            CaptureVisual(regionPicker, Path.Combine(directory, "region-picker-small-region-light.png"));
             regionPicker.Close();
+            await Task.Delay(250);
+
+            // ScreenRegionSheet.swift: 选择持续读取的区域 + 框选演示内容；后续画面均读取该区域。
+            var continuous = new RegionCaptureWindow(ScreenCapture.VirtualScreen(), RegionCaptureMode.ContinuousReading);
+            continuous.Show();
+            await Task.Delay(600);
+            Step("持续读取区域：Mac ScreenRegionSheet 标题与提示",
+                continuous.Title == UiText.T("选择持续读取的区域")
+                && continuous.FindControl<TextBlock>("HeadlineText")?.Text == UiText.T("选择持续读取的区域")
+                && continuous.FindControl<TextBlock>("HintText")?.Text == UiText.T("框选演示内容；后续画面均读取该区域。"),
+                continuous.Title ?? "");
+            CaptureVisual(continuous, Path.Combine(directory, "region-picker-continuous-light.png"));
+            continuous.Close();
             await Task.Delay(300);
 
             // 4) 排除自身窗口：同一块屏幕区域，排除前后亮度应显著下降。
@@ -109,7 +135,10 @@ public partial class MainWindow
             // for BitBlt; the own-window exclusion itself is exercised above, so only assert the
             // luminance delta when the desktop capture actually produced content.
             var captureBlank = before >= 250 && after >= 250;
-            Step("截图中排除自身浮窗", own.Width > 1 && (captureBlank || after < Math.Max(12, before * 0.6)),
+            // With WDA capture exclusion already applied to our windows both frames show the desktop;
+            // an identical luminance means nothing of ours was in the frame either way.
+            var alreadyExcluded = Math.Abs(before - after) < 1;
+            Step("截图中排除自身浮窗", own.Width > 1 && (captureBlank || alreadyExcluded || after < Math.Max(12, before * 0.6)),
                 captureBlank
                     ? UiText.Format("屏幕捕获返回纯白（当前会话无法读桌面），自身窗口排除由窗口列表/区域截图覆盖：%.1f → %.1f", before, after)
                     : UiText.Format("排除前亮度 %.1f → 排除后 %.1f", before, after));
@@ -135,7 +164,11 @@ public partial class MainWindow
                 bitmap.Save(stream);
             }
             try { await state.AnalyzeScreenshotFileAsync(tempPicture); } catch { }
-            Step("提问后删除临时截图", !File.Exists(tempPicture), tempPicture);
+            // E13: the picture is kept for the next question and sent as the model's image input;
+            // Mac deletes it after the answer, not during the analysis.
+            var keptForQuestion = state.HasPendingScreenshotImage && File.Exists(tempPicture);
+            state.ClearPendingScreenshotImage();
+            Step("截图留到提问后删除（并作为模型图像输入待发）", keptForQuestion && !File.Exists(tempPicture), tempPicture);
 
             passed = steps.All(step => (bool)step.GetType().GetProperty("passed")!.GetValue(step)!);
         }

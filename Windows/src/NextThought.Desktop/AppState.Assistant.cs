@@ -72,6 +72,8 @@ public partial class AppState
 
     public void OpenDetachedModule(AssistantModule module)
     {
+        // Mac never detaches the insights module: it can only dock or hide (decisions §3.3 insights 5).
+        if (module == AssistantModule.Insights) return;
         var previous = AssistantLayoutState;
         AssistantLayoutState = AssistantLayoutState.Detach(module);
         SyncDetachedModuleWindows(previous);
@@ -96,7 +98,8 @@ public partial class AppState
     /// <summary>Opens/closes the module windows so they follow the layout (Mac DetachedModuleController).</summary>
     private void SyncDetachedModuleWindows(AssistantLayout previous)
     {
-        foreach (var module in AssistantLayoutState.Detached.Except(previous.Detached).ToList())
+        foreach (var module in AssistantLayoutState.Detached.Except(previous.Detached)
+                     .Where(module => module != AssistantModule.Insights).ToList())
         {
             var window = new DetachedModuleWindow { DataContext = this, Module = module };
             detachedModuleWindows[module] = window;
@@ -202,10 +205,16 @@ public partial class AppState
         }
     }
 
-    /// <summary>The answer text on screen: the live draft, or the answer at the cursor.</summary>
-    public string DisplayedAnswerText => AnswerHistoryCursor is not null
-        ? DisplayedAnswerRecord?.Answer ?? ""
-        : AnswerText;
+    /// <summary>The answer text on screen: the live draft, or the answer at the cursor. The web
+    /// version replaces it only for the answers the user switched (E14 ShowsWebAnswer).</summary>
+    public string DisplayedAnswerText
+    {
+        get
+        {
+            if (ShowsWebAnswer && DisplayedWebLookup is { HasAnswer: true } lookup) return lookup.Answer;
+            return AnswerHistoryCursor is not null ? DisplayedAnswerRecord?.Answer ?? "" : AnswerText;
+        }
+    }
 
     public string DisplayedQuestionText => AnswerHistoryCursor is not null
         ? DisplayedAnswerRecord?.Question ?? ""
