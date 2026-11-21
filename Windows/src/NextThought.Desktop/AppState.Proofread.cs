@@ -129,6 +129,8 @@ public partial class AppState
 
     partial void OnCorrectedTranscriptShowOriginalChanged(bool value)
     {
+        var index = value ? 1 : 0;
+        if (CorrectedTranscriptVersionIndex != index) CorrectedTranscriptVersionIndex = index;
         OnPropertyChanged(nameof(CorrectedTranscriptShowCorrected));
         RefreshCorrectedTranscript();
     }

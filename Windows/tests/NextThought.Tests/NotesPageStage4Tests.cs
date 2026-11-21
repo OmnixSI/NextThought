@@ -58,18 +58,15 @@ public sealed class NotesPageStage4Tests
     public void TheFormatSelectorUsesTheMacLabelsInTheMacOrder()
     {
         var view = Read("Views", "NotesView.axaml");
-        var order = new[] { "{loc:Tr 复盘}", "{loc:Tr 提纲}", "{loc:Tr 鱼骨图}", "{loc:Tr 观点对照}" };
-        // 复盘 appears in the breadcrumb too; compare the last occurrence of the four format chips.
-        var positions = new List<int>();
-        var start = view.IndexOf("notesformat", StringComparison.Ordinal);
-        Assert.True(start > 0);
-        var tail = view[start..];
-        foreach (var label in order) positions.Add(tail.IndexOf(label, StringComparison.Ordinal));
-        Assert.All(positions, position => Assert.True(position >= 0));
-        for (var i = 1; i < positions.Count; i++) Assert.True(positions[i - 1] < positions[i]);
-        Assert.DoesNotContain("{loc:Tr 文字纪要}", view);
-        Assert.DoesNotContain("{loc:Tr 要点大纲}", view);
-        Assert.DoesNotContain("NotesFormatIsFishbone", tail[..Math.Max(0, positions[1])]);
+        // components-6: the format selector is the design-system PillTabs, items in Mac order.
+        Assert.Contains("<c:PillTabs SelectedIndex=\"{Binding NotesFormatIndex}\"", view);
+        foreach (var label in new[] { "复盘", "提纲", "鱼骨图", "观点对照" })
+            Assert.Contains("Content=\"{loc:Tr " + label + "}\"", view);
+        var order = new[] { "复盘", "提纲", "鱼骨图", "观点对照" }
+            .Select(label => view.IndexOf("{loc:Tr " + label + "}", StringComparison.Ordinal)).ToArray();
+        for (var i = 1; i < order.Length; i++) Assert.True(order[i - 1] < order[i]);
+        Assert.DoesNotContain("GroupName=\"notesformat\"", view);
+        Assert.DoesNotContain("NotesFormatIsFishbone", view.Split("notesformat").Length > 1 ? view : "");
     }
 
     [Fact]
