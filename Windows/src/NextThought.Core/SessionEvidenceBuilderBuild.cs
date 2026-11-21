@@ -11,7 +11,9 @@ public static partial class SessionEvidenceBuilder
         IReadOnlyList<TranscriptLine> lines, StructuredNotesDoc? notes, SessionSummary? summary,
         IReadOnlyList<TranscriptCorrection>? corrections = null)
     {
-        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, [], corrections: corrections ?? notes?.Corrections);
+        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, [],
+            corrections: corrections ?? notes?.Corrections,
+            voiceNames: meta.VoiceNames, meVoices: meta.MeVoices?.ToHashSet());
         var transcript = projection.Transcript;
         var currentRevision = projection.TranscriptSourceRevision;
         var references = new List<SessionEvidenceReference>();

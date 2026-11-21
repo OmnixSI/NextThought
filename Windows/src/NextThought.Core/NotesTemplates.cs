@@ -369,6 +369,8 @@ public sealed record StructuredNotesDoc(
     string Model = "",
     string? TranscriptSourceRevision = null)
 {
+    /// <summary>Computed view; not part of the Mac StructuredNotes encoding used for the revision.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool HasContent => Sections.Any(section => section.Items.Count > 0);
 }
 

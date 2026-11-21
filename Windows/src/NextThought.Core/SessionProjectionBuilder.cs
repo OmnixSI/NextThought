@@ -64,15 +64,17 @@ public static class SessionProjectionBuilder
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionProjectedAnswer> answers,
         SessionProjectedSummary? summary = null, IReadOnlyList<SessionQuestionEvent>? detected = null,
         SessionProjectionOptions? options = null, IReadOnlyList<TranscriptCorrection>? corrections = null,
-        StructuredNotesPayload? notes = null, StructuredNotesDoc? textNotes = null)
+        StructuredNotesPayload? notes = null, StructuredNotesDoc? textNotes = null,
+        IReadOnlyDictionary<string, string>? voiceNames = null, ISet<int>? meVoices = null)
     {
         options ??= new SessionProjectionOptions();
         corrections ??= [];
         var correctedLines = NotesCorrections.Apply(corrections, lines);
-        var speakerLabels = SpeakerLabels.PromptLabels(lines, null, null, false);
+        var speakerLabels = SpeakerLabels.PromptLabels(lines, voiceNames, meVoices, false);
         var text = new List<SessionProjectedText>();
         var transcript = new List<SessionProjectedTranscriptLine>();
-        var currentTranscriptRevision = TranscriptSourceRevision(sessionId, startedAt, lines, corrections);
+        var currentTranscriptRevision = TranscriptSourceRevision(sessionId, startedAt, lines, corrections,
+            voiceNames, meVoices);
         for (var index = 0; index < lines.Count; index++)
         {
             var line = lines[index];
@@ -208,11 +210,18 @@ public static class SessionProjectionBuilder
 
 
     /// <summary>A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it.</summary>
+    public static string TranscriptSourceRevision(SessionMeta meta, IReadOnlyList<TranscriptLine> lines,
+        IReadOnlyList<TranscriptCorrection> corrections) =>
+        TranscriptSourceRevision(meta.Id, meta.StartedAt, lines, corrections, meta.VoiceNames,
+            meta.MeVoices?.ToHashSet());
+
+    /// <summary>A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it.</summary>
     public static string TranscriptSourceRevision(Guid sessionId, DateTimeOffset startedAt,
-        IReadOnlyList<TranscriptLine> lines, IReadOnlyList<TranscriptCorrection> corrections)
+        IReadOnlyList<TranscriptLine> lines, IReadOnlyList<TranscriptCorrection> corrections,
+        IReadOnlyDictionary<string, string>? voiceNames = null, ISet<int>? meVoices = null)
     {
         var corrected = NotesCorrections.Apply(corrections, lines);
-        var labels = SpeakerLabels.PromptLabels(lines, null, null, false);
+        var labels = SpeakerLabels.PromptLabels(lines, voiceNames, meVoices, false);
         var parts = new List<string> { sessionId.ToString("D").ToUpperInvariant(), "transcript-source-v1" };
         for (var index = 0; index < lines.Count; index++)
         {
@@ -222,7 +231,7 @@ public static class SessionProjectionBuilder
             parts.Add(SwiftDigest.DateBitPattern(line.Date));
             parts.Add(line.Speaker);
             parts.Add(line.Voice?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "");
-            parts.Add(labels.TryGetValue(line.Id, out var label) ? label : line.Speaker);
+            parts.Add(labels.TryGetValue(line.Id, out var label) ? label : SpeakerLabel(line.Speaker));
             parts.Add(line.Text);
             parts.Add(text);
             if (text == line.Text) continue;
@@ -239,6 +248,14 @@ public static class SessionProjectionBuilder
         }
         return SwiftDigest.Of([.. parts]);
     }
+
+    /// <summary>Mac SessionSpeaker.label: the fallback when the line's voice is not on show.</summary>
+    private static string SpeakerLabel(string speaker) => speaker switch
+    {
+        "me" => "我",
+        "room" => "现场",
+        _ => "对方"
+    };
 
     private static SessionDerivedContentStatus DerivedStatus(string? saved, string current) =>
         saved is null ? SessionDerivedContentStatus.Unknown

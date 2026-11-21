@@ -41,7 +41,8 @@ public sealed record SessionProjectedTranscriptLine
         DateTimeOffset startedAt, SessionProjectionOptions options, string? speakerLabel = null,
         IReadOnlyList<TranscriptCorrection>? appliedCorrections = null)
     {
-        var offset = Math.Max(0, (int)((line.StartedAt ?? line.Date) - startedAt).TotalSeconds);
+        // Mac: max(0, Int(raw.date.timeIntervalSince(meta.startedAt))) — the spoken date, not startedAt.
+        var offset = Math.Max(0, (int)(line.Date - startedAt).TotalSeconds);
         var originalRevision = TranscriptRevisions.Of(line.Id, line.Text);
         var sourceRevision = TranscriptRevisions.Of(line.Id,
             options.TranscriptVariant == SessionTranscriptVariant.Original ? line.Text : correctedText);
