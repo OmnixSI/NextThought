@@ -20,6 +20,9 @@
     <x:String x:Key="IconChevronUp">&#xF2B7;</x:String>
     <x:String x:Key="IconCircle">&#xF2BC;</x:String>
     <x:String x:Key="IconCircleFill">&#xF2BC;</x:String>
+    <x:String x:Key="IconSquare">&#xF292;</x:String>
+    <x:String x:Key="IconTriangle">&#xF03A5;</x:String>
+    <x:String x:Key="IconDiamond">&#xE4BC;</x:String>
     <x:String x:Key="IconDisplay">&#xEDC3;</x:String>
     <x:String x:Key="IconDocPlaintext">&#xF379;</x:String>
     <x:String x:Key="IconDocRichtext">&#xE558;</x:String>

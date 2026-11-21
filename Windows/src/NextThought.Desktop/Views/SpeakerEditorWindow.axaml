@@ -27,7 +27,7 @@
             <Button Classes="quiet" Tag="{Binding}" Click="SelectPerson_Click"
                     ToolTip.Tip="{Binding Tooltip}" Margin="{DynamicResource D4Margin_0_0_6_6}" Padding="{DynamicResource D4Padding_10_4}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}">
-                <TextBlock Text="{Binding Mark}" FontSize="11" />
+                <TextBlock Text="{Binding MarkGlyph}" FontSize="11" FontFamily="{StaticResource IconFont}" />
                 <TextBlock Text="{Binding DisplayLabel}" Classes="label" />
               </StackPanel>
             </Button>
