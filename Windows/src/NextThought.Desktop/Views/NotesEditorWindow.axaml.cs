@@ -26,7 +26,7 @@ public partial class NotesEditorWindow : Window
     private bool allowClose;
 
     private async Task<bool> ConfirmDiscardAsync(AppState state) =>
-        await new ConfirmDialog(UiText.T("放弃尚未保存的更改？")).ShowDialog<bool>(this);
+        await new ConfirmDialog(UiText.T("放弃尚未保存的更改？"), UiText.T("放弃更改"), UiText.T("继续编辑")).ShowDialog<bool>(this);
 
     private async void Cancel_Click(object? sender, RoutedEventArgs e)
     {

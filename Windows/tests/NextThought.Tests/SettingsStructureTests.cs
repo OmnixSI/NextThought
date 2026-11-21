@@ -37,9 +37,13 @@ public sealed class SettingsStructureTests
         var scan = 0;
         foreach (var (title, tag) in expected)
         {
-            var marker = $"Content=\"{{loc:Tr {title}}}\" Tag=\"{tag}\"";
+            // §3.6 G2: the Mac sidebar rows are icon + label buttons (settings-nav).
+            var marker = $"Classes=\"quiet settings-nav\" HorizontalContentAlignment=\"Left\" Tag=\"{tag}\"";
             var at = xaml.IndexOf(marker, scan, StringComparison.Ordinal);
             Assert.True(at > 0, "sidebar 顺序缺失：" + title);
+            var block = xaml[at..Math.Min(xaml.Length, at + 500)];
+            Assert.Contains($"{{loc:Tr {title}}}", block);
+            Assert.Contains("FontFamily=\"{StaticResource IconFont}\"", block);
             scan = at;
         }
     }
@@ -81,23 +85,55 @@ public sealed class SettingsStructureTests
         // Mac PresenterSettings: 提词 / 双屏演讲 / 字幕条.
         Assert.Contains("{loc:Tr 显示方式}", Card("提词"));
         Assert.StartsWith("Coach|", Card("双屏演讲"));
-        // Mac SetupChecklist lives in 高级 → 数据与维护.
-        // E3: Mac puts SetupChecklist on the 通用 page (SettingsGeneralData).
-        Assert.StartsWith("General|", Card("设置清单"));
+        // §3.6: Mac SetupChecklist / data about live in 高级 → 数据与维护.
+        Assert.StartsWith("Advanced|", Card("设置清单"));
+        Assert.StartsWith("Advanced|", Card("数据与关于"));
         // Mac AnswerSettings: 回答服务 / 联网 / 资料 / 技能.
         Assert.StartsWith("Answer|", Card("技能"));
         Assert.StartsWith("Answer|", Card("资料"));
         // Mac NotesSettingsView: 会议自动收尾 / 自定义模板.
         Assert.StartsWith("Notes|", Card("会议自动收尾"));
         Assert.StartsWith("Notes|", Card("自定义纪要模板"));
-        // §6.7 ownership: 区分说话人（声纹）and 术语和人名 live on 通用; 同声传译 and 字幕条 on 提词与教练;
-        // 联网搜索 stays on the 回答与资料 page (inside the answer-service card).
+        // §3.6: 区分说话人（声纹）and 术语和人名 live on 通用; 说话人与翻译 moved to 通用 as well;
+        // 字幕条 stays on 提词与教练 and 联网搜索 moves to its own 回答与资料 section (E27).
         Assert.StartsWith("General|", Card("区分说话人"));
         Assert.StartsWith("General|", Card("术语和人名"));
-        Assert.StartsWith("Coach|", Card("同声传译"));
+        Assert.StartsWith("General|", Card("同声传译"));
         Assert.StartsWith("Coach|", Card("字幕条"));
         Assert.StartsWith("Answer|", Card("回答服务"));
-        Assert.Contains("{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}", Card("回答服务"));
+        // §3.6 A1: Mac AnswerSettings API / Codex segmented backend.
+        var answer = Card("回答服务");
+        Assert.Contains("InkSegmented", answer);
+        Assert.Contains("{Binding Settings.AnswerBackendIndex", answer);
+        // §3.6 A5: 联网搜索 is its own Answer section with the Mac tri-state picker.
+        var web = Card("联网搜索");
+        Assert.StartsWith("Answer|", web);
+        Assert.Contains("{Binding Settings.WebSearchModeChoices}", web);
+        Assert.Contains("{Binding Settings.SelectedWebSearchMode}", web);
+        Assert.Contains("{loc:Tr 联网}", web);
+        // §3.6 E3: 术语和人名 opens the glossary window (Mac 管理…) instead of inline editing.
+        var glossary = Card("术语和人名");
+        Assert.Contains("{loc:Tr 管理…}", glossary);
+        Assert.DoesNotContain("GlossaryText", glossary);
+        // §3.6 N3: 纪要高级 on the notes page carries the notes model.
+        var notesAdvanced = Card("纪要高级");
+        Assert.StartsWith("Notes|", notesAdvanced);
+        Assert.Contains("{Binding Settings.NotesModel}", notesAdvanced);
+        // §3.6 P1: the presenter page has the Mac 字号 slider.
+        Assert.Contains("{Binding Settings.TeleprompterFontSize}", Card("提词"));
+        // §3.6 settings-structure: recordSessions gets its Mac B BGeneral card.
+        var record = Card("记录每次会议");
+        Assert.StartsWith("General|", record);
+        Assert.Contains("IsChecked=\"{Binding Settings.RecordSessions}\"", record);
+        Assert.Contains("{loc:Tr 保存转录和会中回答，不保存原始音频。生成纪要时会把本次转录发送给当前回答服务。}", record);
+        // The update card shows the Mac version/build line and no longer owns the channel picker.
+        Assert.Contains("{Binding Settings.VersionLine}", Card("更新"));
+        Assert.Contains("{Binding Settings.BuildLine}", Card("更新"));
+        Assert.DoesNotContain("{Binding UpdateChannels}", Card("更新"));
+        // Semantic retrieval appears once, in the 高级 → 资料组件 control (not on 回答与资料).
+        Assert.DoesNotContain("Settings.UseSemanticRetrieval", xaml);
+        var advanced = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "DocumentComponentsAdvanced.axaml"));
+        Assert.Equal(1, advanced.Split("{Binding Settings.UseSemanticRetrieval}").Length - 1);
     }
 
     [Fact]
@@ -108,9 +144,12 @@ public sealed class SettingsStructureTests
         Assert.Contains("PageTitle(page)", code);
         Assert.Contains("\"回答与资料\"", code);
         Assert.Contains("\"提词与教练\"", code);
-        // Results are built from every card, not only the current page.
-        Assert.Contains("foreach (var card in cards)", code);
-        Assert.DoesNotContain("card.Tag as string == currentPage && text.Contains", code);
+        // §3.6: results come from the Mac SettingsSearchItem keyword table, not only visible card text.
+        Assert.Contains("NextThought.Core.SettingsSearchItem.Matching(query)", code);
+        Assert.Contains("ScrollToSection(item.Anchor)", code);
+        var index = Read(Path.Combine("Windows", "src", "NextThought.Core", "SettingsSearchIndex.cs"));
+        foreach (var term in new[] { "刘海", "钉住", "notch", "同声传译", "记录 保存 会议记录" })
+            Assert.Contains(term, index);
         var xaml = Xaml();
         Assert.Contains("Name=\"SettingsSearchResults\"", xaml);
         Assert.Contains("AutomationProperties.Name=\"{loc:Tr 设置搜索结果}\"", xaml);

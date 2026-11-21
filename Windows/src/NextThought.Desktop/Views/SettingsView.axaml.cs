@@ -117,6 +117,13 @@ public partial class SettingsView : UserControl
     private void ShowPage(string page)
     {
         currentPage = page;
+        SettingsHeaderTitle.Text = PageTitle(page);
+        // §3.6 G2: the sidebar row is a Mac AppNavigationSidebar selection (soft block).
+        foreach (var button in this.GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("settings-nav")))
+        {
+            if (string.Equals(button.Tag as string, page, StringComparison.Ordinal)) button.Classes.Add("active");
+            else button.Classes.Remove("active");
+        }
         foreach (var card in this.GetVisualDescendants().OfType<Border>()
                      .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
             card.IsVisible = card.Tag as string == page;
@@ -176,20 +183,17 @@ public partial class SettingsView : UserControl
         }
         foreach (var card in cards) card.IsVisible = false;
         SettingsSearchResults.IsVisible = true;
-        foreach (var card in cards)
+        // §3.6 / Mac SettingsSearchItem: the hidden keyword table finds items whose title does not
+        // contain the query (刘海 / 钉住 / notch …), and each result carries the Mac page title.
+        foreach (var item in NextThought.Core.SettingsSearchItem.Matching(query))
         {
-            var heading = card.GetVisualDescendants().OfType<TextBlock>()
-                .FirstOrDefault(block => block.Classes.Contains("section"))?.Text ?? "";
-            var text = string.Join(" ", card.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? "")
-                .Concat(card.GetVisualDescendants().OfType<ContentControl>().Select(control => control.Content as string ?? "")));
-            if (!text.Contains(query, StringComparison.OrdinalIgnoreCase)) continue;
-            var page = card.Tag as string ?? currentPage;
-            var title = heading.Length > 0 ? heading + " · " + PageTitle(page) : PageTitle(page);
+            var title = item.Title + " · " + PageTitle(item.Page);
             var result = new Button { Content = title, Classes = { "quiet" }, HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left };
             result.Click += (_, _) =>
             {
                 box.Text = "";
-                ShowPage(page);
+                ShowPage(item.Page);
+                ScrollToSection(item.Anchor);
             };
             SettingsSearchResults.Children.Add(result);
         }
@@ -199,6 +203,20 @@ public partial class SettingsView : UserControl
                 Text = UiText.T("没有匹配的设置项"),
                 Classes = { "caption" }
             });
+    }
+
+    /// <summary>Best-effort jump to the card whose section heading is the Mac anchor.</summary>
+    private void ScrollToSection(string anchor)
+    {
+        if (string.IsNullOrEmpty(anchor)) return;
+        var heading = this.GetVisualDescendants().OfType<TextBlock>()
+            .FirstOrDefault(block => block.Classes.Contains("section")
+                && (string.Equals(block.Text, UiText.T(anchor), StringComparison.Ordinal)
+                    || string.Equals(block.Text, anchor, StringComparison.Ordinal)
+                    || (block.Text ?? "").Contains(anchor, StringComparison.Ordinal)));
+        if (heading is null) return;
+        var y = heading.TranslatePoint(new Avalonia.Point(0, 0), SettingsScroll)?.Y ?? 0;
+        SettingsScroll.Offset = new Avalonia.Vector(0, Math.Max(0, SettingsScroll.Offset.Y + y - 16));
     }
 
     private static string PageTitle(string page) => UiText.T(page switch

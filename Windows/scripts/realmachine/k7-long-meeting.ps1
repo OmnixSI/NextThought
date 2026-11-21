@@ -281,10 +281,13 @@ try {
         if ($counts[$index] -le $counts[$index - 1]) { $runLength++; if ($runLength -gt $stallRuns) { $stallRuns = $runLength } } else { $runLength = 0 }
     }
     $memory = @($report.memory)
-    $first = @($memory | Select-Object -First ([Math]::Max(1, [int]($memory.Count / 3))))
-    $last = @($memory | Select-Object -Last ([Math]::Max(1, [int]($memory.Count / 3))))
-    $firstAvg = if ($first.Count -gt 0) { ($first | Measure-Object -Property workingSetMB -Average).Average } else { 0 }
-    $lastAvg = if ($last.Count -gt 0) { ($last | Measure-Object -Property workingSetMB -Average).Average } else { 0 }
+    $third = [Math]::Max(1, [int]($memory.Count / 3))
+    $first = @($memory | Select-Object -First $third)
+    $last = @($memory | Select-Object -Last $third)
+    $firstValues = @($first | ForEach-Object { [double]$_.workingSetMB })
+    $lastValues = @($last | ForEach-Object { [double]$_.workingSetMB })
+    $firstAvg = if ($firstValues.Count -gt 0) { ($firstValues | Measure-Object -Average).Average } else { 0 }
+    $lastAvg = if ($lastValues.Count -gt 0) { ($lastValues | Measure-Object -Average).Average } else { 0 }
     $ratio = if ($firstAvg -gt 0) { [Math]::Round($lastAvg / $firstAvg, 2) } else { 0 }
     $sessionOk = $false
     if ($sessionDir) {

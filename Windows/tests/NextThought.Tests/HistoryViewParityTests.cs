@@ -127,7 +127,6 @@ public sealed class HistoryViewParityTests
         var view = Read("Views", "HistoryView.axaml");
         foreach (var label in new[] { "返回首页", "清除搜索与筛选", "重试读取" })
             Assert.Contains(label, view);
-        Assert.Contains("RowMenu_Opening", view);
         var meeting = Read("AppState.HistoryMeeting.cs");
         Assert.Contains("OpenHistoryHitInMeeting", meeting);
         Assert.Contains("ShowNotesTranscriptAt", meeting);

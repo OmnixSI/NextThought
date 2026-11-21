@@ -15,6 +15,11 @@ public partial class AppState
     private SlideFollowController? slideFollow;
     private readonly Dictionary<string, SlideNotes> slideNotesCacheByPage = [];
     private DateTimeOffset slideFollowSince;
+    /// <summary>Where the current slide came from (Mac LiveInsightsState.slideSource): screen, manual step or speech.</summary>
+    private SlideSource lastSlideSource = SlideSource.Screen;
+
+    /// <summary>E4/island 7: the 讲稿「手动」tag on the cue island reads this.</summary>
+    public bool SlideIsManual => lastSlideSource == SlideSource.Manual;
 
     /// <summary>E9: the last screen classification (Mac ScreenKind) and its local relevance.</summary>
     [ObservableProperty] private ScreenKind screenWatchKind = ScreenKind.Other;
@@ -116,6 +121,11 @@ public partial class AppState
         if (index < 0) return;
         var changed = index != slideIndex;
         slideIndex = index;
+        if (lastSlideSource != source)
+        {
+            lastSlideSource = source;
+            OnPropertyChanged(nameof(SlideIsManual));
+        }
         slideFollowSince = DateTimeOffset.UtcNow;
         OnPropertyChanged(nameof(SlideStatus));
         OnPropertyChanged(nameof(CurrentSlideText));

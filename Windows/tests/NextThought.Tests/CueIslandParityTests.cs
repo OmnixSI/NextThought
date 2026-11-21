@@ -12,6 +12,19 @@ namespace NextThought.Tests;
 /// </summary>
 public sealed class CueIslandParityTests
 {
+
+    private static string ReadCheck(params string[] parts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "App.axaml")))
+                return File.ReadAllText(Path.Combine([directory.FullName, "Windows", "src", "NextThought.Desktop", .. parts]));
+            directory = directory.Parent;
+        }
+        throw new DirectoryNotFoundException("repository root");
+    }
+
     private static string Root()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
@@ -214,6 +227,27 @@ public sealed class CueIslandParityTests
         Assert.Contains("island-", runner);
         Assert.Contains("ApplyStateForCheck", runner);
         Assert.Contains("ClearStateForCheck", runner);
+    }
+
+    [Fact]
+    public void TheIslandTakesClicksAsAWholeAndWithdrawsWhileSharing()
+    {
+        var vm = ReadCheck("Views", "Island", "CueIslandViewModel.cs");
+        // decisions §3.2 island 5: hover / pinned / peeking -> the whole panel takes clicks.
+        Assert.Contains("WantsClicks => !shareAvoiding && (hovering || pinned || Peeking)", vm);
+        var window = ReadCheck("Views", "CueIslandWindow.axaml.cs");
+        Assert.Contains("model.WantsClicks", window);
+        // island 6: NextThought's own window in front keeps the island compact.
+        Assert.Contains("MainWindowFront", vm);
+        Assert.Contains("var covered = mainWindowFront && !forceCue;", vm);
+        // island 7: slide manual tag and the tracked slide source.
+        Assert.Contains("SlideIsManual", vm);
+        Assert.Contains("SlideIsManual", ReadCheck("Views", "CueIslandWindow.axaml"));
+        Assert.Contains("lastSlideSource", ReadCheck("AppState.SlideFollow.cs"));
+        // island 9: sharing makes the island withdraw by itself (existing ScreenShareDetector).
+        Assert.Contains("if (shareAvoiding) return CueIslandPhase.Hidden;", vm);
+        Assert.Contains("ScreenShareDetector.IsSharingActive", window);
+        Assert.Contains("model.SetShareAvoiding", window);
     }
 
     [Fact]

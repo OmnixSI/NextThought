@@ -15,7 +15,7 @@
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               Tag="{Binding}" Click="Row_Click" Padding="{DynamicResource D4Padding_8_6}">
         <Button.ContextMenu>
-          <ContextMenu Opening="RowMenu_Opening">
+          <ContextMenu>
             <MenuItem Header="{loc:Tr 打开纪要}" Tag="{Binding}" Click="OpenSession_Tapped" />
             <MenuItem Header="{loc:Tr 重新整理}" Tag="{Binding}" Click="Regenerate_Tapped" />
             <MenuItem Header="{loc:Tr 纪要语言}">

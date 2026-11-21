@@ -16,7 +16,7 @@ public static class MacPreferenceMap
     private static readonly string[] MappedJsonNames =
     [
         "baseUrl", "model", "notesModel", "reasoningEffort", "localModel", "secondPass", "captureMicrophone",
-        "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt",
+        "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt", "recordSessions",
         "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize", "cueSurface", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
@@ -35,7 +35,7 @@ public static class MacPreferenceMap
     private static readonly HashSet<string> MappedKeysTemp =
     [
         "answerBackend", "answerGloss", "answerLanguage", "apiBaseURL", "apiModel", "appearance", "autoSummarize",
-        "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider",
+        "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider", "recordSessions",
         "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueSurface", "cueWidth", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
@@ -73,9 +73,10 @@ public static class MacPreferenceMap
         "recognitionVocabulary" => settings.Vocabulary,
         "autoSummarize" => settings.AutoSummarize,
         "automaticAnswers" => settings.AutomaticAnswers,
+        "recordSessions" => settings.RecordSessions,
         "automaticUpdateChecks" => settings.AutoCheckUpdates,
         "answerBackend" => settings.UseCodex ? "codexAppServer" : "openAICompatible",
-        "webSearchMode" => settings.WebSearch ? "auto" : "off",
+        "webSearchMode" => settings.WebSearchMode,
         "semanticRetrievalEnabled" => settings.UseSemanticRetrieval,
         "codexModelID" => settings.CodexModel,
         "answerGloss" => settings.AnswerGloss,
@@ -147,13 +148,27 @@ public static class MacPreferenceMap
             case "recognitionVocabulary": settings.Vocabulary = AsString(normalized, settings.Vocabulary); break;
             case "autoSummarize": settings.AutoSummarize = normalized is bool summarize ? summarize : settings.AutoSummarize; break;
             case "automaticAnswers": settings.AutomaticAnswers = normalized is bool automatic ? automatic : settings.AutomaticAnswers; break;
+            case "recordSessions": settings.RecordSessions = normalized is bool record ? record : settings.RecordSessions; break;
             case "automaticUpdateChecks": settings.AutoCheckUpdates = normalized is bool checks ? checks : settings.AutoCheckUpdates; break;
             case "answerBackend":
                 settings.UseCodex = normalized is string backend && backend is "codexAppServer" or "codexExec";
                 break;
             case "webSearchMode":
-                settings.WebSearch = normalized is not "off";
+            {
+                // 决议 §3.3: the Mac three-state value (off / auto / always), not a Windows bool.
+                // Old settings files stored the bool mapping; accept it once and migrate. Read the
+                // raw value: Normalize would turn the legacy bool into the string preference's
+                // default before this switch sees it.
+                var mode = value switch
+                {
+                    bool enabled => enabled ? "auto" : "off",
+                    string text when text is "off" or "auto" or "always" => text,
+                    _ => MacPreferences.Normalize(key, value) as string ?? settings.WebSearchMode
+                };
+                settings.WebSearchMode = mode;
+                settings.WebSearch = mode != "off";
                 break;
+            }
             case "semanticRetrievalEnabled":
                 settings.UseSemanticRetrieval = normalized is bool semantic ? semantic : settings.UseSemanticRetrieval;
                 break;

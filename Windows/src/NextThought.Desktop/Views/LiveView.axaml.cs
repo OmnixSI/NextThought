@@ -160,6 +160,21 @@ public partial class LiveView : UserControl
 
     // ---- J6/Mac SpeakerStrip + LineSpeakerMenu ---------------------------------------
 
+    /// <summary>
+    /// §3.3 live 8 / Mac ScrollFollowObserver.onTextSelection: selecting transcript text pauses the
+    /// follow, so the viewport stays where the reader is while new lines keep arriving. Avalonia 12's
+    /// SelectableTextBlock has no SelectionChanged event, so the selection is noticed on the pointer
+    /// and key events that can change it.
+    /// </summary>
+    private void TranscriptText_PointerReleased(object? sender, PointerReleasedEventArgs e) => NoticeTextSelection(sender);
+
+    private void TranscriptText_KeyUp(object? sender, KeyEventArgs e) => NoticeTextSelection(sender);
+
+    private void NoticeTextSelection(object? sender)
+    {
+        if (sender is SelectableTextBlock { SelectedText.Length: > 0 }) state?.LiveSelectedText();
+    }
+
     /// <summary>Mac SpeakerStrip: tapping a person opens their name / merge / 这是我 editor.</summary>
     private void SpeakerChip_Click(object? sender, RoutedEventArgs e)
     {
@@ -414,12 +429,6 @@ public partial class LiveView : UserControl
     private void Teleprompter_Click(object? sender, RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleTeleprompter();
-    }
-
-    private void Insights_Click(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not AppState state) return;
-        new InsightsPanelWindow { DataContext = state }.Show();
     }
 
     private void Speakers_Click(object? sender, RoutedEventArgs e)

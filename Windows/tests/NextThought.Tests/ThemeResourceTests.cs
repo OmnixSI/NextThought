@@ -119,13 +119,15 @@ public sealed class ThemeResourceTests
         var numeric = System.Text.RegularExpressions.Regex.Matches(controls, "Property=\"MinHeight\" Value=\"([0-9]+)\"")
             .Select(match => match.Groups[1].Value).OrderBy(value => value).ToArray();
         Assert.Equal(new[] { "0", "24", "3" }, numeric);
-        // Primary action buttons in the pages use the 36 pt row height; the only remaining page
-        // clickable literal is the compact teleprompter handle button.
-        foreach (var view in new[] { "LiveView.axaml", "NotesView.axaml", "LibraryView.axaml" })
+        // Primary action buttons in the pages use the Mac hit heights: the live page's 立即回答 is
+        // Space.controlLarge (40, §3.3 live 6); the other page actions keep the 36 pt row height.
+        foreach (var view in new[] { "NotesView.axaml", "LibraryView.axaml" })
         {
             var text = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", view));
             Assert.Contains("MinHeight=\"{DynamicResource HitRow}\"", text);
         }
+        var liveView = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("MinHeight=\"{DynamicResource ControlLarge}\"", liveView);
         var series = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "SeriesView.axaml"));
         Assert.Contains("MinHeight=\"{DynamicResource Control}\"", series);
         // Two clickable sizes stay literal on purpose: the compact teleprompter handle button

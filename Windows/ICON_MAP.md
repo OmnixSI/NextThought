@@ -173,3 +173,13 @@ Microsoft；系统 `Segoe Fluent Icons` 作为回退）。字形的码点来自 
 | `cursorarrow` | `U+F05FC` | `IconIslandCursor` | `ic_fluent_cursor_24_regular` |
 | `cursorarrow.slash` | `U+F62F` | `IconIslandCursorOff` | `ic_fluent_prohibited_24_regular`（近似） |
 | `ellipsis` | `U+E826` | `IconIslandEllipsis` | `ic_fluent_more_horizontal_24_regular` |
+
+## §3.3 live 会中页暂停/继续（决议 live 1）
+
+会中页顶栏 `PauseResumeButton` 用 24 px 的字形（岛上的 `IconIslandPause/Play` 是 28 px 字号下的同一符号，
+会中页单独取 24 px 版本）：
+
+| SF Symbol | 字形 | 资源 | Fluent 名称 |
+|---|---|---|---|
+| `pause.fill` | `U+F5A2` | `IconPause` | `ic_fluent_pause_24_regular` |
+| `play.fill` | `U+F606` | `IconPlay` | `ic_fluent_play_24_regular` |

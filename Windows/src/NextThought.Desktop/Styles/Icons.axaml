@@ -98,4 +98,8 @@
     <x:String x:Key="IconIslandCursor">&#xF05FC;</x:String>
     <x:String x:Key="IconIslandCursorOff">&#xF62F;</x:String>
     <x:String x:Key="IconIslandEllipsis">&#xE826;</x:String>
+    <!-- §3.3 live 1: the live pause/resume button uses the Fluent pause / play glyphs
+         (ic_fluent_pause_24_regular U+F5A2, ic_fluent_play_24_regular U+F606). -->
+    <x:String x:Key="IconPause">&#xF5A2;</x:String>
+    <x:String x:Key="IconPlay">&#xF606;</x:String>
 </ResourceDictionary>

@@ -387,6 +387,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string vocabulary = "";
     [ObservableProperty] private bool automaticAnswers = true;
     [ObservableProperty] private bool autoSummarize = true;
+    /// <summary>Mac key <c>recordSessions</c>: save the transcript and answers of each meeting.</summary>
+    [ObservableProperty] private bool recordSessions = true;
     [ObservableProperty] private bool useSemanticRetrieval;
     [ObservableProperty] private bool separateSpeakers;
     [ObservableProperty] private bool translateSpeech;
@@ -637,6 +639,36 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool? liveTranslation;
     /// <summary>E4/Mac webSearchMode: off / auto / always.</summary>
     [ObservableProperty] private string webSearchMode = "auto";
+
+    /// <summary>§3.6 A5: Mac WebSearchMode.displayName — 不联网 / 自动判断 / 每次都查.</summary>
+    public sealed record WebSearchModeChoice(string Value, string Title);
+
+    public IReadOnlyList<WebSearchModeChoice> WebSearchModeChoices =>
+    [
+        new("off", UiText.T("不联网")),
+        new("auto", UiText.T("自动判断")),
+        new("always", UiText.T("每次都查"))
+    ];
+
+    [ObservableProperty] private WebSearchModeChoice? selectedWebSearchMode;
+
+    partial void OnSelectedWebSearchModeChanged(WebSearchModeChoice? value)
+    {
+        if (value is null) return;
+        WebSearchMode = value.Value;
+        WebSearch = value.Value != "off";
+    }
+
+    /// <summary>§3.6 A1: Mac AnswerSettings API / Codex segmented backend (0 = API, 1 = Codex).</summary>
+    [ObservableProperty] private int answerBackendIndex;
+
+    public IReadOnlyList<string> AnswerBackendChoices => ["API", "Codex"];
+
+    partial void OnAnswerBackendIndexChanged(int value)
+    {
+        UseCodex = value == 1;
+        OnPropertyChanged(nameof(CodexFastAvailable));
+    }
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "";
 
@@ -777,6 +809,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         Vocabulary = settings.Vocabulary;
         AutomaticAnswers = settings.AutomaticAnswers;
         AutoSummarize = settings.AutoSummarize;
+        RecordSessions = settings.RecordSessions;
         UseSemanticRetrieval = settings.UseSemanticRetrieval;
         SeparateSpeakers = settings.SeparateSpeakers;
         TranslateSpeech = settings.TranslateSpeech;
@@ -793,6 +826,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AutoTranslateForeign = settings.AutoTranslateForeign;
         LiveTranslation = settings.LiveTranslation;
         WebSearchMode = settings.WebSearchMode;
+        SelectedWebSearchMode = WebSearchModeChoices.FirstOrDefault(choice => choice.Value == WebSearchMode) ?? WebSearchModeChoices[1];
+        AnswerBackendIndex = settings.UseCodex ? 1 : 0;
         FollowSlides = settings.FollowSlides;
         InsightScreenWatch = settings.InsightScreenWatch;
         InsightScreenInterval = Math.Max(1, settings.InsightScreenInterval);
@@ -834,6 +869,19 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         LoadDocumentSettings(settings);
         RefreshScreens();
     }
+
+    /// <summary>Mac UpdateSettings first line: "NextThought " + the assembly version.</summary>
+    public string VersionLine
+    {
+        get
+        {
+            var version = typeof(SettingsViewModel).Assembly.GetName().Version ?? new Version(0, 0, 0);
+            return "NextThought " + version.ToString(3);
+        }
+    }
+
+    /// <summary>Mac UpdateSettings second line: 构建 %@, the monotonic revision of this build.</summary>
+    public string BuildLine => UiText.Format("构建 %@", UpdateCheck.CurrentBuild.ToString());
 
     public AppSettings Build()
     {
@@ -881,12 +929,13 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         LastMeetingTitle = state.MeetingTitle == "新会议" ? LastMeetingTitle : state.MeetingTitle,
         AutomaticAnswers = AutomaticAnswers,
         AutoSummarize = AutoSummarize,
+        RecordSessions = RecordSessions,
         UseSemanticRetrieval = UseSemanticRetrieval,
-        WebSearch = WebSearch,
+        WebSearch = (SelectedWebSearchMode?.Value ?? "auto") != "off",
         SeparateSpeakers = SeparateSpeakers,
         TranslateSpeech = TranslateSpeech,
         UseMaterials = UseMaterials,
-        UseCodex = UseCodex,
+        UseCodex = AnswerBackendIndex == 1,
         CodexModel = CodexModel.Trim(),
         // E27: saved providers, the active preset and the GitHub access settings.
         ApiPresets = EditedApiPresets(),
@@ -910,7 +959,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = AnswerGloss,
         AutoTranslateForeign = AutoTranslateForeign,
         LiveTranslation = LiveTranslation,
-        WebSearchMode = WebSearchMode,
+        WebSearchMode = SelectedWebSearchMode?.Value ?? "auto",
         FollowSlides = FollowSlides,
         InsightScreenWatch = InsightScreenWatch,
         InsightScreenInterval = Math.Max(1, InsightScreenInterval),
