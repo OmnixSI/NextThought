@@ -225,6 +225,8 @@ IMPLEMENTED = {
     ("ContentView.swift", "PulseDot"): ("Views/MainWindow.axaml", "final-shell"),
     ("SessionExportUI.swift", "SessionExportSheet"): ("Views/SessionExportSheet.axaml", "export"),
     ("BackupRestoreReview.swift", "BackupRestoreReviewView"): ("Views/BackupRestoreReviewView.axaml", "backup-review"),
+    ("ContentView.swift", "QRCodeView"): ("Views/Controls/QrCodeView.cs", "share-test"),
+    ("ContentView.swift", "ShareTestSheet"): ("Views/ShareTestWindow.axaml", "share-test"),
 
 }
 

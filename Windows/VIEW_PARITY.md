@@ -65,9 +65,9 @@
 | `Sources/NextThought/ContentView.swift` | `LevelMeters` | E13 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/ContentView.swift` | `MainShell` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `PulseDot` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
-| `Sources/NextThought/ContentView.swift` | `QRCodeView` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `QRCodeView` | E13 | Views/Controls/QrCodeView.cs | 已实现、未验证 | `Windows/validation/screens/share-test/` |
 | `Sources/NextThought/ContentView.swift` | `SectionStack` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
-| `Sources/NextThought/ContentView.swift` | `ShareTestSheet` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `ShareTestSheet` | E13 | Views/ShareTestWindow.axaml | 已实现、未验证 | `Windows/validation/screens/share-test/` |
 | `Sources/NextThought/ContentView.swift` | `WindowPickerSheet` | E13 | Views/WindowPickerWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-context/` |
 | `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionScreenshotPicker` | E13 | Views/RegionCaptureWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-question/` |
 | `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionSelectionCanvas` | E13 | Views/RegionCaptureWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-question/` |
@@ -288,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | — | 未做 | — |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**281** 个视图；已有 Windows 页面 **163** 个，其余 **118** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **165** 个，其余 **116** 个待做。
