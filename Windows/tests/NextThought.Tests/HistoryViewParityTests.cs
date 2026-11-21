@@ -31,9 +31,10 @@ public sealed class HistoryViewParityTests
         // HistoryView.body: sessionList 270pt wide, hairline, archive overview on the right.
         Assert.Contains("270", view);
         Assert.Contains("HistoryGroups", view);
-        Assert.Contains("本机记录", view);
+        Assert.Contains("本机记录", File.ReadAllText(Path.Combine(Windows(), "src", "NextThought.Desktop", "AppState.HistoryOverview.cs")));
         // sessionListTitle: 所有记录 in the left pane and the breadcrumb on the right.
         Assert.Contains("所有记录", view);
+        Assert.Contains("HistoryScopeTitle", view);
         Assert.Contains("会议系列", view);
         Assert.Contains("批量删除", view);
         Assert.Contains("全选当前结果", view);
@@ -67,15 +68,41 @@ public sealed class HistoryViewParityTests
         Assert.Contains("Details", view);
         Assert.Contains("IconSparkle", view);
         Assert.Contains("IconExclamationmarkCircle", view);
-        Assert.Contains("Sunken", view);
+        Assert.Contains("Sunken", Read("Styles", "DesignSystem.axaml"));
         Assert.Contains("InteractiveRowBody", view);
+    }
+
+    [Fact]
+    public void SeriesScopeAndEmptyStatesFollowHistoryViewSwift()
+    {
+        var view = Read("Views", "HistoryView.axaml");
+        // workspace/series scoping: title + scope back, empty states, clear filters.
+        Assert.Contains("HistoryScopeTitle", view);
+        Assert.Contains("HistoryScopeSubtitle", view);
+        Assert.Contains("HistoryScopeHasNoSessions", view);
+        Assert.Contains("IsHistoryScoped", view);
+        Assert.Contains("ShowAllHistoryCommand", view);
+        Assert.Contains("ClearHistoryFiltersCommand", view);
+        Assert.Contains("HistoryNoMatchDetail", view);
+        Assert.Contains("这个系列还没有会议", File.ReadAllText(Path.Combine(Windows(), "src", "NextThought.Desktop", "AppState.HistoryOverview.cs")));
+        // content-search progress + read-issue notice hooks.
+        Assert.Contains("HistoryContentSearchProgress", view);
+        Assert.Contains("HasHistoryReadIssues", view);
+        // 0.5px row separators and the selected-row transition.
+        Assert.Contains("Height=\"0.5\"", view);
+        var styles = Read("Styles", "DesignSystem.axaml");
+        Assert.Contains("BrushTransition", styles);
+        Assert.Contains("Button.recent:focus-visible", styles);
+        // series card mode/unreviewed counts.
+        Assert.Contains("ModeTitle", view);
+        Assert.Contains("CountsText", view);
     }
 
     [Fact]
     public void RowViewModelExposesTheMacSessionRowFields()
     {
         var row = File.ReadAllText(Path.Combine(Windows(), "src", "NextThought.Desktop", "RecentMeetingRow.cs"));
-        foreach (var member in new[] { "ModeTintBrush", "TimeText", "Details", "HasReadySummary", "HasPendingSummary", "HasFailedSummary" })
+        foreach (var member in new[] { "ModeTintBrush", "TimeText", "Details", "HasReadySummary", "HasPendingSummary", "HasFailedSummary", "ModeTitle", "CountsText" })
             Assert.Contains(member, row);
         Assert.Contains("MeetingOutcome.When", row);
         Assert.Contains("MeetingOutcome.Line", row);

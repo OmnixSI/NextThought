@@ -469,4 +469,16 @@
   <Style Selector="Button.recent.selected /template/ Border#Root">
     <Setter Property="Background" Value="{DynamicResource Sunken}" />
   </Style>
+  <!-- §6.7 E1: history rows use the Mac snappy selection and the shared focus ring. -->
+  <Style Selector="Button.recent">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.recent:focus-visible /template/ Border#Root">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ai}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
 </Styles>

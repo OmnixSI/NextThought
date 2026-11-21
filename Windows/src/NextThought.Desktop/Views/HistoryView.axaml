@@ -9,6 +9,7 @@
   <UserControl.Resources>
     <!-- HistoryView.swift SessionRow: scene dot, title, summary icon + time on the right, details caption. -->
     <DataTemplate x:Key="HistoryRowTemplate" x:DataType="local:RecentMeetingRow">
+      <StackPanel>
       <Button Classes="recent" Classes.selected="{Binding IsSelected}"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               Tag="{Binding}" Click="Row_Click" Padding="{DynamicResource D4Padding_8_6}">
@@ -65,6 +66,9 @@
           </StackPanel>
         </c:InteractiveRowBody>
       </Button>
+      <!-- §6.7 E1 SessionRow: 0.5px Ink.hairline after every row (HistoryView.sessionList). -->
+      <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="{DynamicResource D4Margin_12_0_12_0}" />
+      </StackPanel>
     </DataTemplate>
   </UserControl.Resources>
 
@@ -74,8 +78,8 @@
     <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_0_8_0}">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}">
-          <TextBlock Text="{loc:Tr 所有记录}" Classes="section" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-          <TextBlock Text="{loc:Tr 自动保存 · 不保存录音}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding HistoryScopeTitle}" Classes="section" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+          <TextBlock Text="{Binding HistoryScopeSubtitle}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="1" Classes="quiet" Content="{StaticResource IconEllipsis}"
                 FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 会议记录操作}" VerticalAlignment="Top">
@@ -101,6 +105,13 @@
         </Grid>
         <TextBlock Text="{Binding HistorySummary}" Classes="caption" FontSize="11"
                    TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{Binding HistoryContentSearchProgress}" Classes="caption" FontSize="11"
+                   Foreground="{DynamicResource Secondary}" IsVisible="{Binding IsContentSearchingHistory}" TextWrapping="Wrap" />
+        <Border Classes="card" Padding="{DynamicResource D4Padding_8}" IsVisible="{Binding HasHistoryReadIssues}"
+               >
+          <TextBlock Text="{Binding HistoryReadIssueText}" Classes="caption" FontSize="11"
+                     Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
+        </Border>
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
           <ProgressBar IsIndeterminate="True" Width="70" IsVisible="{Binding IsSearchingHistory}" />
           <TextBlock Text="{Binding HistorySearchStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
@@ -131,18 +142,44 @@
                               IsVisible="{Binding $parent[UserControl].DataContext.SelectingHistorySeries}"
                               VerticalAlignment="Center" Click="SeriesCheckBox_Click" />
                     <Button Grid.Column="1" Classes="quiet" HorizontalContentAlignment="Left"
-                            Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenSeries_Tapped"
+                            Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenHistorySeries_Tapped"
                             FontWeight="SemiBold" FontSize="12" Padding="{DynamicResource D4Padding_2}" />
-                    <TextBlock Grid.Column="2" Text="{Binding Rows.Count}" Classes="overline" FontSize="10" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="{DynamicResource D4Spacing_0}">
+                      <TextBlock Text="{Binding ModeTitle}" Classes="caption" FontSize="10"
+                                 Foreground="{DynamicResource Secondary}" HorizontalAlignment="Right" />
+                      <TextBlock Text="{Binding CountsText}" Classes="overline" FontSize="10"
+                                 Foreground="{DynamicResource Tertiary}" HorizontalAlignment="Right" />
+                    </StackPanel>
                   </Grid>
                   <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource HistoryRowTemplate}" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="{loc:Tr 没有符合条件的记录，可以清除条件后查看全部。}"
-                     Classes="caption" IsVisible="{Binding IsHistoryViewEmpty}" TextWrapping="Wrap"
-                     Margin="{DynamicResource D4Margin_4_12_0_0}" />
+          <!-- HistoryView.sessionList empty states -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding HistoryIsEmptyAndNotSearching}"
+                      Margin="{DynamicResource D4Margin_4_24_0_0}">
+            <TextBlock Text="{loc:Tr 还没有会议}" Classes="section" HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 开过的会议会保存在这里；结束时自动整理纪要。}" Classes="caption"
+                       TextWrapping="Wrap" HorizontalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding HistoryScopeHasNoSessions}"
+                      Margin="{DynamicResource D4Margin_4_24_0_0}">
+            <TextBlock Text="{loc:Tr 这个系列还没有会议}" Classes="section" HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 开始一场会议后，它会出现在这个系列里。}" Classes="caption"
+                       TextWrapping="Wrap" HorizontalAlignment="Center" />
+            <Button Classes="quiet" Content="{loc:Tr 返回所有记录}" HorizontalAlignment="Center"
+                    Command="{Binding ShowAllHistoryCommand}" FontSize="12" />
+          </StackPanel>
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding HistoryShowsNoMatch}"
+                      Margin="{DynamicResource D4Margin_4_24_0_0}">
+            <TextBlock Text="{loc:Tr 没有符合条件的记录}" Classes="section" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding HistoryNoMatchDetail}" Classes="caption" TextWrapping="Wrap"
+                       HorizontalAlignment="Center" />
+            <Button Classes="quiet" Content="{loc:Tr 清除搜索与筛选}" HorizontalAlignment="Center"
+                    Command="{Binding ClearHistoryFiltersCommand}" FontSize="12"
+                    IsVisible="{Binding HistoryHasNarrowingFilter}" />
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
     </StackPanel>
@@ -154,6 +191,13 @@
       <Border Grid.Row="0" Height="52" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5"
               Padding="{DynamicResource D4Padding_24_0}">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+          <Button Classes="quiet" Content="{loc:Tr 所有记录}" Command="{Binding ShowAllHistoryCommand}"
+                  IsVisible="{Binding IsHistoryScoped}" FontSize="12" Padding="{DynamicResource D4Padding_4_2}" />
+          <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                     Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center"
+                     IsVisible="{Binding IsHistoryScoped}" />
+          <TextBlock Text="{Binding HistoryScopeTitle}" Classes="caption" VerticalAlignment="Center"
+                     IsVisible="{Binding IsHistoryScoped}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
           <Button Classes="quiet" Content="{loc:Tr 所有记录}" Command="{Binding BackToHistoryOverviewCommand}"
                   IsVisible="{Binding HasSelectedHistory}" FontSize="12" Padding="{DynamicResource D4Padding_4_2}" />
           <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
@@ -169,7 +213,7 @@
         <Border MaxWidth="720" HorizontalAlignment="Left" ClipToBounds="True">
         <StackPanel Spacing="{DynamicResource D4Spacing_16}" Margin="{DynamicResource D4Margin_32_24_32_24}">
           <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-            <TextBlock Text="{loc:Tr 所有记录}" Classes="display" TextWrapping="Wrap" MinWidth="120" HorizontalAlignment="Left" />
+            <TextBlock Text="{Binding HistoryOverviewTitle}" Classes="display" TextWrapping="Wrap" MinWidth="120" HorizontalAlignment="Left" />
             <TextBlock Text="{Binding HistoryOverviewSubtitle}" Classes="caption" TextWrapping="Wrap" />
             <TextBlock Text="{Binding HistoryOverviewStats}" Classes="caption" FontSize="12"
                        Foreground="{DynamicResource Secondary}" FontWeight="Medium" />
@@ -262,10 +306,15 @@
                               IsVisible="{Binding $parent[UserControl].DataContext.SelectingHistorySeries}"
                               VerticalAlignment="Center" Click="SeriesCheckBox_Click" />
                     <Button Grid.Column="1" Classes="quiet" HorizontalContentAlignment="Left"
-                            Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenSeries_Tapped"
+                            Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenHistorySeries_Tapped"
                             FontSize="13" Padding="{DynamicResource D4Padding_4_0}" />
-                    <TextBlock Grid.Column="2" Text="{Binding Rows.Count}" Classes="overline" FontSize="10"
-                               VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding ModeTitle}" Classes="caption" FontSize="11"
+                                 Foreground="{DynamicResource Secondary}" />
+                      <TextBlock Text="{Binding CountsText}" Classes="overline" FontSize="10"
+                                 Foreground="{DynamicResource Tertiary}" />
+                    </StackPanel>
                     <Button Grid.Column="3" Classes="quiet" Content="{StaticResource IconEllipsis}"
                             FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 管理系列}"
                             IsVisible="{Binding CanManage}" Padding="{DynamicResource D4Padding_4}">
@@ -281,8 +330,15 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding HistoryShowsNoMatch}">
+              <TextBlock Text="{loc:Tr 没有符合条件的记录}" Classes="section" />
+              <TextBlock Text="{Binding HistoryNoMatchDetail}" Classes="caption" TextWrapping="Wrap" />
+              <Button Classes="quiet" Content="{loc:Tr 清除搜索与筛选}" HorizontalAlignment="Left"
+                      Command="{Binding ClearHistoryFiltersCommand}" FontSize="12"
+                      IsVisible="{Binding HistoryHasNarrowingFilter}" />
+            </StackPanel>
             <TextBlock Text="{loc:Tr 开过的会议会保存在这里；结束时自动整理纪要。}" Classes="caption"
-                       IsVisible="{Binding IsHistoryViewEmpty}" TextWrapping="Wrap" />
+                       IsVisible="{Binding HistoryIsEmptyAndNotSearching}" TextWrapping="Wrap" />
           </StackPanel>
         </StackPanel>
         </Border>

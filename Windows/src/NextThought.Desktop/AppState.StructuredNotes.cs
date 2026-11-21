@@ -153,6 +153,10 @@ public partial class AppState
     {
         var query = HistoryQuery.Trim();
         IEnumerable<RecentMeetingRow> rows = History;
+        // §6.7 E1: Mac historyWorkspaceFilter — a series scope narrows the list before search/filters.
+        if (HistorySeriesFilter is { Length: > 0 } seriesScope)
+            rows = rows.Where(row => string.Equals(
+                workspace.SeriesOfSession(row.Meta.Id.ToString())?.Id, seriesScope, StringComparison.OrdinalIgnoreCase));
         if (MatchesFilter(HistoryFilter, "有纪要")) rows = rows.Where(row => row.HasSummary);
         else if (MatchesFilter(HistoryFilter, "未整理")) rows = rows.Where(row => !row.HasSummary);
         var now = DateTimeOffset.Now;
@@ -190,14 +194,17 @@ public partial class AppState
                  }))
         {
             // E18: the series checkbox state survives list rebuilds.
+            var seriesRow = group.Key.Id is { } id ? workspace.Find(id) : null;
             var groupRow = new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList())
             {
-                IsSelected = group.Key.Id is { } id && SelectedHistorySeries.Contains(id)
+                IsSelected = group.Key.Id is { } selectedId && SelectedHistorySeries.Contains(selectedId),
+                ModeTitle = seriesRow is null ? "" : UiText.T(SessionModes.Parse(seriesRow.Mode).Title())
             };
             HistoryGroups.Add(groupRow);
         }
         OnPropertyChanged(nameof(HistorySummary));
         OnPropertyChanged(nameof(IsHistoryViewEmpty));
+        NotifyHistoryScopeState();
     }
 
     /// <summary>SessionMode raw value as the Mac archive writes it (LabMeeting → "labMeeting").</summary>

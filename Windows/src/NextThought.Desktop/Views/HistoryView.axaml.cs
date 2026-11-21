@@ -171,6 +171,13 @@ public partial class HistoryView : UserControl
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>§6.7 E1: a series row scopes 所有记录 to that series (HistoryView.showFolder).</summary>
+    private void OpenHistorySeries_Tapped(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { Tag: string seriesId } || StateOf(sender) is not { } state) return;
+        state.OpenHistorySeriesCommand.Execute(seriesId);
+    }
+
     private async void OpenSeries_Tapped(object? sender, RoutedEventArgs e)
     {
         try

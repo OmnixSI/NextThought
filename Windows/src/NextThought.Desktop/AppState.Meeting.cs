@@ -28,6 +28,10 @@ public partial class AppState
     [ObservableProperty] private string historySearchStatus = "";
     [ObservableProperty] private int historyHitIndex = -1;
     [ObservableProperty] private bool selectingHistorySeries;
+    // §6.7 E1: HistoryView's content-search progress and unreadable-section counter.
+    [ObservableProperty] private int historyChecked;
+    [ObservableProperty] private int historyTotal;
+    [ObservableProperty] private int historyUnreadable;
 
     public ObservableCollection<HistoryHitRow> HistoryHits { get; } = [];
     public HashSet<string> SelectedHistorySeries { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -77,9 +81,19 @@ public partial class AppState
         {
             await Dispatcher.UIThread.InvokeAsync(() => HistorySearching = true);
             await Task.Delay(350, ct);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                HistoryTotal = History.Count;
+                HistoryChecked = 0;
+                HistoryUnreadable = 0;
+            });
             var results = await Task.Run(() => Sessions.SearchContentHits(query, 200, ct), ct);
             if (generation != historySearchGeneration) return;
-            await Dispatcher.UIThread.InvokeAsync(() => ApplyHistorySearchResults(results));
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ApplyHistorySearchResults(results);
+                HistoryChecked = History.Count;
+            });
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
