@@ -1,13 +1,16 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using NextThought.Core;
 
 namespace NextThought.Desktop.Views;
 
 /// <summary>
-/// E19: the export sheet (port of SessionExportUI.swift's SessionExportSheet). Three selectors —
-/// 格式 / 转写 / 语言 — drive one projection; the preview shows the same text the file gets.
+/// E21 / §6.7: the export sheet (port of SessionExportUI.swift SessionExportSheet). Three pickers —
+/// 格式 / 转写 / 语言 — drive one projection; the preview shows the same text the file gets; damaged
+/// archives pause the export; the export button is the default action.
 /// </summary>
 public partial class SessionExportSheet : Window
 {
@@ -27,6 +30,7 @@ public partial class SessionExportSheet : Window
     {
         InitializeComponent();
         Opened += (_, _) => Load();
+        AddHandler(KeyDownEvent, OnKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
     private void Load()
@@ -68,24 +72,34 @@ public partial class SessionExportSheet : Window
         HintText.Text = SessionExportContent.UsesPageLayout(format)
             ? UiText.T("页面预览与导出使用同一版校正、译文和纪要内容。")
             : UiText.T("预览使用同一版转写投影；字幕时间来自语句起止时间，缺少结束时间时会标明估算。");
-        var (estimated, stale) = state.SessionExportSubtitleWarnings(SelectedVariant, SelectedLanguage);
-        var warnings = new List<string>();
-        if (!SessionExportContent.UsesPageLayout(format))
-        {
-            if (estimated > 0) warnings.Add(UiText.Format("%lld 段结束时间为估算值", estimated));
-            if (stale > 0) warnings.Add(UiText.Format("%lld 条译文可能已过期", stale));
-        }
+
+        // A damaged archive pauses the export with the Mac caution block.
         var readIssue = state.SessionExportReadIssue;
-        if (readIssue.Length > 0) warnings.Insert(0, readIssue);
-        WarningText.Text = string.Join("  ·  ", warnings);
-        WarningText.IsVisible = warnings.Count > 0;
+        ReadIssuePanel.IsVisible = readIssue.Length > 0;
+        ReadIssueText.Text = readIssue;
+        ExportButton.IsEnabled = readIssue.Length == 0 && text.Length > 0;
+
+        // Derived notes stale / no source revision: the Windows archive does not track the derived
+        // content status yet, so the Mac notice is kept hidden (see compare.md §6.7 E21).
+        StaleNotice.IsVisible = false;
+
+        // Subtitle formats only: estimated endings and possibly stale translations.
+        var (estimated, stale) = state.SessionExportSubtitleWarnings(SelectedVariant, SelectedLanguage);
+        var subtitleFormat = !SessionExportContent.UsesPageLayout(format);
+        EstimatedWarning.IsVisible = subtitleFormat && estimated > 0;
+        if (estimated > 0) EstimatedText.Text = UiText.Format("%lld 段结束时间为估算值", estimated);
+        StaleTranslationWarning.IsVisible = subtitleFormat && stale > 0;
+        if (stale > 0) StaleTranslationText.Text = UiText.Format("%lld 条译文可能已过期", stale);
+        SubtitleWarnings.IsVisible = EstimatedWarning.IsVisible || StaleTranslationWarning.IsVisible;
+
+        StatusText.Text = state.SessionExportStatusText;
     }
 
     private async void Export_Click(object? sender, RoutedEventArgs e)
     {
         try
         {
-            if (state is null) return;
+            if (state is null || !ExportButton.IsEnabled) return;
             var format = SelectedFormat;
             var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
             if (storage is null) return;
@@ -98,9 +112,27 @@ public partial class SessionExportSheet : Window
             });
             if (file?.TryGetLocalPath() is not { } path) return;
             await state.SaveSessionExportAsync(format, SelectedVariant, SelectedLanguage, path);
+            StatusText.Text = state.SessionExportStatusText;
         }
         catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>Mac: the export button has the default action shortcut (⏎).</summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Return) || !ExportButton.IsEnabled) return;
+        e.Handled = true;
+        Export_Click(ExportButton, new RoutedEventArgs());
+    }
+
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
+
+    /// <summary>E21 evidence hook: selects a format/variant/language and refreshes the preview.</summary>
+    public void SelectForCheck(int formatIndex, int variantIndex = 0, int languageIndex = 0)
+    {
+        FormatBox.SelectedIndex = formatIndex;
+        VariantBox.SelectedIndex = variantIndex;
+        LanguageBox.SelectedIndex = languageIndex;
+        UpdatePreview();
+    }
 }
