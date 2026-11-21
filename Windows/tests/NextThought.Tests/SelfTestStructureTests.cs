@@ -1286,12 +1286,14 @@ public sealed class SelfTestStructureTests
 
 
     [Fact]
-    public void CueIslandHasFiveStateEvidenceHook()
+    public void CueIslandHasSixStateEvidenceHook()
     {
-        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "CueIslandWindow.axaml.cs"));
+        // §6.6: the six Mac presentations plus the collapse/open/script states are scripted in the
+        // self-test partial, and the screenshot batch captures every one of them.
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "CueIslandWindowStates.cs"));
         Assert.Contains("ApplyStateForCheck", code);
-        Assert.Contains("\"collapsed\"", code);
-        Assert.Contains("\"launcher\"", code);
+        foreach (var state in new[] { "\"cue\"", "\"hearing\"", "\"deck\"", "\"launcher\"", "\"pinned\"", "\"autoend\"", "\"compact\"", "\"open\"", "\"slide\"" })
+            Assert.Contains(state, code);
         var runner = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "SelfTest", "RunScreenshotsAsync.cs"));
         Assert.Contains("island-\" + islandState", runner);
     }

@@ -14,17 +14,61 @@
        along the lower edge and a soft shadow under it. The window never takes focus and clicks
        pass through it unless the pointer is over one of the controls. -->
 
+  <Window.Resources>
+    <Thickness x:Key="IslandMargin_20_0_20_22">20,0,20,22</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_14_14_24_24">14,14,24,24</CornerRadius>
+    <Thickness x:Key="IslandMargin_14_0">14,0</Thickness>
+    <x:Double x:Key="IslandSpacing_7">7</x:Double>
+    <CornerRadius x:Key="IslandCornerRadius_4">4</CornerRadius>
+    <x:Double x:Key="IslandSpacing_6">6</x:Double>
+    <x:Double x:Key="IslandSpacing_5">5</x:Double>
+    <x:Double x:Key="IslandSpacing_8">8</x:Double>
+    <Thickness x:Key="IslandMargin_18_2_18_12">18,2,18,12</Thickness>
+    <x:Double x:Key="IslandSpacing_2">2</x:Double>
+    <Thickness x:Key="IslandMargin_20_4_20_16">20,4,20,16</Thickness>
+    <Thickness x:Key="IslandMargin_6_0_0_0">6,0,0,0</Thickness>
+    <Thickness x:Key="IslandMargin_0_0_0_12">0,0,0,12</Thickness>
+    <Thickness x:Key="IslandMargin_0_6_0_0">0,6,0,0</Thickness>
+    <Thickness x:Key="IslandMargin_0_0_0_8">0,0,0,8</Thickness>
+    <Thickness x:Key="IslandMargin_0_0_0_10">0,0,0,10</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_8">8</CornerRadius>
+    <Thickness x:Key="IslandPadding_5_1">5,1</Thickness>
+    <Thickness x:Key="IslandMargin_6_0">6,0</Thickness>
+    <x:Double x:Key="IslandSpacing_4">4</x:Double>
+    <Thickness x:Key="IslandMargin_0_2_0_0">0,2,0,0</Thickness>
+    <Thickness x:Key="IslandMargin_18_6_18_14">18,6,18,14</Thickness>
+    <x:Double x:Key="IslandSpacing_12">12</x:Double>
+    <CornerRadius x:Key="IslandCornerRadius_9">9</CornerRadius>
+    <Thickness x:Key="IslandPadding_7_2">7,2</Thickness>
+    <Thickness x:Key="IslandMargin_8_0_0_0">8,0,0,0</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_3">3</CornerRadius>
+    <Thickness x:Key="IslandMargin_0_2_8_0">0,2,8,0</Thickness>
+    <x:Double x:Key="IslandSpacing_3">3</x:Double>
+    <Thickness x:Key="IslandMargin_0_0_6_0">0,0,6,0</Thickness>
+    <Thickness x:Key="IslandMargin_0_0_6_6">0,0,6,6</Thickness>
+    <x:Double x:Key="IslandSpacing_10">10</x:Double>
+    <Thickness x:Key="IslandMargin_20_10_20_16">20,10,20,16</Thickness>
+    <Thickness x:Key="IslandMargin_2_0">2,0</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_14">14</CornerRadius>
+    <Thickness x:Key="IslandPadding_11_0">11,0</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_13">13</CornerRadius>
+    <Thickness x:Key="IslandPadding_8_0">8,0</Thickness>
+    <Thickness x:Key="IslandPadding_10_0">10,0</Thickness>
+    <CornerRadius x:Key="IslandCornerRadius_6">6</CornerRadius>
+    <Thickness x:Key="IslandPadding_0">0</Thickness>
+  </Window.Resources>
+
   <Window.Styles>
     <!-- IslandAction: the deck's pills (CueIsland.swift IslandAction). -->
     <Style Selector="Button.islandAction">
       <Setter Property="Background" Value="#1AFFFFFF" />
       <Setter Property="Foreground" Value="#D9FFFFFF" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="{StaticResource IslandCornerRadius_14}" />
       <Setter Property="Height" Value="28" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Padding" Value="11,0" />
+      <Setter Property="Padding" Value="{StaticResource IslandPadding_11_0}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -54,11 +98,11 @@
       <Setter Property="Background" Value="#12FFFFFF" />
       <Setter Property="Foreground" Value="#B8FFFFFF" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="CornerRadius" Value="{StaticResource IslandCornerRadius_13}" />
       <Setter Property="Height" Value="26" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="Padding" Value="{StaticResource IslandPadding_8_0}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -75,11 +119,11 @@
       <Setter Property="Background" Value="#1AFFFFFF" />
       <Setter Property="Foreground" Value="#D9FFFFFF" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="{StaticResource IslandCornerRadius_14}" />
       <Setter Property="Height" Value="28" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="Padding" Value="{StaticResource IslandPadding_10_0}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -93,12 +137,12 @@
       <Setter Property="Background" Value="#1AFFFFFF" />
       <Setter Property="Foreground" Value="#CCFFFFFF" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="{StaticResource IslandCornerRadius_6}" />
       <Setter Property="Width" Value="22" />
       <Setter Property="Height" Value="20" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Padding" Value="0" />
+      <Setter Property="Padding" Value="{StaticResource IslandPadding_0}" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -149,9 +193,9 @@
 
     <!-- The window is wider than the island by ShadowPadding on each side: the soft shadow needs room. -->
     <Grid x:Name="Stage" HorizontalAlignment="Center" VerticalAlignment="Top"
-          Margin="20,0,20,22">
+          Margin="{StaticResource IslandMargin_20_0_20_22}">
       <!-- The soft drop shadow under the island (radius 18, y 10, ~18% black). -->
-      <Border x:Name="ShadowLayer" Background="#FF000000" CornerRadius="14,14,24,24"
+      <Border x:Name="ShadowLayer" Background="#FF000000" CornerRadius="{StaticResource IslandCornerRadius_14_14_24_24}"
               BoxShadow="0 10 18 0 #2E000000" IsVisible="{Binding ShowIsland}" />
       <island:IslandFrame x:Name="Frame"
                           Flare="{Binding Flare}" CornerRadiusValue="{Binding CornerRadiusValue}"
@@ -161,19 +205,19 @@
           <!-- Row level with the notch: the meeting's pulse on the left, the clock or the coach on
                the right. A click on the bar keeps the deck open (CueIslandView.bar). -->
           <Grid x:Name="BarRow" Grid.Row="0" Height="{Binding BarHeight}" ColumnDefinitions="Auto,*,Auto"
-                Margin="14,0" Background="Transparent" PointerPressed="Bar_PointerPressed">
-            <StackPanel x:Name="PulseCluster" Grid.Column="0" Orientation="Horizontal" Spacing="7"
+                Margin="{StaticResource IslandMargin_14_0}" Background="Transparent" PointerPressed="Bar_PointerPressed">
+            <StackPanel x:Name="PulseCluster" Grid.Column="0" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_7}"
                         VerticalAlignment="Center" IsVisible="{Binding ShowPulse}">
-              <Border x:Name="StatusDot" Width="7" Height="7" CornerRadius="4"
+              <Border x:Name="StatusDot" Width="7" Height="7" CornerRadius="{StaticResource IslandCornerRadius_4}"
                       Background="{Binding StatusDotBrush}" VerticalAlignment="Center" />
               <island:IslandVoiceWave x:Name="SoundWave" Width="25" Height="13"
                                       Tint="{Binding WaveTint}" Active="{Binding WaveActive}" Level="{Binding WaveLevel}" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_6}" VerticalAlignment="Center">
               <TextBlock x:Name="SlidePageText" Text="{Binding SlidePageLabel}" IsVisible="{Binding ShowSlidePage}"
                          Foreground="{Binding TintBrush}" FontSize="11" FontWeight="SemiBold"
                          VerticalAlignment="Center" />
-              <StackPanel x:Name="CoachEar" Orientation="Horizontal" Spacing="5" IsVisible="{Binding ShowCoach}"
+              <StackPanel x:Name="CoachEar" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}" IsVisible="{Binding ShowCoach}"
                           VerticalAlignment="Center">
                 <TextBlock Text="{StaticResource IconIslandMoon}" FontFamily="{StaticResource IconFont}" FontSize="10"
                            Foreground="{Binding CoachBrush}" VerticalAlignment="Center"
@@ -200,11 +244,11 @@
           <StackPanel x:Name="PhaseHost" Grid.Row="1">
             <!-- 对方在说 as a live activity: the candidate question they are asking, with the
                  interpretation underneath when live translation is on. -->
-            <StackPanel x:Name="HearingPanel" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowHearing}"
-                        Margin="18,2,18,12">
+            <StackPanel x:Name="HearingPanel" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_8}" IsVisible="{Binding ShowHearing}"
+                        Margin="{StaticResource IslandMargin_18_2_18_12}">
               <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                          Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
-              <StackPanel Spacing="2" VerticalAlignment="Center">
+              <StackPanel Spacing="{StaticResource IslandSpacing_2}" VerticalAlignment="Center">
                 <TextBlock x:Name="HearingText" Text="{Binding HearingText}" FontSize="13" FontWeight="Medium"
                            Foreground="#D1FFFFFF" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                 <TextBlock x:Name="HearingTranslationText" Text="{Binding HearingTranslation}"
@@ -214,12 +258,12 @@
             </StackPanel>
 
             <!-- 对方在说 as their turn: their sentences plus what they mean. -->
-            <StackPanel x:Name="ListeningPanel" IsVisible="{Binding ShowListening}" Margin="20,4,20,16" Spacing="8">
+            <StackPanel x:Name="ListeningPanel" IsVisible="{Binding ShowListening}" Margin="{StaticResource IslandMargin_20_4_20_16}" Spacing="{StaticResource IslandSpacing_8}">
               <Grid ColumnDefinitions="Auto,Auto,*,Auto">
                 <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                            Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{loc:Tr 对方在说}" FontSize="12" FontWeight="Medium"
-                           Foreground="#80FFFFFF" Margin="6,0,0,0" VerticalAlignment="Center" />
+                           Foreground="#80FFFFFF" Margin="{StaticResource IslandMargin_6_0_0_0}" VerticalAlignment="Center" />
                 <Button x:Name="EnableTranslationButton" Grid.Column="3" Classes="islandButton"
                         Command="{Binding EnableTranslationCommand}" IsVisible="{Binding ShowEnableTranslation}"
                         Content="{loc:Tr 开启同声传译}" FontSize="11" />
@@ -233,9 +277,9 @@
             </StackPanel>
 
             <!-- The answer: the question being answered and the lines to read. -->
-            <StackPanel x:Name="CuePanel" IsVisible="{Binding ShowCue}" Margin="20,4,20,16">
-              <StackPanel IsVisible="{Binding ShowHeardStrip}" Spacing="5" Margin="0,0,0,12">
-                <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel x:Name="CuePanel" IsVisible="{Binding ShowCue}" Margin="{StaticResource IslandMargin_20_4_20_16}">
+              <StackPanel IsVisible="{Binding ShowHeardStrip}" Spacing="{StaticResource IslandSpacing_5}" Margin="{StaticResource IslandMargin_0_0_0_12}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_6}">
                   <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                              Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
                   <TextBlock Text="{loc:Tr 对方在说}" FontSize="12" FontWeight="Medium" Foreground="#80FFFFFF"
@@ -246,21 +290,21 @@
                 <TextBlock Text="{Binding HeardStripTranslation}" IsVisible="{Binding ShowHeardStripTranslation}"
                            FontSize="{Binding HeardStripTranslationSize}" FontWeight="Medium" Foreground="#FFFFFFFF"
                            TextWrapping="Wrap" MaxLines="3" />
-                <Rectangle Height="1" Fill="#1FFFFFFF" Margin="0,6,0,0" />
+                <Rectangle Height="1" Fill="#1FFFFFFF" Margin="{StaticResource IslandMargin_0_6_0_0}" />
               </StackPanel>
-              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCueQuestion}" Margin="0,0,0,8">
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCueQuestion}" Margin="{StaticResource IslandMargin_0_0_0_8}">
                 <!-- English questions are longer than Chinese ones: two lines, still trimmed at the end
                      (Mac lineLimit(asked == nil ? 1 : 2), truncationMode(.head)). -->
                 <TextBlock x:Name="CueQuestionText" Text="{Binding CueQuestion}" FontSize="12" FontWeight="Medium"
                            Foreground="#80FFFFFF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
                            MaxLines="2" />
                 <island:ThinkingDots x:Name="CueThinking" Grid.Column="1" IsVisible="{Binding ShowThinking}"
-                                     Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                     Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="{StaticResource IslandMargin_6_0_0_0}" />
               </Grid>
               <!-- What was asked, in my own language (Mac CueIslandView.asked). -->
               <TextBlock x:Name="CueAskedText" Text="{Binding CueAsked}" IsVisible="{Binding ShowCueAsked}"
                          FontSize="{Binding AskedTextSize}" FontWeight="Medium" Foreground="{Binding TintBrush}"
-                         TextWrapping="Wrap" MaxLines="3" Margin="0,0,0,10" />
+                         TextWrapping="Wrap" MaxLines="3" Margin="{StaticResource IslandMargin_0_0_0_10}" />
               <TextBlock x:Name="CueEmptyHint" Text="{Binding CueEmptyText}" IsVisible="{Binding ShowCueEmpty}"
                          FontSize="{Binding EmptyTextSize}" FontWeight="Medium" Foreground="#8CFFFFFF"
                          TextWrapping="Wrap" />
@@ -274,17 +318,17 @@
             </StackPanel>
 
             <!-- 讲稿: the talking points of the slide on the shared display. -->
-            <StackPanel x:Name="SlidePanel" IsVisible="{Binding ShowSlide}" Margin="20,4,20,16">
-              <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,0,0,8">
+            <StackPanel x:Name="SlidePanel" IsVisible="{Binding ShowSlide}" Margin="{StaticResource IslandMargin_20_4_20_16}">
+              <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="{StaticResource IslandMargin_0_0_0_8}">
                 <TextBlock x:Name="SlideHeaderText" Text="{Binding SlideHeader}" FontSize="12" FontWeight="Medium"
                            Foreground="#80FFFFFF" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                 <Border x:Name="SlideManualTag" Grid.Column="1" IsVisible="False" Background="{Binding TintSoftBrush}"
-                        CornerRadius="8" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                        CornerRadius="{StaticResource IslandCornerRadius_8}" Padding="{StaticResource IslandPadding_5_1}" Margin="{StaticResource IslandMargin_6_0_0_0}" VerticalAlignment="Center">
                   <TextBlock Text="{loc:Tr 手动}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding TintBrush}" />
                 </Border>
                 <island:ThinkingDots Grid.Column="3" IsVisible="{Binding ShowSlideEmpty}"
-                                     Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="6,0" />
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowSlideSteps}"
+                                     Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="{StaticResource IslandMargin_6_0}" />
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_4}" IsVisible="{Binding ShowSlideSteps}"
                             VerticalAlignment="Center">
                   <Button x:Name="SlidePrevButton" Classes="islandStep" Command="{Binding StepSlideCommand}"
                           CommandParameter="-1" IsEnabled="{Binding SlidePrevEnabled}">
@@ -311,22 +355,22 @@
               <TextBlock x:Name="SlideTransitionText" Text="{Binding SlideTransition}"
                          IsVisible="{Binding ShowSlideTransition}" FontSize="{Binding SlideTransitionSize}"
                          FontWeight="Medium" Foreground="{Binding TintBrush}" TextWrapping="Wrap" MaxLines="2"
-                         Margin="0,2,0,0" />
+                         Margin="{StaticResource IslandMargin_0_2_0_0}" />
             </StackPanel>
 
             <!-- 会中面板: the meeting under the pointer, and the four actions worth doing without
                  leaving the meeting window. -->
-            <StackPanel x:Name="DeckPanel" IsVisible="{Binding ShowDeck}" Margin="18,6,18,14" Spacing="12">
+            <StackPanel x:Name="DeckPanel" IsVisible="{Binding ShowDeck}" Margin="{StaticResource IslandMargin_18_6_18_14}" Spacing="{StaticResource IslandSpacing_12}">
               <Grid ColumnDefinitions="Auto,Auto,*,Auto">
                 <TextBlock x:Name="DeckTitleText" Text="{Binding DeckTitle}" FontSize="14" FontWeight="SemiBold"
                            Foreground="#FFFFFFFF" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                <Border x:Name="DeckSceneTag" Grid.Column="1" Background="{Binding TintSoftBrush}" CornerRadius="9"
-                        Padding="7,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                <Border x:Name="DeckSceneTag" Grid.Column="1" Background="{Binding TintSoftBrush}" CornerRadius="{StaticResource IslandCornerRadius_9}"
+                        Padding="{StaticResource IslandPadding_7_2}" Margin="{StaticResource IslandMargin_8_0_0_0}" VerticalAlignment="Center">
                   <TextBlock x:Name="DeckSceneTagText" Text="{Binding DeckSceneTag}" FontSize="11"
                              FontWeight="Medium" Foreground="{Binding TintBrush}" />
                 </Border>
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                  <Border x:Name="DeckWarningDot" Width="5" Height="5" CornerRadius="3" Background="#F0B24A"
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}" VerticalAlignment="Center">
+                  <Border x:Name="DeckWarningDot" Width="5" Height="5" CornerRadius="{StaticResource IslandCornerRadius_3}" Background="#F0B24A"
                           IsVisible="{Binding ShowDeckWarning}" VerticalAlignment="Center" />
                   <TextBlock x:Name="DeckModeText" Text="{Binding DeckModeText}" FontSize="11" FontWeight="Medium"
                              Foreground="#80FFFFFF" />
@@ -334,9 +378,9 @@
               </Grid>
               <Grid x:Name="DeckHeardRow" ColumnDefinitions="Auto,*" IsVisible="{Binding ShowDeckHeard}">
                 <TextBlock x:Name="DeckHeardSpeaker" Text="{Binding DeckHeardSpeaker}" FontSize="11"
-                           FontWeight="SemiBold" Foreground="#73FFFFFF" Margin="0,2,8,0"
+                           FontWeight="SemiBold" Foreground="#73FFFFFF" Margin="{StaticResource IslandMargin_0_2_8_0}"
                            VerticalAlignment="Top" />
-                <StackPanel Grid.Column="1" Spacing="3">
+                <StackPanel Grid.Column="1" Spacing="{StaticResource IslandSpacing_3}">
                   <TextBlock x:Name="DeckHeardText" Text="{Binding DeckHeardText}" FontSize="13"
                              Foreground="#D1FFFFFF" TextWrapping="Wrap" MaxLines="2"
                              TextTrimming="CharacterEllipsis" />
@@ -349,7 +393,7 @@
                 <Button x:Name="DeckForceAnswerButton" Classes="islandAction prominent"
                         Command="{Binding ForceAnswerCommand}"
                         ToolTip.Tip="{loc:Tr 立即回答}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandBolt}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 立即回答}" FontSize="12" FontWeight="Medium" />
@@ -357,21 +401,21 @@
                 </Button>
                 <Button x:Name="DeckPreviousAnswerButton" Grid.Column="1" Classes="islandAction"
                         Command="{Binding ShowPreviousCueCommand}" IsVisible="{Binding ShowDeckPrevious}"
-                        Margin="6,0,0,0" ToolTip.Tip="{loc:Tr 再看一眼上一条回答}">
+                        Margin="{StaticResource IslandMargin_6_0_0_0}" ToolTip.Tip="{loc:Tr 再看一眼上一条回答}">
                   <TextBlock Text="{loc:Tr 上一条}" FontSize="12" FontWeight="Medium" />
                 </Button>
                 <Button x:Name="DeckRecordOnlyButton" Grid.Column="2" Classes="islandAction"
-                        Command="{Binding ToggleRecordOnlyCommand}" Margin="6,0,0,0">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                        Command="{Binding ToggleRecordOnlyCommand}" Margin="{StaticResource IslandMargin_6_0_0_0}">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandEdit}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding DeckModeActionLabel}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
                 </Button>
                 <Button x:Name="DeckPauseButton" Grid.Column="4" Classes="islandAction"
-                        Command="{Binding TogglePauseCommand}" Margin="0,0,6,0"
+                        Command="{Binding TogglePauseCommand}" Margin="{StaticResource IslandMargin_0_0_6_0}"
                         ToolTip.Tip="{loc:Tr 暂停或继续聆听}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandPause}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" IsVisible="{Binding !IsPaused}" />
                     <TextBlock Text="{StaticResource IconIslandPlay}" FontFamily="{StaticResource IconFont}"
@@ -381,7 +425,7 @@
                 </Button>
                 <Button x:Name="DeckEndButton" Grid.Column="5" Classes="islandAction destructive"
                         Command="{Binding EndMeetingCommand}" ToolTip.Tip="{loc:Tr 现在结束并整理纪要}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandStop}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 结束}" FontSize="12" FontWeight="Medium" />
@@ -393,7 +437,7 @@
             </StackPanel>
 
             <!-- 启动器: no meeting yet, the notch offers to start one in any scene. -->
-            <StackPanel x:Name="LauncherPanel" IsVisible="{Binding ShowLauncher}" Margin="18,6,18,14" Spacing="12">
+            <StackPanel x:Name="LauncherPanel" IsVisible="{Binding ShowLauncher}" Margin="{StaticResource IslandMargin_18_6_18_14}" Spacing="{StaticResource IslandSpacing_12}">
               <TextBlock Text="{loc:Tr 开始一场}" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.6"
                          Foreground="#73FFFFFF" />
               <ItemsControl x:Name="LauncherScenesHost" ItemsSource="{Binding LauncherScenes}">
@@ -405,9 +449,9 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="island:LauncherSceneItem">
                     <Button Classes="islandChip" Tag="{Binding ModeKey}" Click="LauncherScene_Click"
-                            Margin="0,0,6,6">
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Border Width="6" Height="6" CornerRadius="3" Background="{Binding Tint}"
+                            Margin="{StaticResource IslandMargin_0_0_6_6}">
+                      <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_6}">
+                        <Border Width="6" Height="6" CornerRadius="{StaticResource IslandCornerRadius_3}" Background="{Binding Tint}"
                                 VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Medium" />
                       </StackPanel>
@@ -420,7 +464,7 @@
                            VerticalAlignment="Center" />
                 <Button x:Name="LauncherOpenWindowButton" Grid.Column="1" Classes="islandAction"
                         Command="{Binding OpenMainWindowCommand}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandWindow}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 打开主窗口}" FontSize="12" FontWeight="Medium" />
@@ -430,8 +474,8 @@
             </StackPanel>
 
             <!-- 自动结束提醒: nobody is talking, the meeting ends by itself soon. -->
-            <StackPanel x:Name="AutoEndPanel" IsVisible="{Binding ShowAutoEnd}" Margin="18,6,18,14" Spacing="10">
-              <StackPanel Orientation="Horizontal" Spacing="7">
+            <StackPanel x:Name="AutoEndPanel" IsVisible="{Binding ShowAutoEnd}" Margin="{StaticResource IslandMargin_18_6_18_14}" Spacing="{StaticResource IslandSpacing_10}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_7}">
                 <TextBlock x:Name="AutoEndIcon" Text="{StaticResource IconIslandMoon}"
                            FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="{Binding CautionBrush}"
                            VerticalAlignment="Center" />
@@ -439,11 +483,11 @@
                            Foreground="{Binding CautionBrush}" TextTrimming="CharacterEllipsis"
                            TextWrapping="NoWrap" />
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowAutoEndActions}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_6}" IsVisible="{Binding ShowAutoEndActions}">
                 <Button x:Name="KeepRecordingButton" Classes="islandAction prominent"
                         Command="{Binding KeepRecordingCommand}"
                         ToolTip.Tip="{loc:Tr 取消倒计时，继续记录这场会议}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandMic}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 继续记录}" FontSize="12" FontWeight="Medium" />
@@ -451,7 +495,7 @@
                 </Button>
                 <Button x:Name="EndNowButton" Classes="islandAction destructive"
                         Command="{Binding EndMeetingCommand}" ToolTip.Tip="{loc:Tr 现在结束并整理纪要}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_5}">
                     <TextBlock Text="{StaticResource IconIslandStop}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 现在结束}" FontSize="12" FontWeight="Medium" />
@@ -463,8 +507,8 @@
             <!-- The controls that appear while the pointer rests on the island; everything here
                  also has a shortcut (CueIslandView.controls). -->
             <Grid x:Name="ControlsRow" ColumnDefinitions="*,Auto" IsVisible="{Binding ShowControls}"
-                  Margin="20,10,20,16">
-              <StackPanel Orientation="Horizontal" Spacing="2">
+                  Margin="{StaticResource IslandMargin_20_10_20_16}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_2}">
               <Button x:Name="HistoryPrevButton" Classes="islandButton" IsVisible="{Binding ShowHistoryControls}"
                       Command="{Binding PreviousAnswerCommand}" ToolTip.Tip="{loc:Tr 上一条回答}">
                 <TextBlock Text="{StaticResource IconIslandChevronLeft}" FontFamily="{StaticResource IconFont}"
@@ -472,7 +516,7 @@
               </Button>
               <TextBlock Text="{Binding HistoryPosition}" IsVisible="{Binding ShowHistoryControls}" FontSize="11"
                          FontWeight="Medium" Foreground="#8CFFFFFF" VerticalAlignment="Center"
-                         Margin="2,0" />
+                         Margin="{StaticResource IslandMargin_2_0}" />
               <Button x:Name="HistoryNextButton" Classes="islandButton" IsVisible="{Binding ShowHistoryControls}"
                       Command="{Binding NextAnswerCommand}" ToolTip.Tip="{loc:Tr 下一条回答}">
                 <TextBlock Text="{StaticResource IconIslandChevronRight}" FontFamily="{StaticResource IconFont}"
@@ -483,7 +527,7 @@
               <Button x:Name="ExampleButton" Classes="islandButton" Command="{Binding ExampleCommand}"
                       Content="{loc:Tr 举例}" ToolTip.Tip="{loc:Tr 加一个例子}" />
               </StackPanel>
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{StaticResource IslandSpacing_2}">
               <Button x:Name="FontSmallerButton" Classes="islandButton" Command="{Binding SmallerFontCommand}"
                       ToolTip.Tip="{loc:Tr 缩小文字}">
                 <TextBlock Text="{StaticResource IconIslandFont}" FontFamily="{StaticResource IconFont}"
