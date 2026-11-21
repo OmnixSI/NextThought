@@ -35,3 +35,5 @@
   SendInput / 键盘 PageDown，跟页断言用 `SlideFollow` 的当前页与讲稿要点变化）。
 - 证据：`report.json`、`slide-follow.png`（自检截到的那一帧）、`runner.out.txt`。
 - 未 push；该问题建议开给会中页/文档 owner 修，修好后本项重跑一次即可出通过证据。
+
+> 注：本目录证据与 K10 一起落在提交 `bca906b3`（当时共享树 HEAD 已被他人推进，未重写历史）；本提交只补这一行说明。
