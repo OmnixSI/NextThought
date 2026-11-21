@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
         x:Class="NextThought.Desktop.Views.TypographySampleWindow"
         Width="900" Height="1020"
         Background="{DynamicResource Paper}"
