@@ -104,4 +104,16 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding KeepMyNotesRevisionCommand}", view);
         Assert.Contains("AI 整理出了新版本。现在显示的仍是你改过的版本。", view);
     }
+
+    [Fact]
+    public void TheStaleSourceHintUsesTheMacSentence()
+    {
+        var state = Read("AppState.NotesStatus.cs");
+        Assert.Contains("RefreshNotesStatus", state);
+        Assert.Contains("transcriptSourceRevision", state);
+        Assert.Contains("部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。", state);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasNotesStaleHint}", view);
+        Assert.Contains("{Binding NotesStaleHintText}", view);
+    }
 }

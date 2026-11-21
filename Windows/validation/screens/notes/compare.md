@@ -83,7 +83,7 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 ## 9. 未解决 / 待补
 
 1. 结构化纪要条目级编辑 sheet（NotesItemEditSheet）与 ConfirmBadge/VerdictBadge 未做：Windows 仍用 Markdown 渲染结构化纪要，证据行可编辑但无条目级编辑/确认/评价徽标。
-2. Mac 的来源过期提示（stale/unknown）、读取问题条（readIssues+详情）、归档状态条（saving/blocked/unacked 确认）未在会议页显示。
+2. 来源过期提示：**已完成**——`RefreshNotesStatus` 检查 summary.json 的 `transcriptSourceRevision`，缺失时显示 Mac 原句「部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。」；读取问题条（readIssues+详情）与归档状态条（saving/blocked/unacked）**仍待做**。
 3. 「AI 新版本」行：**已完成**——会议页标题区 `HasAiNewVersion` 条（Mac 原句「AI 整理出了新版本。现在显示的仍是你改过的版本。」）+「查看新版」（打开编辑器并切 AI 原稿）与「保留我的修订」（`basedOnGeneratedAt` 记到新 AI 时间后关闭提示）；数据比较用 summary.json generatedAt vs basedOnGeneratedAt。
 4. 会议页回答列表缺时间/首 token/未完成/分答截图/评价徽标（这些在历史页归档概览有）。
 5. 转写 tab 内嵌版本切换/查找/逐行撤销未做（E17 的 CorrectedTranscriptView 窗口已实现，可从按钮进入）；跳转滚动为近似最近行。
