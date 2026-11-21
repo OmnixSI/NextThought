@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1279;
+    public const int Count = 1273;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -209,7 +209,6 @@ internal static class UiTextWindowsEnglish
         ["全部会议"] = "All meetings",
         ["全部文件"] = "All files",
         ["全部术语"] = "All terms",
-        ["全部设置"] = "All settings",
         ["共 %lld 份资料，均在本机解析，不上传。"] = "%lld materials, all parsed on this device, never uploaded.",
         ["共用文档组件"] = "Shared document components",
         ["关于"] = "About",
@@ -378,7 +377,6 @@ internal static class UiTextWindowsEnglish
         ["导入纪要模板"] = "Import note template",
         ["导入资料"] = "Import materials",
         ["导出"] = "Export",
-        ["导出 Markdown"] = "Export Markdown",
         ["导出 PDF"] = "Export PDF",
         ["导出 SRT"] = "Export SRT",
         ["导出 VTT"] = "Export VTT",
@@ -472,7 +470,6 @@ internal static class UiTextWindowsEnglish
         ["已有纪要"] = "Notes exist",
         ["已框选读屏区域：%lld×%lld。"] = "Screen-read area selected: %lld×%lld.",
         ["已清除说话人 %lld 的名字。"] = "Cleared the name of speaker %lld.",
-        ["已确认经验"] = "Confirmed lessons",
         ["已经有同名的系列了。"] = "A series with that name already exists.",
         ["已结束 · 会议已归档"] = "Ended · meeting archived",
         ["已读取归档；%lld 项待写入"] = "Archive read; %lld items pending write",
@@ -762,7 +759,6 @@ internal static class UiTextWindowsEnglish
         ["正在按《%@》合并分段结果…"] = "Merging parts for “%@”…",
         ["正在按《%@》整理…（第 %lld/%lld 段）"] = "Organizing with “%@”… (part %lld of %lld)",
         ["正在整理成%@…"] = "Organizing into %@…",
-        ["正在整理纪要…"] = "Writing the notes…",
         ["正在本机读取录音…"] = "Reading the recording on this device…",
         ["正在查证当前回答…"] = "Verifying the current answer…",
         ["正在校对转写…"] = "Proofreading the transcript…",
@@ -896,7 +892,6 @@ internal static class UiTextWindowsEnglish
         ["经验已记下。"] = "Lesson saved.",
         ["结束会议"] = "End meeting",
         ["结束会议后，按转写整理总结、决定、待办和未决问题。"] = "After a meeting, organize the transcript into a summary, decisions, actions and open questions.",
-        ["结束后自动整理"] = "Summarize automatically after ending",
         ["结论与待办"] = "Conclusions and actions",
         ["给这场会起个名字"] = "Name this meeting",
         ["继续完成设置"] = "Finish setting up",
@@ -926,7 +921,6 @@ internal static class UiTextWindowsEnglish
         ["自检：安装包已下载并通过 SHA-256，启动命令已记录。"] = "Self-test: installer downloaded and SHA-256 verified; launch command recorded.",
         ["英文"] = "English",
         ["英译："] = "English: ",
-        ["英语回答附中文对照"] = "Gloss English answers in Chinese",
         ["蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"] = "The Bluetooth fallback is unavailable: the phone still filters by the IH- broadcast name, Windows cannot rename its broadcast, and it stays closed until the phone scans by service ID.",
         ["补译"] = "Translate missing",
         ["补译已结束；有译文的句子已分别保存。未成功的句子可再次补译。"] = "Translation finished; translated sentences were saved. Retry the ones that failed.",
@@ -1012,7 +1006,6 @@ internal static class UiTextWindowsEnglish
         ["转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。"] = "Transcripts stay on this device. With a remote answer service, the question and relevant transcript are sent to that service.",
         ["转写已在界面更正，但用户更正记录写入失败："] = "The transcript was corrected on screen, but writing the correction record failed: ",
         ["输入问题，回车回答"] = "Type a question and press Enter",
-        ["输入问题；回车发送"] = "Type a question; press Enter to send",
         ["过期状态来自版本比较；旧内容仍可读。"] = "Stale state comes from revision comparison; old content stays readable.",
         ["返回"] = "Back",
         ["还不能开始记录：请先在设置里准备语音组件。"] = "Cannot start recording yet: prepare the speech components in settings.",
@@ -1191,6 +1184,8 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["截图会裁切到选中范围。请把题目、代码或公式完整框入。"] = "The screenshot is cropped to the selection. Frame the question, code or formula completely.",
+        ["屏幕选区无效，请重新框选。"] = "The screen selection is invalid. Frame it again.",
         ["选择持续读取的区域"] = "Choose the area to keep reading",
         ["框选演示内容；后续画面均读取该区域。"] = "Select the demo content; every later frame reads that area.",
         ["双屏演讲：主窗口已由你叫回，本场会议不再自动隐藏。"] = "Two-screen presenting: you brought the main window back, so it will not be hidden automatically for the rest of this meeting.",
@@ -1256,7 +1251,6 @@ internal static class UiTextWindowsEnglish
         ["打开屏幕感知"] = "Turn on screen awareness",
         ["收起"] = "Collapse",
         ["正在根据这一页和你的资料写讲稿提示…"] = "Writing talking points for this page from the slide and your materials…",
-        ["结束并整理纪要"] = "End and write notes",
         ["屏幕：%@"] = "Screen: %@",
         ["题目"] = "Question",
         ["代码"] = "Code",

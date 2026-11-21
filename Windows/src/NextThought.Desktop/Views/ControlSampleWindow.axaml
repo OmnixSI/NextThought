@@ -107,7 +107,7 @@
               <TextBlock Text="{loc:Tr 新增 6 句 · 回到现场}" Classes="caption" />
             </Border>
             <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_4_0_0}">
-              <TextBox PlaceholderText="{loc:Tr 输入问题；回车发送}" />
+              <TextBox PlaceholderText="{loc:Tr 输入问题，回车发送}" />
               <Button Grid.Column="1" Classes="primary" Content="{loc:Tr 立即回答}" Margin="{DynamicResource D4Margin_8_0_0_0}" />
             </Grid>
             <TextBlock Text="{loc:Tr Ctrl+L 聚焦输入 · Enter 发送 · Ctrl+Shift+Enter 强制回答 · Esc 取消当前回答 · ↑/PageUp 保持阅读位置}" Classes="caption" />
