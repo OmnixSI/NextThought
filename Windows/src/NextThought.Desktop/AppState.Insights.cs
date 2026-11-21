@@ -62,20 +62,65 @@ public partial class AppState
     }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void RegenerateNotes() => RegenerateSlideNotes();
+    private async Task RegenerateNotes() => await RegenerateSlideNotesAsync();
+
+    /// <summary>Mac insights.generatingNotes: the per-page spinner while the notes are written.</summary>
+    [ObservableProperty] private bool slideNotesGenerating;
+
+    /// <summary>Mac insights.slideNotesError: the orange note under the talking points.</summary>
+    [ObservableProperty] private string slideNotesError = "";
+
+    public bool HasSlideNotesError => SlideNotesError.Length > 0;
+
+    /// <summary>Mac SlideSection placeholder: no points yet and no error to show.</summary>
+    public bool SlideNotesWaiting => !HasSlidePoints && !HasSlideNotesError;
+
+    partial void OnSlideNotesErrorChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasSlideNotesError));
+        OnPropertyChanged(nameof(SlideNotesWaiting));
+    }
+
+    partial void OnSlideNotesGeneratingChanged(bool value) => OnPropertyChanged(nameof(SlideNotesWaiting));
 
     /// <summary>Mac prepareSlideNotes(force: true): drop the cached notes and write them again.</summary>
-    public void RegenerateSlideNotes()
+    public void RegenerateSlideNotes() => _ = RegenerateSlideNotesAsync();
+
+    private async Task RegenerateSlideNotesAsync()
     {
         if (CurrentSlide is not { } info) return;
         var page = SlidePages().FirstOrDefault(item => item.Page == info.Number && item.DocumentName == info.DocumentName);
         if (page is null) return;
+        SlideNotesError = "";
+        SlideNotesGenerating = true;
         slideNotesCacheByPage.Remove(page.Key);
-        var directory = SlideNotesDirectory;
-        var fingerprint = SlideNotesCacheStore.Fingerprint(page, SlideNotesMode);
-        var next = SlidePages().FirstOrDefault(item =>
-            item.DocumentId == page.DocumentId && item.Page == page.Page + 1);
-        var notes = SlideNotes.Script(page, next) ?? new SlideNotes
+        try
+        {
+            var notes = await Task.Run(() => BuildRegeneratedSlideNotes(page));
+            slideNotesCacheByPage[page.Key] = notes;
+            var directory = SlideNotesDirectory;
+            var fingerprint = SlideNotesCacheStore.Fingerprint(page, SlideNotesMode);
+            try { SlideNotesCacheStore.Save(directory, page, notes, fingerprint); }
+            catch (Exception error) { SlideNotesError = UiText.Format("讲稿提示生成失败：%@", error.Message); }
+        }
+        catch (Exception error)
+        {
+            SlideNotesError = UiText.Format("讲稿提示生成失败：%@", error.Message);
+        }
+        finally
+        {
+            SlideNotesGenerating = false;
+            RefreshInsights();
+        }
+    }
+
+    /// <summary>The Mac local fallback when no cache/script exists: the slide's own lines become points.</summary>
+    private SlideNotes BuildRegeneratedSlideNotes(SlidePage page)
+    {
+        var pages = SlidePages();
+        var next = pages.FirstOrDefault(item => item.DocumentId == page.DocumentId && item.Page == page.Page + 1);
+        if (SlideNotes.Script(page, next) is { } script) return script;
+        return new SlideNotes
         {
             Points = page.Text.Split('\n')
                 .Select(line => line.Trim().TrimStart('#', '-', '*', ' '))
@@ -84,9 +129,6 @@ public partial class AppState
                 .ToList(),
             Transition = next?.Title ?? ""
         };
-        slideNotesCacheByPage[page.Key] = notes;
-        SlideNotesCacheStore.Save(directory, page, notes, fingerprint);
-        RefreshInsights();
     }
 
     /// <summary>Covered/next marker of every talking point, from what I have read aloud so far.</summary>
