@@ -98,7 +98,8 @@ public sealed class GapClosureTests
         var liveNotes = File.ReadAllText(Path.Combine(Desktop("SelfTest", "Checks"), "RunLiveNotesCheckAsync.cs"));
         Assert.Contains("LiveNotesPrompt.Parse", liveNotes);
         Assert.Contains("LiveNotesSchedule.IsDue", liveNotes);
-        Assert.Contains("InstallDemoLiveNotes", liveNotes);
+        Assert.Contains("InstallDemoLiveNotes", liveNotes + File.ReadAllText(Path.Combine(Desktop("AppState.LiveNotes.cs"))));
+        Assert.Contains("DemoStages.LiveNotes", liveNotes);
         var fixtures = File.ReadAllText(Path.Combine(Desktop("SelfTest", "Checks"), "RunBackupFixturesCheckAsync.cs"));
         Assert.Contains("BackupService", fixtures);
         Assert.Contains("CreateAsync", fixtures);

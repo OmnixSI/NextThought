@@ -95,6 +95,9 @@ public partial class MainWindow : Window
             TextZoomService.ApplyAll();
             if (StartupOptions.SelfTest is { Length: > 0 } selfTest) await RunNamedSelfTestAsync(selfTest);
             if (StartupOptions.Screenshots is { Length: > 0 } screenshots) await RunScreenshotsAsync(screenshots);
+            // J8: Mac NEXTTHOUGHT_DEMO_CHURN=<file> — the demo walkthrough measures the live page.
+            if (StartupOptions.Demo is true && StartupOptions.DemoChurn is { Length: > 0 } churnPath)
+                _ = RunDemoChurnAsync(churnPath);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
