@@ -47,12 +47,12 @@
                    TextWrapping="NoWrap" MaxLines="1" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
           <controls:SceneTag Mode="{Binding SelectedSeriesMode}" Name="{Binding SelectedSeriesTypeName}" />
-          <TextBlock Text="{Binding SelectedSeriesStatsLine}" Classes="caption" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SeriesEditorStatsLine}" Classes="caption" VerticalAlignment="Center" />
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <Button Classes="primary" Content="{loc:Tr 开下一场}" Command="{Binding OpenNextMeetingInSeriesCommand}" />
-        <Button Classes="quiet" Content="{loc:Tr 配置}">
+        <Button x:Name="ConfigButton" Classes="quiet" Content="{loc:Tr 配置}">
           <Button.Flyout>
             <MenuFlyout>
               <MenuItem Header="{loc:Tr 基本信息}" Click="SectionBasic_Click" />
@@ -288,16 +288,31 @@
           <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap" Height="120" />
         </StackPanel>
 
-        <!-- 系列技能：WorkspaceSkillsSection -->
+        <!-- 系列技能：WorkspaceSkillsSection (Mac heading 技能 N + import/manage + per-skill toggles) -->
         <StackPanel x:Name="SkillsSection" Spacing="{DynamicResource D4Spacing_8}" IsVisible="False">
-          <TextBlock Text="{loc:Tr 技能}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{Binding SeriesSkillsHeading}" Classes="section" VerticalAlignment="Center" />
+            <Button Classes="quiet" Content="{loc:Tr 导入并用于此系列…}" Click="ImportSeriesSkills_Click"
+                    HorizontalAlignment="Right" />
+            <Button Classes="quiet" Content="{loc:Tr 管理技能}" Click="ManageSkills_Click" />
+          </StackPanel>
           <TextBlock Text="{loc:Tr 还没有技能。技能是一份 Markdown 说明（如 SKILL.md）：说话方式、答题套路、领域知识，回答时会遵循。}"
                      Classes="caption" TextWrapping="Wrap" IsVisible="{Binding !HasSeriesSkills}" />
           <ItemsControl ItemsSource="{Binding SeriesSkills}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SeriesSkillRow">
-                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsAttached, Mode=TwoWay}"
-                          MinHeight="{DynamicResource HitRow}" Margin="{DynamicResource D4Margin_0_0_0_4}" />
+                <CheckBox IsChecked="{Binding IsAttached, Mode=TwoWay}" IsEnabled="{Binding CanToggle}"
+                          MinHeight="{DynamicResource HitRow}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                    <TextBlock Text="{loc:Tr 所有系列}" FontSize="10" FontWeight="SemiBold"
+                               VerticalAlignment="Center" IsVisible="{Binding IsGlobal}" />
+                    <TextBlock Text="{loc:Tr 已停用}" FontSize="10" Opacity="0.6" VerticalAlignment="Center"
+                               IsVisible="{Binding IsDisabled}" />
+                    <TextBlock Text="{Binding Summary}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
+                               IsVisible="{Binding HasSummary}" />
+                  </StackPanel>
+                </CheckBox>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

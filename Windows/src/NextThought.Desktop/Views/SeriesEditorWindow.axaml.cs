@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using System.IO;
 using NextThought.Core;
 
 namespace NextThought.Desktop.Views;
@@ -14,7 +15,29 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class SeriesEditorWindow : Window
 {
-    public SeriesEditorWindow() => InitializeComponent();
+    public SeriesEditorWindow()
+    {
+        InitializeComponent();
+        Opened += (_, _) => PopulateConfigTypeMenu();
+    }
+
+    /// <summary>WorkspaceEditor editorActions: the type picker lives in the 配置 menu.</summary>
+    private void PopulateConfigTypeMenu()
+    {
+        if (DataContext is not AppState state || ConfigButton?.Flyout is not MenuFlyout flyout) return;
+        if (flyout.Items.OfType<MenuItem>().FirstOrDefault(item => item.Name == "ConfigTypeMenu") is not { } typeMenu) return;
+        typeMenu.Items.Clear();
+        foreach (var choice in state.SeriesEditorModeChoices)
+        {
+            var item = new MenuItem { Header = choice };
+            item.Click += (_, _) =>
+            {
+                state.SeriesEditorMode = choice;
+                ShowSection("basic");
+            };
+            typeMenu.Items.Add(item);
+        }
+    }
 
     /// <summary>WorkspaceEditor section switching: 记录/资料/经验积累 plus the 配置 sections.</summary>
     private void ShowSection(string section)
@@ -256,6 +279,41 @@ public partial class SeriesEditorWindow : Window
             await state.OpenSeriesRecordAsync(row);
         }
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    /// <summary>Mac 导入并用于此系列…: import Markdown skills and attach them to this series.</summary>
+    private async void ImportSeriesSkills_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppState state) return;
+            if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
+            var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = UiText.T("导入技能（Markdown）"),
+                AllowMultiple = true,
+                FileTypeFilter = [new FilePickerFileType("Markdown") { Patterns = ["*.md", "*.markdown", "*.txt"] }]
+            });
+            foreach (var file in files)
+            {
+                if (file.TryGetLocalPath() is not { } path) continue;
+                try
+                {
+                    var skill = Skill.Parse(await File.ReadAllTextAsync(path), Path.GetFileName(path));
+                    state.AddSkills([skill]);
+                    state.AttachSkillToSelectedSeries(skill.Id);
+                }
+                catch (IOException) { }
+            }
+            state.RefreshSeriesSkillsForCheck();
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    /// <summary>Mac 管理技能: open 设置 → 回答与资料 → 技能.</summary>
+    private void ManageSkills_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.OpenSettingsPage("Answer", "技能");
     }
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();

@@ -71,3 +71,12 @@ Windows 实现：`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.SeriesEditor.
 6. 基本信息缺字段折叠/背景笔记/自定义类型改名；缺未保存修改提示。
 7. 分区切换过渡动画（Motion.phase）未做。
 8. Mac 无参考截图，本对照为 Swift 源码逐元素；截图来自 demo 数据（记录为空，资料/经验/技能来自演示系列）。
+
+---
+
+## §5 二期修复（2026-11-21，decisions §3.5 series-editor）
+
+本页 1–7 中已修并重拍：
+1. 头部统计行回退：`SeriesEditorStatsLine` —— 无会议统计时显示「N 场会议 · M 份资料」（Mac SeriesStatsLine 回退）。
+2. 配置菜单补「类型」子菜单：`ConfigButton` 的 Flyout 内动态列出 `SeriesEditorModeChoices`，选择后切到基本信息；「开下一场」的禁用条件仍待接 `Recording`（下一批）。
+截图：`series-editor-*.png`（records/documents/knowledge/skills/basic/requirements 浅色 + records/knowledge 深色，`--self-test=series-editor-tabs` exit 0）。
