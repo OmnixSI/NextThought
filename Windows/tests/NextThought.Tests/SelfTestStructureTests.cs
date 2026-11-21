@@ -664,7 +664,10 @@ public sealed class SelfTestStructureTests
     {
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml")));
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("Insights_Click", xaml);
+        // §3.3 insights 5: the panel is embedded in the transcript column; there is no separate
+        // 屏幕与讲稿 window entry on the Mac, so the old Insights_Click entry is gone.
+        Assert.Contains("<views:InsightsPanel", xaml);
+        Assert.DoesNotContain("Insights_Click", xaml);
         var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
         // E7/§6.5: the panel now has the Mac header + slide/screen/answer-progress sections.
         Assert.Contains("屏幕与讲稿", panel);

@@ -431,12 +431,6 @@ public partial class LiveView : UserControl
         if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleTeleprompter();
     }
 
-    private void Insights_Click(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not AppState state) return;
-        new InsightsPanelWindow { DataContext = state }.Show();
-    }
-
     private void Speakers_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;

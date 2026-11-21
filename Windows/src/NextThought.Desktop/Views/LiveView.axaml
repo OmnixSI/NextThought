@@ -291,7 +291,8 @@
                   <CheckBox Content="{loc:Tr 手机伴侣}" IsChecked="{Binding LiveCompanionOn, Mode=OneWay}" Click="Companion_Click" FontSize="12" />
                   <CheckBox Content="{loc:Tr 同声传译}" IsChecked="{Binding LiveTranslationEnabled, Mode=OneWay}" Click="LiveTranslation_Click" FontSize="12" />
                   <Button Classes="quiet" Content="{loc:Tr 回答浮窗}" Click="Teleprompter_Click" FontSize="12" HorizontalAlignment="Left" />
-                  <Button Classes="quiet" Content="{loc:Tr 屏幕与讲稿}" Click="Insights_Click" FontSize="12" HorizontalAlignment="Left" />
+                  <!-- §3.3 insights 5: the 屏幕与讲稿 module lives in the page/停靠 modules only; the Mac
+                       has no separate insights window, so the standalone-window entry is gone. -->
                   <Button Classes="quiet" Content="{loc:Tr 说话人}" Click="Speakers_Click" FontSize="12" HorizontalAlignment="Left" />
                   <Button Classes="quiet" Content="{loc:Tr 补译}" Command="{Binding TranslateMissingCommand}" FontSize="12" HorizontalAlignment="Left" />
 
