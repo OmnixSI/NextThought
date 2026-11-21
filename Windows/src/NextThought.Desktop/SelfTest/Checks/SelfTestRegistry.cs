@@ -11,6 +11,7 @@ public partial class MainWindow
         var methodName = normalized switch
         {
             "startup" => "WriteStartupReportAsync",
+            "zoom" => "RunTextZoomCheckAsync",
             "subtitle-export" => "RunSubtitleExportCheckAsync",
             "backup" => "RunBackupCheckAsync",
             "acceptance" => "RunAcceptanceCheckAsync",

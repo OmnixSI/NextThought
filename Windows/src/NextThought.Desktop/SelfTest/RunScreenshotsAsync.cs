@@ -175,6 +175,38 @@ public partial class MainWindow
             CaptureWindow(Path.Combine(directory, "onboarding-last.png"));
             state.OnboardingVisible = false;
 
+            // J7: the three text-zoom steps the task book asks evidence for, on the two key pages
+            // (home and the live meeting page), light and dark.
+            state.ApplyUiLanguage(false);
+            foreach (var zoom in new[] { 0.9, 1.2, 1.45 })
+            {
+                TextZoomService.SetFactorForCheck(zoom);
+                foreach (var dark in new[] { false, true })
+                {
+                    if (Application.Current is { } zoomApp)
+                        zoomApp.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                    var zoomSuffix = "-" + (dark ? "dark" : "light") + ".png";
+                    foreach (var (section, name) in new[] { (AppSection.Home, "home"), (AppSection.Live, "live") })
+                    {
+                        state.Section = section;
+                        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                        await Task.Delay(180);
+                        // The page content is rebuilt when the section changes: rescale it before the
+                        // capture (the watcher would only reach it on its next 600 ms tick).
+                        TextZoomService.ApplyAll();
+                        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                        await Task.Delay(180);
+                        var page = "zoom-" + zoom.ToString("0.##") + "-" + name + zoomSuffix;
+                        CaptureWindow(Path.Combine(directory, page));
+                        await WriteInventoryAsync(this, textDirectory, page.Replace(".png", ""));
+                    }
+                }
+            }
+            TextZoomService.SetFactorForCheck(1);
+            state.Section = AppSection.Home;
+            if (Application.Current is { } resetApp)
+                resetApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+
             // §6.6 / C5–C9: every island presentation in the same light/dark matrix as the Mac
             // reference screenshots (mac-screens/island). The island is always the dark notch
             // surface, so the two themes differ only in the app around it — captured either way.

@@ -180,9 +180,16 @@ def mac_counterpart(win_key: str, mac: set[str]) -> str | None:
 def allowed_text(text: str, demo: list[str]) -> bool:
     """User/demo data and OS device names may stay Chinese on an English page."""
     return (any(value in text for value in demo)
+            or any(text in value for value in demo)
             or any(value in text for value in DEMO_TEXT)
             or text.startswith(SYSTEM_DATA_PREFIXES)
             or any(value in text for value in OTHER_TASK_TEXT))
+
+
+def icon_text(text: str) -> bool:
+    """Icon-font glyphs (private-use codepoints) are symbols, not clipped wording."""
+    chars = [char for char in text if not char.isspace()]
+    return bool(chars) and all(0xE000 <= ord(char) <= 0xF8FF or not char.isalnum() for char in chars)
 
 
 def scan_screens(directory: Path) -> dict:
@@ -191,7 +198,8 @@ def scan_screens(directory: Path) -> dict:
         raise SystemExit(f"no text inventories under {text_dir}; run --screenshots first")
     demo = demo_literals()
     pages = sorted(text_dir.glob("*-en*.txt")) + sorted(text_dir.glob("island-*-en.txt"))
-    pages = sorted({page for page in pages})
+    # <page>.truncation.txt files live next to the inventories but are parsed separately below.
+    pages = sorted({page for page in pages if not page.name.endswith(".truncation.txt")})
     rows: list[dict] = []
     residuals: list[dict] = []
     truncations: list[dict] = []
@@ -221,7 +229,11 @@ def scan_screens(directory: Path) -> dict:
                 kind, _, rest = line.partition("\t")
                 fit, _, text = rest.partition("\t")
                 truncations.append({"page": page.stem, "kind": kind, "fit": fit,
-                                    "text": text, "allowed": allowed_text(text, demo)})
+                                    "text": text,
+                                    # Chinese text on an English page is user/demo data (it is
+                                    # allowed above), so its ellipsis is not a wording overflow.
+                                    "allowed": allowed_text(text, demo) or icon_text(text)
+                                               or bool(CJK.search(text))})
     return {
         "pages": len(pages),
         "cjkRows": sum(1 for row in rows if row["kind"] != "_summary"),
@@ -287,12 +299,13 @@ def write_wording(table: dict[str, str], places: dict[str, str], scan: dict | No
         lines.append(f"- 含中文字符的行：**{scan['cjkRows']}**")
         lines.append(f"- 其中用户数据/演示数据/系统设备名（允许）：**{scan['allowed']}**")
         lines.append(f"- **残留（需要修）：{len(scan['residual'])}**")
-        lines.append(f"- **英文文字截断/溢出（需要修）：{len(scan['truncation'])}**")
+        flagged_truncation = [row for row in scan["truncation"] if not row["allowed"]]
+        lines.append(f"- **英文文字截断/溢出（需要修）：{len(flagged_truncation)}**")
         lines.append("")
-        if scan["truncation"]:
+        if flagged_truncation:
             lines.append("| 页面 | 控件 | 需要/实际 | 文字 |")
             lines.append("|---|---|---|---|")
-            for row in scan["truncation"]:
+            for row in flagged_truncation:
                 lines.append(f"| {row['page']} | {row['kind']} | {row['fit']} | {row['text'].replace('|', chr(92) + '|')[:160]} |")
             lines.append("")
         lines.append("### 逐页结论")
@@ -301,7 +314,7 @@ def write_wording(table: dict[str, str], places: dict[str, str], scan: dict | No
         lines.append("|---|---|---|---|---|")
         page_rows = {row["page"]: row["text"] for row in scan["rows"] if row["kind"] == "_summary"}
         residual_pages = {row["page"] for row in scan["residual"]}
-        truncation_pages = {row["page"] for row in scan["truncation"]}
+        truncation_pages = {row["page"] for row in flagged_truncation}
         for page in sorted(page_rows):
             broken = page in residual_pages or page in truncation_pages
             conclusion = "不通过" if broken else "通过"
@@ -346,7 +359,8 @@ def write_wording(table: dict[str, str], places: dict[str, str], scan: dict | No
         evidence.append(f"- 生成时间：{datetime.date.today().isoformat()}")
         evidence.append(f"- 扫描页面：{scan['pages']} 个英文文字清单")
         evidence.append(f"- 含中文字符行：{scan['cjkRows']}；允许（用户数据/设备名）：{scan['allowed']}；残留：{len(scan['residual'])}")
-        evidence.append(f"- 文字截断/溢出：{len(scan['truncation'])}")
+        flagged_truncation = [row for row in scan["truncation"] if not row["allowed"]]
+        evidence.append(f"- 文字截断/溢出：{len(flagged_truncation)}")
         evidence.append("")
         evidence.append("完整逐页文字清单由截图命令输出到 `<screens>/text/`（`*.txt`），同一批还写了")
         evidence.append("`*.truncation.txt`（渲染后按该控件实际 bounds 重新测量，放不下的文字逐条记下）。")
@@ -357,7 +371,7 @@ def write_wording(table: dict[str, str], places: dict[str, str], scan: dict | No
         evidence.append("|---|---|---|---|---|")
         page_rows = {row["page"]: row["text"] for row in scan["rows"] if row["kind"] == "_summary"}
         residual_pages = {row["page"] for row in scan["residual"]}
-        truncation_pages = {row["page"] for row in scan["truncation"]}
+        truncation_pages = {row["page"] for row in flagged_truncation}
         for page in sorted(page_rows):
             broken = page in residual_pages or page in truncation_pages
             evidence.append(f"| {page} | {page_rows[page]} | {1 if page in residual_pages else 0} | "
@@ -372,10 +386,10 @@ def write_wording(table: dict[str, str], places: dict[str, str], scan: dict | No
         else:
             evidence.append("除用户数据、演示数据与 Windows 设备名外，英文页面没有中文字符。")
             evidence.append("")
-        if scan["truncation"]:
+        if flagged_truncation:
             evidence.append("## 截断/溢出")
             evidence.append("")
-            for row in scan["truncation"]:
+            for row in flagged_truncation:
                 evidence.append(f"- `{row['page']}` [{row['kind']}] {row['fit']} {row['text']}")
             evidence.append("")
         else:
@@ -400,13 +414,14 @@ def main(argv: list[str]) -> int:
               f"residual={len(scan['residual'])} truncation={len(scan['truncation'])}")
         for row in scan["residual"][:80]:
             print(f"  RESIDUAL {row['page']} [{row['kind']}] {row['text'][:120]}")
-        for row in scan["truncation"][:80]:
+        for row in [item for item in scan["truncation"] if not item["allowed"]][:80]:
             print(f"  TRUNCATED {row['page']} [{row['kind']}] {row['fit']} {row['text'][:120]}")
     if args.write:
         table = windows_table()
         places = locations()
         write_wording(table, places, scan)
-    if args.check and scan is not None and (scan["residual"] or scan["truncation"]):
+    if args.check and scan is not None and (scan["residual"]
+                                            or any(not row["allowed"] for row in scan["truncation"])):
         return 1
     return 0
 

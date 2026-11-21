@@ -27,6 +27,9 @@ public partial class MainWindow : Window
         this.state = state;
         InitializeComponent();
         DataContext = state;
+        // J7: the text zoom (Mac TextZoom) lives next to settings.json and rescales the pages.
+        TextZoomService.Configure(state.Paths.Root);
+        AddHandler(KeyDownEvent, OnTextZoomKeyDown, RoutingStrategies.Tunnel);
         WindowCaptureHiding.StartTracking();
         // E13: clear capture files left behind by cancelled/failed screenshots.
         CleanupStaleCaptureFiles();
@@ -60,8 +63,18 @@ public partial class MainWindow : Window
             else if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode);
             else if (e.PropertyName == nameof(AppState.Recording))
             {
-                if (state.Recording) ApplyPresenterModeForRecording();
-                else ExitPresenterMode();
+                if (state.Recording)
+                {
+                    // A new meeting forgets that the page was brought back during the last one.
+                    presenterPageWanted = false;
+                    ApplyPresenterModeForRecording();
+                }
+                else
+                {
+                    presenterPageWanted = false;
+                    presenterSettle?.Stop();
+                    ExitPresenterMode();
+                }
             }
         };
         Opened += async (_, _) =>
@@ -79,6 +92,7 @@ public partial class MainWindow : Window
                 ReloadHotkeys();
             };
             RefreshDisplays();
+            TextZoomService.ApplyAll();
             if (StartupOptions.SelfTest is { Length: > 0 } selfTest) await RunNamedSelfTestAsync(selfTest);
             if (StartupOptions.Screenshots is { Length: > 0 } screenshots) await RunScreenshotsAsync(screenshots);
         };
@@ -90,8 +104,9 @@ public partial class MainWindow : Window
         RegisterHotkeys();
         state.ShortcutsChanged += ReloadHotkeys;
         RefreshDisplays();
-        // Dual-screen topologies change while the app runs (docking, projector plugged in).
-        try { Screens.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshDisplays); }
+        // Dual-screen topologies change while the app runs (docking, projector plugged in). The
+        // layout is only acted on once it has been stable for 1.5 s (Mac PresenterMode.displaysChanged).
+        try { Screens.Changed += (_, _) => QueuePresenterDisplayChange(); }
         catch { /* headless test hosts have no screen manager */ }
     }
 
@@ -203,6 +218,30 @@ public partial class MainWindow : Window
         teleprompter?.Close();
         (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         Close();
+    }
+
+    /// <summary>
+    /// J7: Ctrl + / Ctrl − / Ctrl 0 resize all page text (Mac menu shortcuts ⌘+ / ⌘− / ⌘0). The cue
+    /// island and the answer window keep their own size buttons and are excluded by the service.
+    /// </summary>
+    private void OnTextZoomKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+        switch (e.Key)
+        {
+            case Key.OemPlus or Key.Add:
+                TextZoomService.Grow();
+                e.Handled = true;
+                break;
+            case Key.OemMinus or Key.Subtract:
+                TextZoomService.Shrink();
+                e.Handled = true;
+                break;
+            case Key.D0 or Key.NumPad0:
+                TextZoomService.Reset();
+                e.Handled = true;
+                break;
+        }
     }
 
     private async void OnboardingVoice_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
