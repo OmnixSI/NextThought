@@ -101,7 +101,26 @@ public sealed class SettingsStructureTests
         Assert.StartsWith("General|", Card("同声传译"));
         Assert.StartsWith("Coach|", Card("字幕条"));
         Assert.StartsWith("Answer|", Card("回答服务"));
-        Assert.Contains("{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}", Card("回答服务"));
+        // §3.6 A1: Mac AnswerSettings API / Codex segmented backend.
+        var answer = Card("回答服务");
+        Assert.Contains("InkSegmented", answer);
+        Assert.Contains("{Binding Settings.AnswerBackendIndex", answer);
+        // §3.6 A5: 联网搜索 is its own Answer section with the Mac tri-state picker.
+        var web = Card("联网搜索");
+        Assert.StartsWith("Answer|", web);
+        Assert.Contains("{Binding Settings.WebSearchModeChoices}", web);
+        Assert.Contains("{Binding Settings.SelectedWebSearchMode}", web);
+        Assert.Contains("{loc:Tr 联网}", web);
+        // §3.6 E3: 术语和人名 opens the glossary window (Mac 管理…) instead of inline editing.
+        var glossary = Card("术语和人名");
+        Assert.Contains("{loc:Tr 管理…}", glossary);
+        Assert.DoesNotContain("GlossaryText", glossary);
+        // §3.6 N3: 纪要高级 on the notes page carries the notes model.
+        var notesAdvanced = Card("纪要高级");
+        Assert.StartsWith("Notes|", notesAdvanced);
+        Assert.Contains("{Binding Settings.NotesModel}", notesAdvanced);
+        // §3.6 P1: the presenter page has the Mac 字号 slider.
+        Assert.Contains("{Binding Settings.TeleprompterFontSize}", Card("提词"));
         // §3.6 settings-structure: recordSessions gets its Mac B BGeneral card.
         var record = Card("记录每次会议");
         Assert.StartsWith("General|", record);

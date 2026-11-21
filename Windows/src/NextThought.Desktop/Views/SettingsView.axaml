@@ -4,6 +4,7 @@
              xmlns:local="using:NextThought.Desktop"
              xmlns:views="using:NextThought.Desktop.Views"
              xmlns:platform="using:NextThought.Platform"
+             xmlns:design="using:NextThought.Desktop.Controls"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
@@ -196,18 +197,9 @@
           <TextBlock Name="AnchorGeneralGlossary" Text="{loc:Tr 术语和人名}" Classes="section" />
           <TextBlock Text="{loc:Tr 名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
-          <TextBlock Text="{loc:Tr 术语表（人名与专有名词）}" Classes="label" />
-          <TextBlock Text="{loc:Tr 每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。}"
-                     Classes="caption" FontSize="11" />
-          <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   PlaceholderText="{loc:Tr Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="{loc:Tr 保存术语表}" Command="{Binding SaveGlossaryCommand}" />
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
-            <Button Classes="quiet" Content="{loc:Tr 打开术语表}" Click="OpenGlossary_Click" />
-          </StackPanel>
+            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+            <Button Content="{loc:Tr 管理…}" Click="OpenGlossary_Click" HorizontalAlignment="Right" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -250,6 +242,11 @@
             <TextBlock Text="{loc:Tr 提示岛宽度}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.CueWidthChoices}" SelectedItem="{Binding Settings.SelectedCueWidth}"
                       Width="160" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="{loc:Tr 字号}" Classes="label" VerticalAlignment="Center" />
+            <Slider Minimum="14" Maximum="36" TickFrequency="1" IsSnapToTickEnabled="True"
+                    Value="{Binding Settings.TeleprompterFontSize}" Width="260" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -310,6 +307,15 @@
 
       <!-- E25 / Mac SettingsPresenter.swift ShortcutsSettingsRow: a collapsible 快捷键… row. -->
       <views:ShortcutsSettingsRow />
+
+      <!-- §3.6 N3: Mac NotesAdvanced — the notes model lives beside the notes templates. -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorNotesAdvanced" Text="{loc:Tr 纪要高级}" Classes="section" />
+          <TextBlock Text="{loc:Tr 纪要模型（留空沿用回答模型）}" Classes="label" />
+          <TextBox Text="{Binding Settings.NotesModel}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
 
       <!-- E29: 会议自动收尾 — Mac 纪要页 (AutoEndViews.swift AutoEndSettingsSection) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
@@ -453,6 +459,25 @@
         </StackPanel>
       </Border>
 
+      <!-- §3.6 A5: Mac AnswerSettings 联网搜索 section — the tri-state mode plus the Tavily key. -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorAnswerWeb" Text="{loc:Tr 联网搜索}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="{loc:Tr 联网}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.WebSearchModeChoices}"
+                      SelectedItem="{Binding Settings.SelectedWebSearchMode}" MinWidth="180" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr 问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
+            <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
+        </StackPanel>
+      </Border>
+
       <!-- E23: 资料 — Mac DocumentReadingSettings（组件细节在 高级 → 资料组件） -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
@@ -473,21 +498,17 @@
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer3" Text="{loc:Tr 回答服务}" Classes="section" />
-          <!-- §6.7 English: the Mac label wraps; give it a wrapping TextBlock so the checkbox grows
-               instead of clipping the second line (English scan needed 38px, had 19.3px). -->
-          <CheckBox IsChecked="{Binding Settings.WebSearch}" HorizontalContentAlignment="Left">
-            <TextBlock Text="{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}" TextWrapping="Wrap" MaxWidth="520" />
-          </CheckBox>
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
-            <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
+          <!-- §3.6 A1: Mac AnswerSettings API / Codex InkSegmented backend. -->
+          <design:InkSegmented SelectedIndex="{Binding Settings.AnswerBackendIndex, Mode=TwoWay}" Width="220" HorizontalAlignment="Left">
+            <design:InkSegmented.Items>
+              <ListBoxItem Content="API" />
+              <ListBoxItem Content="Codex" />
+            </design:InkSegmented.Items>
+          </design:InkSegmented>
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding Settings.UseCodex}">
+            <TextBlock Text="{loc:Tr Codex 模型（留空沿用账号默认模型）}" Classes="label" />
+            <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
           </StackPanel>
-          <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
-          <TextBlock Text="{loc:Tr 问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。}"
-                     Classes="caption" FontSize="11" />
-          <CheckBox Content="{loc:Tr 使用本机 Codex CLI 账号}" IsChecked="{Binding Settings.UseCodex}" />
-          <TextBlock Text="{loc:Tr Codex 模型（留空沿用账号默认模型）}" Classes="label" />
-          <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
           <TextBlock Text="{loc:Tr 预设}" Classes="label" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <ComboBox ItemsSource="{Binding Settings.ApiPresetChoices}" SelectedItem="{Binding Settings.SelectedApiPreset}"
@@ -500,16 +521,10 @@
           </StackPanel>
           <TextBlock Text="{loc:Tr 兼容 Chat Completions 的 API 地址}" Classes="label" />
           <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="{loc:Tr 回答模型名称}" Classes="label" />
-              <TextBox Text="{Binding Settings.Model}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="{loc:Tr 纪要模型（留空沿用回答模型）}" Classes="label" />
-              <TextBox Text="{Binding Settings.NotesModel}" />
-            </StackPanel>
-          </Grid>
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+            <TextBlock Text="{loc:Tr 回答模型名称}" Classes="label" />
+            <TextBox Text="{Binding Settings.Model}" />
+          </StackPanel>
           <TextBlock Text="API Key" Classes="label" />
           <TextBox Text="{Binding Settings.ApiKey}" PasswordChar="•" PlaceholderText="sk-…" />
           <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" FontSize="11" />

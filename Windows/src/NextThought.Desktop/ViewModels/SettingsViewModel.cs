@@ -639,6 +639,36 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool? liveTranslation;
     /// <summary>E4/Mac webSearchMode: off / auto / always.</summary>
     [ObservableProperty] private string webSearchMode = "auto";
+
+    /// <summary>§3.6 A5: Mac WebSearchMode.displayName — 不联网 / 自动判断 / 每次都查.</summary>
+    public sealed record WebSearchModeChoice(string Value, string Title);
+
+    public IReadOnlyList<WebSearchModeChoice> WebSearchModeChoices =>
+    [
+        new("off", UiText.T("不联网")),
+        new("auto", UiText.T("自动判断")),
+        new("always", UiText.T("每次都查"))
+    ];
+
+    [ObservableProperty] private WebSearchModeChoice? selectedWebSearchMode;
+
+    partial void OnSelectedWebSearchModeChanged(WebSearchModeChoice? value)
+    {
+        if (value is null) return;
+        WebSearchMode = value.Value;
+        WebSearch = value.Value != "off";
+    }
+
+    /// <summary>§3.6 A1: Mac AnswerSettings API / Codex segmented backend (0 = API, 1 = Codex).</summary>
+    [ObservableProperty] private int answerBackendIndex;
+
+    public IReadOnlyList<string> AnswerBackendChoices => ["API", "Codex"];
+
+    partial void OnAnswerBackendIndexChanged(int value)
+    {
+        UseCodex = value == 1;
+        OnPropertyChanged(nameof(CodexFastAvailable));
+    }
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "";
 
@@ -796,6 +826,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AutoTranslateForeign = settings.AutoTranslateForeign;
         LiveTranslation = settings.LiveTranslation;
         WebSearchMode = settings.WebSearchMode;
+        SelectedWebSearchMode = WebSearchModeChoices.FirstOrDefault(choice => choice.Value == WebSearchMode) ?? WebSearchModeChoices[1];
+        AnswerBackendIndex = settings.UseCodex ? 1 : 0;
         FollowSlides = settings.FollowSlides;
         InsightScreenWatch = settings.InsightScreenWatch;
         InsightScreenInterval = Math.Max(1, settings.InsightScreenInterval);
@@ -899,11 +931,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AutoSummarize = AutoSummarize,
         RecordSessions = RecordSessions,
         UseSemanticRetrieval = UseSemanticRetrieval,
-        WebSearch = WebSearch,
+        WebSearch = (SelectedWebSearchMode?.Value ?? "auto") != "off",
         SeparateSpeakers = SeparateSpeakers,
         TranslateSpeech = TranslateSpeech,
         UseMaterials = UseMaterials,
-        UseCodex = UseCodex,
+        UseCodex = AnswerBackendIndex == 1,
         CodexModel = CodexModel.Trim(),
         // E27: saved providers, the active preset and the GitHub access settings.
         ApiPresets = EditedApiPresets(),
@@ -927,7 +959,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = AnswerGloss,
         AutoTranslateForeign = AutoTranslateForeign,
         LiveTranslation = LiveTranslation,
-        WebSearchMode = WebSearchMode,
+        WebSearchMode = SelectedWebSearchMode?.Value ?? "auto",
         FollowSlides = FollowSlides,
         InsightScreenWatch = InsightScreenWatch,
         InsightScreenInterval = Math.Max(1, InsightScreenInterval),
