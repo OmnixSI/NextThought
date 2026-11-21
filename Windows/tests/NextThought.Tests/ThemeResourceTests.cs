@@ -22,8 +22,10 @@ public sealed class ThemeResourceTests
     {
         var theme = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
         Assert.Contains("<SolidColorBrush x:Key=\"Sunken\" Color=\"#0A1C1B19\" />", theme);
-        Assert.Contains("<SolidColorBrush x:Key=\"ContactShadow\" Color=\"#66000000\" />", theme);
-        Assert.Contains("<SolidColorBrush x:Key=\"AmbientShadow\" Color=\"#52000000\" />", theme);
+        // §5.7: contact/ambient/float are BoxShadows resources now, one set per theme.
+        Assert.Contains("<BoxShadows x:Key=\"ContactShadow\">0 1 2 0 #66000000</BoxShadows>", theme);
+        Assert.Contains("<BoxShadows x:Key=\"AmbientShadow\">0 8 14 0 #52000000</BoxShadows>", theme);
+        Assert.Contains("<BoxShadows x:Key=\"FloatShadow\">0 12 16 0 #80000000</BoxShadows>", theme);
         Assert.Contains("<BoxShadows x:Key=\"FloatShadowValue\">0 12 16 0 #80000000</BoxShadows>", theme);
         Assert.Contains("<BoxShadows x:Key=\"PaperCardShadow\">0 1 2 0 #66000000", theme);
     }
