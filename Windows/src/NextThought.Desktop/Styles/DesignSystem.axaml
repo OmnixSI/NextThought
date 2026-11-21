@@ -465,4 +465,8 @@
     <Setter Property="MinHeight" Value="28" />
     <Setter Property="FontSize" Value="12" />
   </Style>
+  <!-- §6.7 E1: HistoryView SessionRow selected state uses Ink.sunken. -->
+  <Style Selector="Button.recent.selected /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
 </Styles>
