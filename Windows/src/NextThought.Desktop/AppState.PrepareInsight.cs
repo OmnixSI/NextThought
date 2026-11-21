@@ -87,7 +87,7 @@ public partial class AppState
         {
             var mode = Draft?.EffectiveMode ?? SelectedMode;
             var system = PreparationPrompt.System(mode);
-            var user = PreparationPrompt.Output(mode) + "\n\n资料：\n" + material;
+            var user = PreparationPrompt.Output(mode) + UiText.T("\n\n资料：\n") + material;
             var result = await CurrentClient().AnswerAsync(AnswerOptions(), system, user,
                 text => Dispatcher.UIThread.Post(() =>
                 {
@@ -130,7 +130,7 @@ public partial class AppState
         if (SelectedSeries is { } row && workspace.Find(row.Id) is { } series && series.MaterialText() is { Length: > 0 } text)
             return Clip(text, 24_000);
         var pages = Library.DocumentsForRetrieval()
-            .SelectMany(document => document.Blocks.Select(block => $"{document.Name}：{block.Text}"))
+            .SelectMany(document => document.Blocks.Select(block => UiText.Format("%@：%@", document.Name, block.Text)))
             .ToList();
         return Clip(string.Join("\n\n", pages), 24_000);
     }

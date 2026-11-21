@@ -140,7 +140,7 @@ public partial class AppState
             MeetingHighlights.Remove(existing);
             row.IsHighlighted = false;
             RefreshMeetingHighlights();
-            try { PersistMeetingNotes(meta); SetStatus("已取消高亮。"); }
+            try { PersistMeetingNotes(meta); SetStatus(UiText.T("已取消高亮。")); }
             catch (Exception ex) { SetStatus("保存高亮失败：" + ex.Message, true); }
             return;
         }

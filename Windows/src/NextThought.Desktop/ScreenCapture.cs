@@ -111,7 +111,7 @@ public static class ScreenCapture
             if (bounds.Width < 60 || bounds.Height < 40) return true;
             var title = new System.Text.StringBuilder(length + 1);
             Win32Native.GetWindowText(handle, title, title.Capacity);
-            var owner = "未知应用";
+            var owner = UiText.T("未知应用");
             try { using var process = System.Diagnostics.Process.GetProcessById((int)pid); owner = process.ProcessName; } catch { }
             targets.Add(new CaptureTarget(handle, title.ToString().Trim(), owner, bounds));
             return true;
