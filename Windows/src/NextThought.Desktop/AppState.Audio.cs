@@ -145,7 +145,7 @@ public partial class AppState
         {
             var voice = await tagger.LabelAsync(line.StartedAt ?? line.Date, line.EndedAt ?? line.Date);
             if (voice is null) return;
-            await Sessions.AppendVoiceTagAsync(meta.Id, line.Id, voice.Value);
+            await EnqueueVoiceTag(meta.Id, line.Id, voice.Value);
             if (CurrentSession?.Id != meta.Id) return;
             var index = currentLines.FindIndex(l => l.Id == line.Id);
             if (index < 0) return;

@@ -16,7 +16,7 @@ public partial class AppState
     {
         PublishCompanionSnapshot();
         if (!Recording || string.IsNullOrWhiteSpace(value) || CurrentSession is not { } meta) return;
-        _ = Sessions.AppendQuestionAsync(meta.Id, new SessionQuestionEvent
+        _ = EnqueueQuestion(meta, new SessionQuestionEvent
         {
             Date = DateTimeOffset.UtcNow, Text = value, Intent = "detected", Disposition = "candidate"
         }).ContinueWith(task => _ = task.Exception, TaskScheduler.Default);
@@ -430,7 +430,7 @@ public partial class AppState
         currentLines.Add(line);
         Transcript.Add(new TranscriptRow(line));
         while (Transcript.Count > 400) Transcript.RemoveAt(0);
-        var write = Sessions.AppendTranscriptAsync(meta, line);
+        var write = EnqueueTranscriptLine(meta, line);
         writes.Add(write);
         if (voiceTagger is { } tagger && line.Speaker != "me") writes.Add(TagVoiceAsync(meta, line, tagger));
         if (translator is { } translationService) writes.Add(TranslateLineAsync(meta, line, translationService, write));
@@ -478,9 +478,30 @@ public partial class AppState
     /// <summary>E13: make a fresh screenshot the subject of the composer question.</summary>
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string screenContextText = "";
 
-    public void PromptAboutScreenshot(string? screenText = null)
+    /// <summary>E13: the temporary screenshot that the next answer sends as the model's image input.</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string pendingScreenshotImagePath = "";
+
+    public bool HasPendingScreenshotImage => PendingScreenshotImagePath.Length > 0;
+
+    /// <summary>E13: deletes the temporary screenshot after the question was asked (or abandoned).</summary>
+    public void ClearPendingScreenshotImage()
+    {
+        var path = PendingScreenshotImagePath;
+        PendingScreenshotImagePath = "";
+        OnPropertyChanged(nameof(HasPendingScreenshotImage));
+        if (path.Length == 0) return;
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
+    }
+
+    public void PromptAboutScreenshot(string? screenText = null, string? imagePath = null)
     {
         ScreenContextText = (screenText ?? "").Trim();
+        if (!string.IsNullOrEmpty(imagePath))
+        {
+            ClearPendingScreenshotImage();
+            PendingScreenshotImagePath = imagePath;
+            OnPropertyChanged(nameof(HasPendingScreenshotImage));
+        }
         QuestionInput = "请解释这张截图，指出关键信息、数字或风险。";
         Section = AppSection.Live;
         SetStatus(ScreenContextText.Length > 0 ? "截图与 OCR 文本已就绪；可直接发送。" : "截图已就绪；可直接发送，或补充你的问题。");
@@ -539,6 +560,7 @@ public partial class AppState
         var meta = CurrentSession;
         var options = AnswerOptions();
         var clock = Stopwatch.StartNew();
+        string? screenshotImagePath = null;
         try
         {
             if (!check)
@@ -567,36 +589,19 @@ public partial class AppState
             else if (!check) RetrievalInfo = "未使用资料库";
             var sources = retrieved?.Sources ?? [];
             if (!check) { Sources.Clear(); }
+            // E13: the screenshot captured for this question travels with the request itself.
+            screenshotImagePath = !check && PendingScreenshotImagePath.Length > 0 && File.Exists(PendingScreenshotImagePath)
+                ? PendingScreenshotImagePath
+                : null;
             IReadOnlyList<WebResult> web = [];
-
-            if (!check && ShouldSearchWeb(question) && WebSearch() is { } searchProvider)
+            SearchDecision? searchDecision = null;
+            if (!check)
             {
-                // E14: the same question within 30 minutes reuses the earlier verification results.
-                var now = DateTimeOffset.UtcNow;
-                if (webVerificationCache.TryGet(question, searchProvider.Provider, now, out var cached))
-                {
-                    web = cached.Results;
-                    LastWebSearchUsedCache = true;
-                    SetStatus(UiText.Format("正在联网核实（使用 %@ 的查证结果）…", cached.AgeLabel(now)));
-                }
-                else
-                {
-                    SetStatus("正在联网核实…");
-                    var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);
-                    if (webResponse.Error is null)
-                    {
-                        web = webResponse.Results;
-                        webVerificationCache.Store(new WebVerificationEntry(question, searchProvider.Provider,
-                            question, web, DateTimeOffset.UtcNow));
-                    }
-                    else SetStatus(webResponse.Error);
-                    LastWebSearchUsedCache = false;
-                }
-                WebResults.Clear();
-                foreach (var entry in web) WebResults.Add(entry);
-                OnPropertyChanged(nameof(WebStatusText));
-                OnPropertyChanged(nameof(WebVerificationCacheCount));
-                RaiseLiveAnswerUi();
+                // E14/决议 §3.3 web-search 2: the model review decides whether a background web
+                // answer is needed (the original answer is produced without web results; Mac
+                // assessWebSearch runs alongside it and the lookup fills the web version).
+                searchDecision = await AssessWebSearchAsync(question, cancellation.Token);
+                if (generation != requestEpoch) return;
             }
             // E4/Mac EvidenceBundle: freeze what this answer was grounded on so the live page
             // can show the evidence line ("依据：资料 2 · 屏幕 · 联网 1") and its details.
@@ -609,16 +614,19 @@ public partial class AppState
                     Screen = ScreenContextText.Length > 0
                         ? new ScreenContext { Source = UiText.T("屏幕"), CapturedAt = DateTimeOffset.Now }
                         : null,
+                    ScreenImageAttached = screenshotImagePath is not null,
                     Retrieval = retrieved?.Method ?? "未使用资料库",
+                    Search = searchDecision,
                     WebSources = web,
                     Notes = retrieved?.Warning is { } warning ? [warning] : []
                 }
                 : null;
-            var parts = BuildAnswerPrompt(meta, question, web);
+            var parts = BuildAnswerPrompt(meta, question, web, screenshotImagePath is not null);
             var result = await CurrentClient().AnswerAsync(options,
                 check ? "严格按用户要求回复。" : parts.System,
                 check ? question : parts.User,
-                text => ((IProgress<string>)progress).Report(text), cancellation.Token);
+                text => ((IProgress<string>)progress).Report(text), cancellation.Token,
+                imagePath: screenshotImagePath);
             if (generation != requestEpoch) return;
             if (!check)
             {
@@ -643,12 +651,14 @@ public partial class AppState
                     Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic, Sources = cited,
                     Evidence = evidence
                 };
-                await Sessions.AppendAnswerAsync(meta, answerRecord);
+                await EnqueueAnswer(meta, answerRecord);
                 CurrentAnswerHistory.Add(answerRecord);
                 RefreshSessionAnswerHistory();
                 RaiseLiveAnswerUi();
                 RaiseAnswerProgress();
                 RefreshHistory();
+                // E14: a needed lookup fills the web version for exactly this answer id.
+                MaybeStartWebLookup(answerRecord, searchDecision);
             }
             tracker.HasPriorAnswer = true;
             SetStatus(check ? "回答服务连接成功：" + result : "回答已完成。会议内的回答已归档。");
@@ -657,6 +667,8 @@ public partial class AppState
         catch (Exception ex) { if (generation == requestEpoch) SetStatus(ex.Message, true); }
         finally
         {
+            // E13: the screenshot is temporary; Mac deletes it once the question was answered.
+            if (screenshotImagePath is not null && generation == requestEpoch) ClearPendingScreenshotImage();
             cancellation.Dispose();
             if (generation == requestEpoch)
             {
@@ -673,7 +685,7 @@ public partial class AppState
     /// answer/gloss language travels inside the JSON as answer_language/gloss_language (Mac
     /// AnswerLanguage.fields), never as Chinese sentences appended in C#.
     /// </summary>
-    private (string System, string User) BuildAnswerPrompt(SessionMeta? meta, string question, IReadOnlyList<WebResult> web)
+    private (string System, string User) BuildAnswerPrompt(SessionMeta? meta, string question, IReadOnlyList<WebResult> web, bool hasScreenshot = false)
     {
         var series = meta is null ? null : workspace.SeriesOfSession(meta.Id.ToString());
         var settings = Settings.Build();
@@ -698,7 +710,7 @@ public partial class AppState
         var fullMaterial = SelectedMode == MeetingMode.Academic && settings.UseMaterials
             ? AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval())
             : null;
-        return AnswerPromptBuilder.MakeParts(question, context, series?.MaterialText() ?? "", turns, hasScreenshot: false,
+        return AnswerPromptBuilder.MakeParts(question, context, series?.MaterialText() ?? "", turns, hasScreenshot: hasScreenshot,
             preferences: series?.Preferences ?? "", mode: SelectedMode, style: style,
             excerpts: excerpts, experience: ExperiencePromptFor(meta), skills: snippets,
             webResults: web.Count > 0 ? web : null, webSearch: web.Count > 0, today: DateTimeOffset.Now,
@@ -738,26 +750,11 @@ public partial class AppState
     [RelayCommand]
     private async Task LookUpDisplayedAnswerAsync()
     {
-        if (AnswerText.Length == 0) { SetStatus("还没有可查证的回答。"); return; }
+        if (DisplayedAnswerRecord is not { } record) { SetStatus("还没有可查证的回答。"); return; }
         if (WebSearch() is not { } provider) { SetStatus("联网未配置：先在设置里保存 Tavily 密钥。", true); return; }
-        SetStatus("正在查证当前回答…");
-        try
-        {
-            var question = DetectedQuestion.Length > 0 ? DetectedQuestion : "核对上一条回答的事实";
-            var query = question + " " + AnswerText[..Math.Min(AnswerText.Length, 300)];
-            var response = await provider.SearchAsync(query, 5);
-            if (response.Error is not null) { SetStatus(response.Error, true); return; }
-            // E14: a manual lookup is always fresh, but its result seeds the automatic cache so the
-            // same question does not hit the network twice within 30 minutes.
-            webVerificationCache.Store(new WebVerificationEntry(question, provider.Provider, query,
-                response.Results, DateTimeOffset.UtcNow));
-            OnPropertyChanged(nameof(WebVerificationCacheCount));
-            WebResults.Clear();
-            foreach (var entry in response.Results) WebResults.Add(entry);
-            OnPropertyChanged(nameof(WebStatusText));
-            SetStatus(UiText.Format("查证完成：%lld 条联网来源。", response.Results.Count));
-        }
-        catch (Exception ex) { SetStatus("联网查证失败：" + ex.Message, true); }
+        // E14: the manual 联网查一下 produces the same per-answer web version as the automatic
+        // lookup, so the live page can switch between the original and the browsed answer.
+        await StartWebLookupAsync(record, new SearchDecision(true, UiText.T("用户手动联网"), record.Question, "manual"));
     }
 
     [RelayCommand]

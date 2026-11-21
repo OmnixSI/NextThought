@@ -105,7 +105,7 @@ public partial class AppState
         try
         {
             var (updated, tag) = SessionSpeakerEdits.AssignLine(meta, currentLines, lineId, target);
-            await Sessions.AppendVoiceTagAsync(meta.Id, lineId, tag.Voice);
+            await EnqueueVoiceTag(meta.Id, lineId, tag.Voice);
             var name = updated.VoiceNames is { } names
                        && names.TryGetValue(tag.Voice.ToString(System.Globalization.CultureInfo.InvariantCulture), out var value)
                 ? value

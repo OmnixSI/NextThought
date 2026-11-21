@@ -155,6 +155,7 @@ public partial class AppState
         try
         {
             await Task.WhenAll(writes.ToArray());
+            await FlushArchiveQueueAsync();
             await Sessions.ExportMarkdownAsync(CurrentSession.Id, file);
             SetStatus("会议已导出。");
         }
@@ -170,6 +171,7 @@ public partial class AppState
         try
         {
             await Task.WhenAll(writes.ToArray());
+            await FlushArchiveQueueAsync();
             await Sessions.ExportDocxAsync(CurrentSession.Id, file);
             SetStatus("会议已导出为 Word 文档。");
         }
@@ -185,6 +187,7 @@ public partial class AppState
         try
         {
             await Task.WhenAll(writes.ToArray());
+            await FlushArchiveQueueAsync();
             await Sessions.ExportPdfAsync(CurrentSession.Id, file);
             SetStatus("会议已导出为 PDF。");
         }
