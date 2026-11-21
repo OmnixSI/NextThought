@@ -26,6 +26,12 @@ public class MarkdownText : ContentControl
     private static readonly Regex InlinePattern = new(@"(\*\*(?<bold>.+?)\*\*)|(`(?<code>[^`]+)`)|(\*(?<italic>[^*]+)\*)|(\[(?<label>[^\]]+)\]\([^)]*\))",
         RegexOptions.Compiled | RegexOptions.Singleline);
 
+    /// <summary>How many blocks the last render produced (self-check: bullets/code are rendered).</summary>
+    public int RenderedBlockCount { get; private set; }
+
+    /// <summary>How many inline runs the last render produced (self-check: bold/italic/inline code).</summary>
+    public int InlineRunCount { get; private set; }
+
     public MarkdownText()
     {
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -53,7 +59,10 @@ public class MarkdownText : ContentControl
     private void Rebuild()
     {
         var panel = new StackPanel { Spacing = 10 };
-        foreach (var block in ParseBlocks(LaTeXMath.Markdown(Text ?? "")))
+        var blocks = ParseBlocks(LaTeXMath.Markdown(Text ?? ""));
+        RenderedBlockCount = blocks.Count;
+        InlineRunCount = blocks.Sum(block => InlinePattern.Matches(block.Text).Count);
+        foreach (var block in blocks)
         {
             panel.Children.Add(BuildBlock(block));
         }

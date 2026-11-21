@@ -35,7 +35,7 @@ public static class MarkdownReader
     {
         var result = new List<MarkdownBlock>();
         if (string.IsNullOrEmpty(text)) return result;
-        var code = new List<string>?();
+        List<string>? code = null;
         foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
         {
             var trimmed = raw.Trim();
