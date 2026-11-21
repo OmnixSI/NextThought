@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "phase": "set",
+  "steps": [
+    {
+      "name": "shortcut-set",
+      "ok": true,
+      "detail": "key=0x78 mods=0x3"
+    },
+    {
+      "name": "sidebar-set",
+      "ok": true,
+      "detail": "True"
+    },
+    {
+      "name": "opacity-set",
+      "ok": true,
+      "detail": "0.5"
+    },
+    {
+      "name": "zoom-set",
+      "ok": true,
+      "detail": "1.2"
+    },
+    {
+      "name": "after-meeting-save",
+      "ok": true,
+      "detail": "LoadDemo(Home) + Settings.SaveAsync"
+    }
+  ]
+}
