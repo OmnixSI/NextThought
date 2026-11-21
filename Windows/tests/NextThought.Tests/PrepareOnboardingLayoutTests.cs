@@ -37,8 +37,8 @@ public sealed class PrepareOnboardingLayoutTests
         foreach (var element in new[]
                  {
                      "这场会议叫什么", "这是什么会", "根据标题选好了，可以改", "自定义…", "线上", "线下",
-                     "DraftVenueIndex", "DraftSceneChips", "DraftPromise", "DraftSummary", "DraftMomentRows",
-                     "PrepaiView", "prepareSectionTitle"
+                     "DraftOnline", "DraftOffline", "DraftSceneChips", "DraftPromise", "DraftSummary", "DraftMomentRows",
+                     "prepareSectionTitle"
                  })
             Assert.Contains(element, xaml, StringComparison.Ordinal);
         // Mac sections between hairlines: 这场用什么 / 接着上一场 / 这次新加的资料 / 开始前检查.
@@ -116,8 +116,8 @@ public sealed class PrepareOnboardingLayoutTests
             Assert.Contains(element, xaml, StringComparison.Ordinal);
         // Mac frame: header 32/32, content 720 wide, footer 32/16 with the actions on the right.
         Assert.Contains("Width=\"720\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("Margin=\"32,32,32,12\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("Margin=\"32,16\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("PageMargin32_32_32_12", xaml, StringComparison.Ordinal);
+        Assert.Contains("PageMargin32_16", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("设置清单", xaml, StringComparison.Ordinal);
         var sample = File.ReadAllText(Path.Combine(Desktop, "OnboardingSample.cs"));
         Assert.Contains("OnboardingSampleLine", sample, StringComparison.Ordinal);

@@ -37,6 +37,21 @@ public sealed class HistoryGroupRow : System.ComponentModel.INotifyPropertyChang
     public IReadOnlyList<RecentMeetingRow> Rows { get; }
     public bool CanManage => SeriesId is not null;
 
+    /// <summary>§6.7 E1: the series' scene title shown beside its name (Mac folder.modeTitle).</summary>
+    public string ModeTitle { get; init; } = "";
+
+    /// <summary>§6.7 E1: "N 场 · M 未整理" for the series card/list row.</summary>
+    public string CountsText
+    {
+        get
+        {
+            var ready = Rows.Count(row => row.HasSummary);
+            return ready > 0
+                ? UiText.Meetings(Rows.Count) + " · " + UiText.Format("%lld 篇已整理", (long)ready)
+                : UiText.Meetings(Rows.Count);
+        }
+    }
+
     private bool isSelected;
     public bool IsSelected
     {

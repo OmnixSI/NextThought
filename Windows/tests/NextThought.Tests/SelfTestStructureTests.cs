@@ -122,10 +122,15 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void OnboardingHasVoiceTestPage()
     {
+        // Mac 3.4.0: the guide asks for the microphone in step 2 (声音); the voice test window is
+        // still the one used from the prepare page's 声音 check.
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingVoiceWindow.axaml")));
         var view = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
-        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml.cs"));
-        Assert.Contains("声音测试", view);
+        var prepare = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml.cs"));
+        Assert.Contains("OnboardingMicrophoneDetail", view);
+        Assert.Contains("OnboardingRecognitionDetail", view);
+        Assert.Contains("声音测试", prepare);
         Assert.Contains("VoiceTest_Click", code);
     }
 
@@ -133,17 +138,25 @@ public sealed class SelfTestStructureTests
     public void OnboardingOffersASampleMeeting()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
-        Assert.Contains("看一场示例会议", xaml);
+        // Mac 3.4.0: 「› 看一段面试示例」 opens the scripted sample panel, not a demo shell.
+        Assert.Contains("OnboardingSampleToggle", xaml);
+        Assert.Contains("OnboardingSampleVisibleLines", xaml);
+        Assert.Contains("OnboardingSampleVisibleTakeaways", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
-        Assert.Contains("OpenOnboardingSample", state);
+        Assert.Contains("OnboardingSampleToggle", state);
     }
 
     [Fact]
     public void OnboardingHasChecklistAndCueMock()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
-        Assert.Contains("OnboardingChecks", xaml);
-        Assert.Contains("提词岛示意", xaml);
+        // Mac 3.4.0: the cue island mock is on step 4; the setup checklist lives on 设置 → 通用.
+        Assert.Contains("OnboardingCueIslandQuestion", xaml);
+        Assert.Contains("OnboardingCueIslandAnswer", xaml);
+        Assert.Contains("提词岛", xaml);
+        Assert.DoesNotContain("OnboardingChecks", xaml);
+        var settings = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("SettingsSetupChecklist", settings);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
         Assert.Contains("OnboardingCheckRow", state);
     }
@@ -1118,12 +1131,13 @@ public sealed class SelfTestStructureTests
     public void PrepareCheckCardsArePresent()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
-        // E2 round 3: CheckCard rows now follow PrepareView.swift (声音 / AI 可选 / 手机 / 资料与模型).
-        Assert.Contains("PrepareAudioReady", xaml);
-        Assert.Contains("PrepareAnswerLine", xaml);
-        Assert.Contains("PrepareEngineStateLabel", xaml);
-        Assert.Contains("PreparePhoneLine", xaml);
-        Assert.Contains("资料与模型", xaml);
+        // Mac 3.4.0 CheckCard: 声音 / AI 可选 / 手机, each with a StatusDot and its own line.
+        Assert.Contains("PrepareAudioTone", xaml);
+        Assert.Contains("PrepareAiTone", xaml);
+        Assert.Contains("PrepareMicLine", xaml);
+        Assert.Contains("PrepareAnswerEngineLine", xaml);
+        Assert.Contains("PrepareEngineVerification", xaml);
+        Assert.Contains("PrepareShowPhoneCheck", xaml);
     }
 
     [Fact]
@@ -1132,7 +1146,8 @@ public sealed class SelfTestStructureTests
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
         Assert.Contains("<Grid RowDefinitions=\"*,Auto\">", xaml);
         Assert.Contains("Grid.Row=\"1\"", xaml);
-        Assert.Contains("开始记录", xaml);
+        Assert.Contains("PrepareStartLabel", xaml);
+        Assert.Contains("StartPreparedMeetingCommand", xaml);
     }
 
     [Fact]
@@ -1141,7 +1156,10 @@ public sealed class SelfTestStructureTests
         var library = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "ViewModels", "LibraryViewModel.cs"));
         Assert.Contains("MaterialsInsight", library);
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
-        Assert.Contains("Library.MaterialsInsight", xaml);
+        // Mac 3.4.0 MaterialsInsight: 「讨论准备 · AI 可选」 block inside 这次新加的资料.
+        Assert.Contains("PrepareInsightHeading", xaml);
+        Assert.Contains("PrepareInsightActionCommand", xaml);
+        Assert.Contains("CancelMaterialsInsightCommand", xaml);
     }
 
     [Fact]
@@ -1151,7 +1169,10 @@ public sealed class SelfTestStructureTests
         Assert.Contains("SelectedSeriesBriefing", series);
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
         Assert.Contains("系列简报", xaml);
-        Assert.Contains("SelectedSeriesBriefing.LatestSessions", xaml);
+        // Mac 3.4.0: the briefing sits in the 接着上一场 section and reads the draft series' briefing.
+        Assert.Contains("DraftBriefingRecentSessions", xaml);
+        Assert.Contains("DraftBriefingLessons", xaml);
+        Assert.Contains("DraftBriefingQuestionBank", xaml);
     }
 
     [Fact]

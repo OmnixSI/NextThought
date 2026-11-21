@@ -1,8 +1,8 @@
 # 首次引导 · Mac ↔ Windows 逐元素对照（§6.3 / §6.7 / E3）
 
-- Mac 基准：v3.4.0 `Sources/NextThought/Onboarding.swift`（`OnboardingView` 四步：header / scenePage+sceneSheet / soundPage / answersPage+`AnswerEngineForm` / startPage+`CueIslandMock` / footer）、`OnboardingSampleMeeting.swift`、Core `OnboardingFlow.swift`、`LiveNotesEngine.swift`（场景即 lastScene）。
-- Mac 参考截图：`validation/mac-screens/onboarding/step-{1,2,3,4}-{light,dark}.png`（1600×1171，窗口 1120×820，比例 1.4214）。
-- Windows 截图：`validation/screens/onboarding/onboarding-step{0,1,2,3}-{light,dark}.png`（1120×820，`--demo --screenshots`，数据目录隔离；step0=场合 … step3=提词与开始）。
+- Mac 基准：Mac 3.4.0 `Sources/NextThought/Onboarding.swift`（`OnboardingView` 四步：header / scenePage+sceneSheet / soundPage / answersPage+`AnswerEngineForm` / startPage+`CueIslandMock` / footer）、`OnboardingSampleMeeting.swift`、Core `OnboardingFlow.swift`、`LiveNotesEngine.swift`（场景即 lastScene）。
+- Mac 参考截图：`../../mac-screens/onboarding/step-{1,2,3,4}-{light,dark}.png`（1600×1171，窗口 1120×820，比例 1.4214）。
+- Windows 截图：`onboarding/onboarding-step{0,1,2,3}-{light,dark}.png`（1120×820，`--demo --screenshots`，数据目录隔离；step0=场合 … step3=提词与开始）。
 - 结论见文末「结论」。
 
 ## 1. 框架（header / footer / 动效）

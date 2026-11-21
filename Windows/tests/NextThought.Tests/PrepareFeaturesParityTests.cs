@@ -63,7 +63,8 @@ public sealed class PrepareFeaturesParityTests
         foreach (var element in new[]
                  {
                      "MeetingFeatureChoices", "MeetingFeatureChoices.FileName", "ForSeries(",
-                     "StandardMeetingFeatures", "Standard(prompting: StandardPrompting, speakers: SpeakerSeparationEnabled)",
+                     "StandardMeetingFeatures", "StandardPrompting", "SpeakerSeparationEnabled",
+                     "prompting: StandardPrompting", "speakers: SpeakerSeparationEnabled",
                      "MeetingFeatureSeriesKey", "ResetMeetingFeatures", "RaiseMeetingFeatures",
                      "ActiveMeetingFeatures", "ApplyActiveMeetingFeatures"
                  })

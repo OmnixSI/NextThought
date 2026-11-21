@@ -1,8 +1,8 @@
 # 会前准备页 · Mac ↔ Windows 逐元素对照（§6.3 / §6.7 / J2）
 
-- Mac 基准：v3.4.0 `Sources/NextThought/PrepareView.swift`（含 3.4.0 的「这场用什么」`FeaturePicker`、`FeatureReset`、`SeriesCarryCard`、`MaterialsBlock`、`CheckCard`、`PreparationStartBar`）、`LiveNotesEngine.swift:144-178`（`meetingFeatures` 每系列沿用）。
-- Mac 参考截图：`validation/mac-screens/prepare/prepare-light.png`、`prepare-dark.png`（1600×1171，窗口 1120×820，比例 1.4214）。
-- Windows 截图：`validation/screens/prepare/prepare-light.png`、`prepare-dark.png`（1120×820，`--demo --screenshots`，数据目录隔离）。
+- Mac 基准：Mac 3.4.0 `Sources/NextThought/PrepareView.swift`（含 3.4.0 的「这场用什么」`FeaturePicker`、`FeatureReset`、`SeriesCarryCard`、`MaterialsBlock`、`CheckCard`、`PreparationStartBar`）、`LiveNotesEngine.swift:144-178`（`meetingFeatures` 每系列沿用）。
+- Mac 参考截图：`../../mac-screens/prepare/prepare-light.png`、`prepare-dark.png`（1600×1171，窗口 1120×820，比例 1.4214）。
+- Windows 截图：`prepare/prepare-light.png`、`prepare-dark.png`（1120×820，`--demo --screenshots`，数据目录隔离）。
 - 结论见文末「结论」。
 
 ## 1. 窗口外壳（非本页所有，仅记录）
