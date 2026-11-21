@@ -43,7 +43,7 @@ public sealed class SceneSettingsPageTests
         var state = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.SceneSettings.cs"));
         Assert.Contains("SceneTemplateOptions()", state);
         Assert.Contains("SceneDefaults.For(mode)", state);
-        var templates = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Templates.cs"));
+        var templates = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Notes.cs"));
         Assert.Contains("DefaultTemplateIdFor(SelectedMode)", templates);
     }
 
