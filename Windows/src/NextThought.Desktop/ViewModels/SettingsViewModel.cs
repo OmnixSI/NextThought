@@ -632,6 +632,15 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("strict", "严格")
     ];
 
+    // §3.3 coach 1: Mac LiveCoach.isEnabled — the in-meeting gentle nudges master switch.
+    [ObservableProperty] private bool coachEnabled = true;
+
+    partial void OnCoachEnabledChanged(bool value)
+    {
+        if (loadingCoachGaze) return;
+        _ = state.ApplyCoachEnabledAsync(value);
+    }
+
     [ObservableProperty] private bool coachWatchesGaze;
     [ObservableProperty] private GazeSensitivityChoice? selectedGazeSensitivity;
     private bool loadingCoachGaze;
@@ -904,6 +913,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightScreenSource = settings.InsightScreenSource;
         InsightScreenRegion = settings.InsightScreenRegion;
         loadingCoachGaze = true;
+        CoachEnabled = settings.CoachEnabled;
         CoachWatchesGaze = settings.CoachWatchesGaze;
         SelectedGazeSensitivity = GazeSensitivityValues.FirstOrDefault(choice => choice.Value == settings.CoachGazeSensitivity)
             ?? GazeSensitivityValues[1];
@@ -1039,6 +1049,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightFollowSlides = InsightFollowSlides,
         InsightScreenSource = InsightScreenSource,
         InsightScreenRegion = InsightScreenRegion,
+        CoachEnabled = CoachEnabled,
         CoachWatchesGaze = CoachWatchesGaze,
         CoachGazeSensitivity = SelectedGazeSensitivity?.Value ?? "standard",
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",

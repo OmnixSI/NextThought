@@ -51,6 +51,26 @@ public sealed class CoachGazeSettingsTests
     }
 
     [Fact]
+    public void TheCoachMasterSwitchDefaultsOnAndPersistsUnderTheMacKey()
+    {
+        var paths = TempPaths();
+        var store = new SettingsStore(paths);
+        Assert.True(store.Load().CoachEnabled);
+        Assert.Equal(true, store.LoadMacValue("coachEnabled"));
+
+        store.SaveMacPreferencesAsync(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["coachEnabled"] = false,
+            ["coachWatchesGaze"] = true
+        }).GetAwaiter().GetResult();
+        Assert.False(store.Load().CoachEnabled);
+        Assert.Equal(false, store.LoadMacValue("coachEnabled"));
+        var json = File.ReadAllText(paths.Settings);
+        Assert.Contains("\"coachEnabled\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"CoachEnabled\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GazeBaselineSidecarRoundTrips()
     {
         var paths = TempPaths();
