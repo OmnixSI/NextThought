@@ -47,6 +47,8 @@
               <RadioButton GroupName="prepare-venue" Content="{loc:Tr 线下}" IsChecked="{Binding DraftOffline, Mode=TwoWay}" />
             </StackPanel>
           </Grid>
+          <TextBlock Text="{Binding DraftVenueHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                     TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_0}" />
 
           <StackPanel Spacing="{DynamicResource D4Spacing_4}">
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -153,6 +155,31 @@
             <Button Content="{loc:Tr 打开资料库}" Command="{Binding NavigateCommand}" CommandParameter="Library" />
             <Button Content="{loc:Tr 打开系列}" Command="{Binding NavigateCommand}" CommandParameter="Series" />
           </StackPanel>
+          <!-- E2 task-33: MaterialsInsight (Mac 讨论准备 · AI 可选). -->
+          <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                  Padding="{DynamicResource D4Padding_14_12}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{Binding PrepareInsightHeading}" Classes="overline" Foreground="{DynamicResource Secondary}" />
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{Binding PrepareInsightHint}" Classes="body" TextWrapping="Wrap"
+                           IsVisible="{Binding !PrepareInsightShowsBody}" />
+                <TextBlock Text="{Binding PrepareInsightStatus}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                           IsVisible="{Binding PrepareInsightRunning}" />
+                <TextBlock Text="{Binding PrepareInsightText}" Classes="body" TextWrapping="Wrap"
+                           IsVisible="{Binding PrepareInsightHasText}" />
+                <TextBlock Text="{Binding PrepareInsightError}" Classes="caption" Foreground="{DynamicResource Caution}"
+                           TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightHasText}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <Button Content="{Binding PrepareInsightAction}" Command="{Binding PrepareInsightActionCommand}"
+                        IsVisible="{Binding !PrepareInsightRunning}" />
+                <Button Content="{loc:Tr 取消生成}" Command="{Binding CancelMaterialsInsightCommand}"
+                        IsVisible="{Binding PrepareInsightRunning}" />
+              </StackPanel>
+              <TextBlock Text="{Binding PrepareInsightActionHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                         TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightShowsBody}" />
+            </StackPanel>
+          </Border>
         </StackPanel>
       </Border>
 
@@ -208,9 +235,20 @@
                     <Button Classes="quiet" Content="{loc:Tr 重新打开麦克风}" Command="{Binding UseMicrophoneAgainCommand}"
                             IsVisible="{Binding PrepareShowUseMicrophone}" />
                     <Button Classes="quiet" Content="{loc:Tr 下载}" Command="{Binding PrepareModelsCommand}" />
+                    <Button Classes="quiet" Content="{loc:Tr 声音测试}" Click="VoiceTest_Click" />
+                    <Button Classes="quiet" Content="{loc:Tr 去准备}" Command="{Binding NavigateCommand}"
+                            CommandParameter="Settings" IsVisible="{Binding !PrepareAudioReady}" />
                   </StackPanel>
                 </Grid>
                 <TextBlock Text="{Binding PrepareMicLine}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                <Grid ColumnDefinitions="Auto,140,Auto,140" ColumnSpacing="{DynamicResource D4Spacing_6}">
+                  <TextBlock Text="{loc:Tr 对方 · 系统声音}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                             VerticalAlignment="Center" />
+                  <ProgressBar Grid.Column="1" Value="{Binding SystemAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{loc:Tr 我 · 麦克风}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                             VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
+                  <ProgressBar Grid.Column="3" Value="{Binding MicrophoneAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
+                </Grid>
                 <TextBlock Text="{Binding PrepareAudioProblem}" Classes="caption" Foreground="{DynamicResource Caution}"
                            TextWrapping="Wrap" IsVisible="{Binding !PrepareAudioReady}" />
                 <TextBlock Text="{Binding ModelStatusText}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
@@ -227,11 +265,13 @@
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Text="{Binding PrepareAnswerLine}" Classes="label" TextWrapping="Wrap" />
                   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                    <Button Classes="quiet" Content="{loc:Tr 检查回答服务}" Command="{Binding TestAnswerEngineCommand}" />
+                    <Button Classes="quiet" Content="{Binding PrepareEngineActionLabel}" Command="{Binding TestAnswerEngineCommand}"
+                            IsEnabled="{Binding PrepareEngineActionEnabled}" />
                     <Button Classes="quiet" Content="{Binding PrepareAnswerAction}" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
                   </StackPanel>
                 </Grid>
-                <TextBlock Text="{Binding PrepareEngineVerification}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding PrepareEngineStateLabel}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                           TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
           </Border>

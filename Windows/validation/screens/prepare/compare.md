@@ -1,35 +1,41 @@
-# E2 · 会前准备页对照（PrepareView，第三轮缺口收尾）
+# E2 · 会前准备页对照（PrepareView，第四轮 task-33 收尾）
 
 - 日期：2026-11-21
-- Mac 参照：`Sources/NextThought/PrepareView.swift`（PrepareView / PrepareComposer / TypePicker / SeriesCarryCard / SeriesBriefingPanel / CarryRow / MaterialsActions / MaterialsBlock / FileRow / MaterialsInsight / CheckCard / AudioCheckRow / VenuePicker / AudioSourceMenu / AnswerCheckRow / PhoneCheckRow / PreparationStartBar）、`Sources/NextThought/AppState+Meeting.swift`（`MeetingDraft`、`MeetingVenue`、`SessionMode.defaultsSummary/preparationHint`）、`Sources/NextThought/AppState+Prepare.swift`（updateDraftTitle / setDraftType / setDraftCustomType / setDraftCarry / cancelDraft / startPreparedMeeting）
-- Windows 实现：`Windows/src/NextThought.Desktop/MeetingDraft.cs`（新）、`AppState.PrepareDraft.cs`（新）、`AppState.Prepare.cs`、`Views/PrepareView.axaml(.cs)`、`AppState.Live.cs` 的 `StartRecordingAsync`
+- Mac 参照：`Sources/NextThought/PrepareView.swift`（PrepareComposer / TypePicker / SeriesCarryCard / SeriesBriefingPanel / MaterialsBlock / FileRow / MaterialsInsight / CheckCard / AudioCheckRow / VenuePicker / AnswerCheckRow / PhoneCheckRow / PreparationStartBar）、`AppState+Meeting.swift`（`MeetingDraft` / `MeetingVenue` / `defaultsSummary`）、`AppState+Prepare.swift`（draft 生命周期、`readDraftMaterials`、`startPreparedMeeting`）、Core `PreparationPrompt`
+- Windows 实现：`Windows/src/NextThought.Desktop/MeetingDraft.cs`、`AppState.PrepareDraft.cs`、`AppState.Prepare.cs`、`AppState.PrepareInsight.cs`（本轮新增）、`Views/PrepareView.axaml(.cs)`、`AppState.Live.cs`
 - 截图：`Windows/validation/screens/prepare/prepare-{light,dark,en-light,en-dark}.png`
 
-## 本轮补齐的缺口（对照 Mac）
+## task-33 本轮收尾项
 
-| Mac 元素 | 本轮实现 | 说明 |
+| Mac 元素 | 实现 | 说明 |
 |---|---|---|
-| `MeetingDraft`（AppState+Meeting.swift） | `MeetingDraft` 记录：title / mode / customTypeName / customBaseMode / typeChosen / seriesId / carry / baselineDocumentIds / previousSessionID / startedAt；AppState 以 `Draft` 持有，`EnsureDraft`（进入准备页）建立，`CancelDraft` 丢弃 | 内存态，和 Mac 一样不落盘；`DraftMeetingPlan` 直接从 draft 生成 ported `MeetingPlan` |
-| `updateDraftTitle` | `DraftTitle` setter：写 `MeetingTitle`，未手动选类型时用 Core `MeetingTypeGuesser` 猜场景 | 输入标题即切换场景与 SceneGlyph，和 Mac 相同 |
-| 类型猜测提示 | 「这是什么会」overline + 猜测时显示「根据标题选好了，可以改」（`DraftGuessNoteVisible`） | Mac `showsGuessNote` 的等价 |
-| `SessionMode.defaultsSummary` / `preparationHint` | `SceneSummary.Defaults/Hint/Line`：10 个场景的默认值摘要与「建议放：」资料提示；`SceneChoice.DefaultsSummary` 作为场景 chip 的 `ToolTip.Tip`；类型卡片下显示「名称：默认值 · 建议放：资料」 | 快捷键按 G10 改为 `Ctrl+Shift+Enter`（Mac 为 ⌘⇧↩） |
-| `TypePicker` 自定义类型 | 「自定义…」chip → `SetDraftCustomType`；自定义面板：类型名称 TextBox（`DraftCustomTypeName`）+ 「基于」下拉（`DraftBaseScenes`） | 修复过一处运行时栈溢出：ItemsSource 每次重建 + SelectionChanged 无守卫会无限递归；现为缓存列表 + 值未变提前返回 + `applyingDraft` 防重入 |
-| `VenuePicker` | 标题右侧「线上 / 线下」RadioButton：线上 = 系统声音 + 麦克风，线下 = 仅麦克风（写 `Settings.CaptureSystem/CaptureMicrophone` 并保存） | 与 Mac MeetingVenue 语义一致；转写 `InPerson` 跟随（Live 用 `CaptureSystem` 推断） |
-| `AudioCheckRow` | 检查卡「声音」行：状态点 + 当前声音来源 + 麦克风状态（现场/我/未开启）+ 模型状态/下载 + 未就绪提示 | 无 macOS 的 AudioSourceMenu（只窗口/刷新）；Mac 该行本身无电平条 |
-| 只记录对方 / 重新打开麦克风 | `ContinueWithoutMicrophoneCommand`、`UseMicrophoneAgainCommand`；页面与开始栏各有入口 | 对应 Mac `continueWithoutMicrophone` / `useMicrophoneAgain` |
-| `AnswerCheckRow` | 「AI 可选」行：API/未配置 + 「检查回答服务」（`TestAnswerEngineCommand`）+ 连接结果（`PrepareEngineVerification`）+ 「更换/去连接」 | Mac 打开设置 answers 页；Windows 复用设置页入口 |
-| `PhoneCheckRow` | 「手机」行：连接状态/中转地址 | 无 Mac 的 companionEnabled 条件隐藏 |
-| `MaterialsBlock` / `FileRow` / `MaterialsActions` | 资料行「名称 + N 段 / 还没有可用的文字 / N 处提示」；拖放目标（`DragDrop.AllowDrop`，`ImportDraftDocumentsAsync`）；「导入资料」按钮；空态提示 | 缺 Mac 的逐条解析进度/失败重试与「这次新加的资料」分组 |
-| `SeriesCarryCard` / `CarryRow` | 系列列表 + 四个带入开关 + `PrepareCarrySummary`；开关同步 `draft.Carry` | 缺 Mac 的系列候选建议（SeriesMatcher 接着上一场/不是同一个系列） |
-| `PreparationStartBar` / `StartButton` | 状态点 + 就绪说明 + 本场资料句 + 取消 + 只记录对方 + 导入 WAV + 开始记录（`StartPreparedMeetingCommand` → `BeginPreparedMeeting`） | 主流程与 Mac startPreparedMeeting 一致；缺录制同意提示（Windows 无对应步骤） |
-| `SeriesBriefingPanel` | 最近会议 / 已确认经验 / 题库 | 与上一轮一致，样式简化 |
+| `MaterialsInsight`（讨论准备 · AI 可选） | `AppState.PrepareInsight.cs`：`准备InsightAction`（整理讨论重点 / 设置 AI 服务（可选））→ `ReadMaterialsInsightAsync` 用 Core `PreparationPrompt.System(mode)` + `Output(mode)` 与系列资料文本（`WorkspaceSeries.MaterialText()`，回退资料库 blocks，截断 24k）走**真实回答服务往返**（`CurrentClient().AnswerAsync`，流式回填），状态 idle/running/ready/failed；未配置服务、无资料、取消、异常分别有明确文案；「取消生成」可用 | Mac `PreparationPreview.shared.read` 的等价；差异：无跨页面缓存复用（每次请求） |
+| CheckCard 采音电平 | `UpdateAudioLevels` 接入引擎 level 回调（`systemLevel/microphoneLevel`），准备页显示「对方 · 系统声音」「我 · 麦克风」两条电平；停止时清零；新增「声音测试」（打开 `OnboardingVoiceWindow`）与未就绪时「去准备」 | Mac 准备页无电平条（电平在 ContentView 的 LevelMeters）；Windows 按任务加在采音行，录音/声音测试时才有读数 |
+| `VenuePicker` 完整交互 | 线上/线下单选旁显示 Mac 语义提示（线上听电脑播放的声音 / 线下只用麦克风、转写标「现场」）；切换即写 `Settings.CaptureSystem/CaptureMicrophone` 并保存；线下强制开麦克风；开始录音据此生成 `InPerson` | 与 Mac `setMeetingVenue` + `isOfflineMeeting/usesMicrophone` 语义一致；不引入 Mac 的 `meetingVenue` UserDefaults 键（Windows 用采集设置推导） |
+| 「测试回答服务」状态机 | `PrepareEngineStateLabel` / `PrepareEngineActionLabel` / `PrepareEngineActionEnabled` 跟随 `EngineTestState`（idle → 正在检查… → 通过·用时 / 失败原因），按钮 idle「检查回答服务」、running 禁用、结束「重新检查」；**未配置服务时直接给出「到 设置 → 回答 填写 API Key 后再检查」**，不再走泛化连接错误 | 真实模型往返由 `TestAnswerEngineAsync` 发送最短请求；结果文本见 `PrepareEngineStateLabel` |
+| 其它 Mac 动作 | 「从以前的会议带入…」未做独立菜单（系列列表已可选）；资料添加支持拖放与「导入资料」按钮（多选由选择器提供单文件）；`开始记录` 走 `StartPreparedMeetingCommand`（draft → MeetingPlan → BeginPreparedMeeting） | 未做逐文件取消/重试（Windows 材料无逐文件作业队列）；`AudioSourceMenu` 的窗口/显示选择仍缺（见准备页遗留差异表） |
 
-## 运行时自测
+## 逐元素对照（延续第三轮表）
 
-- `--demo --self-test prepare`（`RunPrepareCheckAsync`）：逐项驱动场景 chip、自定义类型/基础类型、线上/线下、只记录对方/重新打开麦克风、四个带入开关、资料行、`DraftMeetingPlan`、`BeginPreparedMeeting`（断言 plan Title/Mode/Carry），最后取消并断言 draft 清空。
-- `--demo --self-test startup`：启动/页面装配冒烟。
-- 修复记录：ComboBox `SelectionChanged` 无限递归（栈溢出）已修；修复后 `startup` 与 `prepare` 自测实跑通过。
+| Mac 元素 | Windows 状态 | 差异 |
+|---|---|---|
+| `PrepareComposer`/`TypePicker` | 有：标题、线上/线下、这是什么会、猜测提示、自定义类型 + 基于、promise/summary/moments、chip tooltip `defaultsSummary` | — |
+| `SeriesCarryCard`/`CarryRow` | 有：系列列表、四个带入开关、`PrepareCarrySummary`、draft carry 同步 | 缺 SeriesMatcher「接着上一场/不是同一个系列」建议 |
+| `SeriesBriefingPanel` | 有：最近会议/经验/题库 | 样式简化 |
+| `MaterialsBlock`/`FileRow` | 有：资料行（N 段/提示/无文字）、拖放、导入、空态、`MaterialsInsight` | 缺逐条解析进度/取消/重试 |
+| `CheckCard` | 有：声音（电平/设备状态/模型/下载/声音测试/去准备）、AI 可选（状态机）、手机、资料与模型 | 缺 AudioSourceMenu 的窗口级声音来源 |
+| `PreparationStartBar` | 有：状态点 + 就绪说明 + 本场资料句 + 取消 / 只记录对方 / 导入 WAV / 开始记录 | 缺录制同意提示（Windows 无该步骤） |
+
+## 点按记录
+
+见 `click-through.md`（新增洞察、电平、场地、测试回答服务条目）。
+
+## 验证
+
+- `--demo --self-test prepare`：draft/类型/场地/麦克风/资料行/plan；`startup` 冒烟。
+- `--demo --screenshots`：准备页浅/深/英文。
+- 本轮已核对：洞察块按钮在 idle/未配置两种文案；回答服务测试在未配置时给出明确步骤；场地切换与麦克风状态联动；电平条在未录音时为 0。
 
 ## 未完成项
 
-- SeriesMatcher 系列建议；AudioSourceMenu 捕获窗口选择；逐条解析进度与重试；录制同意提示；本轮截图待 verify 重跑（`click-through.md` 已更新）。
+- 资料逐条解析进度/取消/重试、AudioSourceMenu 窗口选择、SeriesMatcher 建议、录制同意提示；洞察结果无缓存复用。

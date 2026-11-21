@@ -848,6 +848,7 @@ public partial class AppState
         automaticScheduler = new AutomaticAnswerScheduler();
         lastMicrophoneSpeech = default;
         systemLevel = microphoneLevel = 0;
+        UpdateAudioLevels(0, 0);
         LevelText = "";
         OnPropertyChanged(nameof(HasTranscript));
         OnPropertyChanged(nameof(StatsText));

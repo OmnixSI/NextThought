@@ -1090,7 +1090,7 @@ public sealed class SelfTestStructureTests
         // E2 round 3: CheckCard rows now follow PrepareView.swift (声音 / AI 可选 / 手机 / 资料与模型).
         Assert.Contains("PrepareAudioReady", xaml);
         Assert.Contains("PrepareAnswerLine", xaml);
-        Assert.Contains("PrepareEngineVerification", xaml);
+        Assert.Contains("PrepareEngineStateLabel", xaml);
         Assert.Contains("PreparePhoneLine", xaml);
         Assert.Contains("资料与模型", xaml);
     }

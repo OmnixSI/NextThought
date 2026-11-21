@@ -173,6 +173,8 @@ public partial class AppState
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
             BeginLiveTranslation();
+            BeginLiveMeetingTranslation();
+            ApplyRememberedTranslatorForMeeting();
             var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;
             LiveSpeechEngine? ownedEngine = null;
             if (settings.CloudStt.Length == 0)
@@ -287,6 +289,7 @@ public partial class AppState
                 if (source == AudioSource.System) systemLevel = level; else microphoneLevel = level;
                 LevelText = UiText.Format("系统 %.0f · 麦克风 %.0f", systemLevel * 100, microphoneLevel * 100);
                 UpdateAudioLevels(systemLevel, microphoneLevel);
+                UpdateAudioLevels(systemLevel, microphoneLevel);
             });
             await Task.Run(() => capture.Start(settings));
             if (capture.LastError is { } captureError) throw new IOException(captureError);
@@ -382,7 +385,9 @@ public partial class AppState
                 if (automatic && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, false, update.Id, DateTimeOffset.UtcNow));
             }
             else MicrophonePartial = "麦克风 · " + update.Text;
-            RequestPartialTranslation(update.Source, update.Text);
+            // E11/Mac submitPartial: the other side speaking English may turn interpretation on by itself.
+            if (update.Source == AudioSource.System) MaybeAutoOpenLiveTranslation(update.Text);
+            if (LiveTranslationEnabled) RequestPartialTranslation(update.Source, update.Text);
             return;
         }
         if (update.Source == AudioSource.System)
@@ -421,6 +426,8 @@ public partial class AppState
         _ = write.ContinueWith(task => Dispatcher.UIThread.Post(() => HandleAudioFailure("会议写入失败：" + task.Exception!.GetBaseException().Message)), TaskContinuationOptions.OnlyOnFaulted);
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
         NoteSpeechHeard(line);
+        // E7/Mac AnswerProgressStrip: the covered points move with my own speech.
+        if (line.Speaker != "remote") RaiseAnswerProgress();
         // E6/Mac questionTurn.heard / .spoke: their sentences build the turn, a real reply ends it.
         NoteQuestionTurn(line);
         FollowSpeechForLine(line);
@@ -447,10 +454,9 @@ public partial class AppState
 
     private static bool LooksForeign(string text)
     {
-        var letters = text.Count(char.IsLetter);
-        if (letters < 4) return false;
-        var cjk = text.Count(character => character is >= '\u4E00' and <= '\u9FFF');
-        return cjk * 5 < letters;
+        // E11/Mac TranslationDirection.detect: a line that reads as English needs 译文.
+        if (text.Count(char.IsLetter) < 4) return false;
+        return LiveTranslationDirectionDetector.Detect(text) == LiveTranslationDirection.EnglishToChinese;
     }
 
     /// <summary>E13: make a fresh screenshot the subject of the composer question.</summary>
@@ -625,6 +631,7 @@ public partial class AppState
                 CurrentAnswerHistory.Add(answerRecord);
                 RefreshSessionAnswerHistory();
                 RaiseLiveAnswerUi();
+                RaiseAnswerProgress();
                 RefreshHistory();
             }
             tracker.HasPriorAnswer = true;

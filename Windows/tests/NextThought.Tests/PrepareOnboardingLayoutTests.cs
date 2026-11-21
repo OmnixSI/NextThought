@@ -35,9 +35,11 @@ public sealed class PrepareOnboardingLayoutTests
         foreach (var element in new[]
                  {
                      "这场会议叫什么", "这是什么会", "根据标题选好了，可以改", "自定义…", "线上", "线下",
-                     "系列与资料", "系列简报", "带入资料", "带入题库", "带入经验", "带入上一场转写",
+                     "DraftVenueHint", "系列与资料", "系列简报", "带入资料", "带入题库", "带入经验", "带入上一场转写",
                      "PrepareCarrySummary", "PrepareMaterialsRows", "PrepareMaterialsLine", "PrepareAudioReady",
-                     "PrepareAnswerLine", "PrepareEngineVerification", "PrepareMicLine",
+                     "SystemAudioLevelPercent", "MicrophoneAudioLevelPercent", "VoiceTest_Click",
+                     "PrepareInsightHeading", "PrepareInsightActionCommand", "CancelMaterialsInsightCommand",
+                     "PrepareAnswerLine", "PrepareEngineStateLabel", "PrepareEngineActionLabel", "PrepareMicLine",
                      "ImportPreparedDocumentsCommand", "ContinueWithoutMicrophoneCommand", "UseMicrophoneAgainCommand",
                      "TestAnswerEngineCommand", "DragDrop.AllowDrop", "CancelDraftCommand", "开始记录"
                  })
@@ -62,6 +64,16 @@ public sealed class PrepareOnboardingLayoutTests
         var code = File.ReadAllText(Path.Combine(Desktop, "Views", "PrepareView.axaml.cs"));
         Assert.Contains("applyingDraft", code, StringComparison.Ordinal);
         Assert.Contains("TryGetFilesAsync", code, StringComparison.Ordinal);
+        Assert.Contains("VoiceTest_Click", code, StringComparison.Ordinal);
+        // task-33: MaterialsInsight reads the materials through the ported preparation prompt.
+        var insight = File.ReadAllText(Path.Combine(Desktop, "AppState.PrepareInsight.cs"));
+        foreach (var element in new[]
+                 {
+                     "ReadMaterialsInsightAsync", "PreparationPrompt.System", "PreparationPrompt.Output",
+                     "PrepareInsightState", "PrepareEngineStateLabel", "UpdateAudioLevels", "DraftVenueHint",
+                     "还没有配置回答服务"
+                 })
+            Assert.Contains(element, insight, StringComparison.Ordinal);
         // The start path builds the ported MeetingPlan, like Mac startPreparedMeeting.
         var live = File.ReadAllText(Path.Combine(Desktop, "AppState.Live.cs"));
         Assert.Contains("BeginPreparedMeeting(planSeries)", live, StringComparison.Ordinal);
@@ -81,6 +93,30 @@ public sealed class PrepareOnboardingLayoutTests
                      "先看看", "开始第一场", "回到声音"
                  })
             Assert.Contains(element, xaml, StringComparison.Ordinal);
+        // task-34: 示例会议面板（Mac OnboardingSampleMeeting）逐元素。
+        foreach (var element in new[]
+                 {
+                     "OnboardingSampleVisibleLines", "OnboardingSampleVisibleTakeaways", "OnboardingSampleProgress",
+                     "OnboardingSampleSuggestionQuestion", "OnboardingSampleSuggestionAnswer",
+                     "ReplayOnboardingSampleCommand", "实时转写", "面试记录", "重播"
+                 })
+            Assert.Contains(element, xaml, StringComparison.Ordinal);
+        var sample = File.ReadAllText(Path.Combine(Desktop, "OnboardingSample.cs"));
+        Assert.Contains("OnboardingSampleLine", sample, StringComparison.Ordinal);
+        Assert.Contains("OnboardingSampleTakeaway", sample, StringComparison.Ordinal);
+        var sampleState = File.ReadAllText(Path.Combine(Desktop, "AppState.OnboardingSample.cs"));
+        Assert.Contains("ScriptTimeline", sampleState, StringComparison.Ordinal);
+        Assert.Contains("DispatcherTimer", sampleState, StringComparison.Ordinal);
+        // 切步动效: Motion.phase port (0.46 s fade) on every step change.
+        var motion = File.ReadAllText(Path.Combine(Desktop, "Views", "Motion.cs"));
+        Assert.Contains("PhaseIn", motion, StringComparison.Ordinal);
+        Assert.Contains("Phase = TimeSpan.FromMilliseconds(460)", motion, StringComparison.Ordinal);
+        var guideCode = File.ReadAllText(Path.Combine(Desktop, "Views", "OnboardingView.axaml.cs"));
+        Assert.Contains("AnimatePageAsync", guideCode, StringComparison.Ordinal);
+        // 设置清单挂在 Mac 的通用页。
+        var settings = File.ReadAllText(Path.Combine(Desktop, "Views", "SettingsView.axaml"));
+        Assert.Contains("SettingsSetupChecklist", settings, StringComparison.Ordinal);
+        Assert.Contains("Tag=\"General\"", settings, StringComparison.Ordinal);
         var window = File.ReadAllText(Path.Combine(Desktop, "Views", "MainWindow.axaml"));
         Assert.Contains("<views:OnboardingView", window, StringComparison.Ordinal);
         Assert.DoesNotContain("OnboardingStepTitle", window, StringComparison.Ordinal);

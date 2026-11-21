@@ -25,6 +25,20 @@ public partial class PrepareView : UserControl
             state.SetDraftType(scene.Mode);
     }
 
+    private async void VoiceTest_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        try
+        {
+            await new OnboardingVoiceWindow { DataContext = state }.ShowDialog(owner);
+        }
+        catch (Exception ex)
+        {
+            state.SetStatus(UiText.T("操作失败：") + ex.Message, true);
+        }
+    }
+
     private void CustomType_Click(object? sender, RoutedEventArgs e) =>
         (DataContext as AppState)?.SetDraftCustomTypeCommand.Execute(null);
 

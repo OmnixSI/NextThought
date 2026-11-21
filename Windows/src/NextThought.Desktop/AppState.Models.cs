@@ -75,9 +75,14 @@ public partial class AppState
         OnPropertyChanged(nameof(EngineTestPassed));
         OnPropertyChanged(nameof(EngineTestFailed));
         OnPropertyChanged(nameof(EngineTestLabel));
+        RaisePrepareEngineState();
     }
 
-    partial void OnEngineTestSecondsChanged(double value) => OnPropertyChanged(nameof(EngineTestLabel));
+    partial void OnEngineTestSecondsChanged(double value)
+    {
+        OnPropertyChanged(nameof(EngineTestLabel));
+        RaisePrepareEngineState();
+    }
 
     /// <summary>
     /// Mac <c>testAnswerEngine</c>: sends the shortest real request through the current answer
@@ -90,11 +95,22 @@ public partial class AppState
         var settings = Settings.Build();
         var options = AnswerOptions();
         var model = settings.UseCodex ? settings.CodexModel : settings.Model;
+        if (!settings.UseCodex && !Settings.HasApiKey)
+        {
+            // task-33: the real round-trip needs a service; say which step is missing instead of a
+            // generic transport error.
+            EngineTestState = EngineTestState.Failed;
+            EngineTestMessage = UiText.T("还没有配置回答服务：到 设置 → 回答 填写 API Key 后再检查。");
+            OnPropertyChanged(nameof(EngineTestLabel));
+            RaisePrepareEngineState();
+            return;
+        }
         if (string.IsNullOrWhiteSpace(model))
         {
             EngineTestState = EngineTestState.Failed;
             EngineTestMessage = UiText.T("请先选择或填写模型");
             OnPropertyChanged(nameof(EngineTestLabel));
+            RaisePrepareEngineState();
             return;
         }
         EngineTestState = EngineTestState.Running;
