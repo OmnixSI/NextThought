@@ -91,3 +91,12 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
   2. **demo 切页清空选中系列**：`ApplyDemoStage(Library)` 在自定义 workspace（自检/真实非 demo 数据）里找不到 demo 面试系列时把 `SelectedSeries = null`；现在找到才赋值，不再覆盖用户/自检选择（`AppState.Demo.cs` 3 处）。
   3. **`FocusSeriesForCheck` 选中不触发刷新**：`RefreshSeries()` 已默认选中同一行，再赋同值不触发 `OnSelectedSeriesChanged`，导致记录/变更列表不重建；现在显式刷新 lessons/meetings/skills/changes/stats（`AppState.Series.cs`）。
 - 逐元素结论沿用上表：知识候选卡、决定/行动候选卡、匹配问题/近似经验对照、保留旧版、忽略路径均**一致**；仍记为部分/缺口的是「收集本地候选」「收集已核实决定与行动」两个按钮未放到页面（数据层 `CollectKnowledgeCandidates`/`CollectSeriesChangeCandidates` 已实现）、AISoft 卡片底色（视觉近似）、以及真实资料复核窗口的人工确认流程（自检只覆盖警告/预览/备注写入）。这些不影响本轮 E18 验收，已在表中逐条标注。
+
+## task-62 / E18 增量：知识复核按钮与 AISoft 卡片（2026-11-21）
+
+- 按 Mac `KnowledgeReviewSection.swift` 补齐页面元素（此前只有数据层）：
+  1. **「收集本场候选」按钮**：在系列页「待确认」标签的「知识候选」区标题下，绑定 `CollectKnowledgeLabel`（Mac 原文「收集本场候选」）与 `CanCollectKnowledgeCandidates`，点击走 `CollectKnowledgeCandidates()`（读本场 summary 的 lessons/bank 调 `KnowledgeMerger.CollectCandidates`）；「收集已核实的决定与行动」按钮此前已有，现两个按钮都在页面上。
+  2. **候选卡 AISoft 底色**：决定/行动候选卡与知识候选卡都改为 `Classes="card" Background="{DynamicResource AiSoft}"`，对齐 Mac KnowledgeReviewSection 的 AISoft 卡片背景（浅/深主题由 AiSoft 资源自动切换）。
+- 自检：`--self-test=knowledge-review` 仍 **passed 12/12**；新测试 `SeriesKnowledgeStage4Tests` **2/2**（按钮标签/命令接线、两张候选卡 AiSoft）。
+- 截图：`material-review-{light,dark}.png` 与 `knowledge-review-check.json` 本轮重拍/更新（1120 窗口位图，自检 passed 12/12）。系列页「变更/知识候选」两张标签截图**待补**：详情列高于 820 视口，直接截 TabControl 得到 1×1 图；已改为滚动到标签后截整窗，但本轮共享树重建后应用未能启动，下一轮重跑自检补这两张（不影响 ②③ 的代码验收）。
+- 结论：② 收集按钮与 ③ AISoft 卡片已**逐条一致**；① 结构化纪要逐条编辑 +「我已核实」仍在做（见 notes/compare.md 的 E15/E16 段，完成后另提交）。

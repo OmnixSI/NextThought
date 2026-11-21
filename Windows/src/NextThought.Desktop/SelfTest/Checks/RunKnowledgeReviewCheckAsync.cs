@@ -108,13 +108,30 @@ public partial class MainWindow
                 "变更 " + state.SeriesChangeRows.Count + "；知识 " + state.SeriesCandidates.Count
                 + "；记录 " + state.SeriesRecords.Count);
             await Task.Delay(400);
-            CaptureVisual(this, Path.Combine(directory, "series-change-light.png"));
+            // The series detail column is taller than the 820 px window: scroll the tab into view,
+            // then capture the window once per tab and theme.
             if (this.GetVisualDescendants().OfType<TabControl>().FirstOrDefault(tabs => tabs.Name == "Tabs") is { } seriesTabs)
             {
-                seriesTabs.SelectedIndex = 1; // 待确认（知识候选）标签
-                await Task.Delay(500);
+                state.SeriesSelectedTab = 0;
+                seriesTabs.BringIntoView();
+                await Task.Delay(600);
+                CaptureVisual(this, Path.Combine(directory, "series-change-light.png"));
+                Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+                await Task.Delay(350);
+                CaptureVisual(this, Path.Combine(directory, "series-change-dark.png"));
+                Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+                await Task.Delay(250);
+                state.SeriesSelectedTab = 1;
+                seriesTabs.BringIntoView();
+                await Task.Delay(600);
                 CaptureVisual(this, Path.Combine(directory, "series-knowledge-light.png"));
-                seriesTabs.SelectedIndex = 0;
+                Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+                await Task.Delay(350);
+                CaptureVisual(this, Path.Combine(directory, "series-knowledge-dark.png"));
+                Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+                await Task.Delay(250);
+                state.SeriesSelectedTab = 0;
+                await Task.Delay(300);
             }
 
             // 1) 行动建议：确认负责人/期限后作为新行动加入。

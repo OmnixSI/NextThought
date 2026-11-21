@@ -46,6 +46,11 @@ public partial class SeriesView : UserControl
         if (DataContext is AppState state) state.CollectSeriesChangeCandidates();
     }
 
+    private void CollectKnowledge_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.CollectKnowledgeCandidates();
+    }
+
     private void AcceptSeriesChange_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
