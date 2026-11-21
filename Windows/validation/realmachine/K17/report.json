@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "ocrChars": 347,
+  "matchedPage": null,
+  "screenExcerpt": "你 是 NextThought Windows 移 植 项 目\n0\nOwns Stage 4 prepare page + 0...\n你 是 NextThought Windows 移 植 项 目\n。 1 小 时 11 分 46 秒\n303M tok\n。 1 小 时 57 分 14 秒\n亻 永 田 ， g1 工 丿 G 匚 仅 跬 瓜 ， ] 肀 」 ， 巧 疋 ：\n4c 合 并 提 交 ）\n尔 「 清 理 本 地 文 件 夹 而 不 是 git 仓 库 」 的 说 明 ）\n",
+  "ranked": [],
+  "error": "使用 Windows 系统 OCR，复杂版面、手写或低清图片需人工核对；多页 TIFF 仅读取首帧。",
+  "rulesPassed": false,
+  "cachePassed": true,
+  "classifyPassed": false,
+  "ruleError": "seen=1 manual=2 held=2 resumed=2 speech=1 grace=False/False"
+}
