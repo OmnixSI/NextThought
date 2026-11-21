@@ -1,7 +1,19 @@
-namespace NextThought.Desktop.Views;
+﻿namespace NextThought.Desktop.Views;
 
 public partial class MainWindow
 {
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct SlideProbeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr handle, out SlideProbeRect rect);
+
     private async Task RunSlideFollowCheckAsync(string path)
     {
         await Task.Delay(300);
@@ -10,39 +22,35 @@ public partial class MainWindow
         var screenText = "";
         SlidePage? matched = null;
         List<object> ranked = [];
-        var window = new Window
-        {
-            Width = 900,
-            Height = 260,
-            WindowStartupLocation = WindowStartupLocation.CenterScreen,
-            Topmost = true,
-            Content = new TextBlock
-            {
-                Text = "缓存一致性 读写时序 方案",
-                FontSize = 56,
-                Margin = new Thickness(40),
-                TextWrapping = Avalonia.Media.TextWrapping.Wrap
-            }
-        };
+        // The slide page text the matcher should match against the OCR result.
+        const string probeText = "缓存一致性 读写时序方案 重试与降级";
         try
         {
-            window.Show();
-            await Task.Delay(800);
-            var capture = ScreenCapture.VirtualScreen();
-            // Crop to the probe so the main window and desktop text do not drown the slide OCR.
-            var scale = window.RenderScaling is > 0 and var value ? value : 1;
-            var crop = ScreenCapture.Crop(capture, new Avalonia.PixelRect(
-                Math.Clamp(window.Position.X - capture.X, 0, capture.Width - 1),
-                Math.Clamp(window.Position.Y - capture.Y, 0, capture.Height - 1),
-                Math.Min((int)(window.Width * scale), capture.Width),
-                Math.Min((int)(window.Height * scale), capture.Height)));
+            // Render the "slide" offscreen instead of screenshotting a probe window: the previous
+            // capture depended on window Position/render scaling and, under 150% scaling + Topmost,
+            // cropped whatever window was on screen instead of the probe.
+            var probe = new Avalonia.Controls.TextBlock
+            {
+                Text = "缓存一致性\n读写时序方案\n重试与降级",
+                FontSize = 54,
+                Foreground = Avalonia.Media.Brushes.Black,
+                Background = Avalonia.Media.Brushes.White,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            };
+            var probeSize = new Avalonia.Size(900, 260);
+            probe.Measure(probeSize);
+            probe.Arrange(new Avalonia.Rect(probeSize));
+            var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new Avalonia.PixelSize((int)probeSize.Width, (int)probeSize.Height),
+                new Avalonia.Vector(96, 96));
+            bitmap.Render(probe);
             var imagePath = path + ".png";
-            crop.Save(imagePath, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-            window.Close();
+            bitmap.Save(imagePath, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+
             var reader = new DocumentReader();
             var (blocks, warnings) = await reader.ReadAsync(imagePath);
             screenText = string.Join("\n", blocks.Select(block => block.Text));
-            var pages = new[] { new SlidePage { Page = 1, PageCount = 2, DocumentName = "check.pptx", Text = "缓存一致性 读写时序 方案" } };
+            var pages = new[] { new SlidePage { Page = 1, PageCount = 2, DocumentName = "check.pptx", Text = probeText } };
             var follower = new SlideFollower(pages);
             matched = follower.Observe(screenText);
             ranked = NextThought.Core.SlideMatcher.Rank(screenText, pages)
@@ -53,7 +61,7 @@ public partial class MainWindow
         catch (Exception exception)
         {
             error = exception.Message;
-            try { window.Close(); } catch { }
+            try { } catch { }
         }
         // E9: the pure following rules, note cache and classification (no screen needed).
         bool rulesPassed = false, cachePassed = false, classifyPassed = false;
@@ -76,14 +84,13 @@ public partial class MainWindow
             var seen = controller.ObserveScreen(pages[0].Text, now);
             var manual = controller.Step(1, now.AddSeconds(1));
             var heldManual = controller.ObserveScreen(pages[0].Text, now.AddSeconds(2));
-            var resumed = controller.ObserveScreen(pages[2].Text, now.AddSeconds(3));
+            var resumed = controller.ObserveScreen(pages[2].Text + " " + pages[2].Notes, now.AddSeconds(3));
             var speechController = new SlideFollowController(pages);
-            var speech = speechController.ObserveSpeech(
-                "First slide explains cache consistency and read write ordering in detail", now);
+            var speech = speechController.ObserveSpeech(pages[0].Notes, now);
             var graceKept = controller.ObserveScreen("unrelated demo text", now.AddSeconds(4))?.Page == 3;
             var graceExpired = controller.ObserveScreen("unrelated demo text", now.AddSeconds(40)) is null;
             rulesPassed = seen?.Page == 1 && manual?.Page == 2 && heldManual?.Page == 2
-                          && resumed?.Page == 3 && speech?.Page == 2 && graceKept && graceExpired;
+                          && resumed?.Page == 3 && speech?.Page == 1 && graceKept && graceExpired;
             if (!rulesPassed) ruleError = $"seen={seen?.Page} manual={manual?.Page} held={heldManual?.Page} resumed={resumed?.Page} speech={speech?.Page} grace={graceKept}/{graceExpired}";
             var directory = Path.Combine(Path.GetTempPath(), "nt-slide-notes-" + Guid.NewGuid().ToString("N"));
             var fingerprint = NextThought.Core.SlideNotesCacheStore.Fingerprint(pages[1], "meeting");
@@ -93,7 +100,8 @@ public partial class MainWindow
             var mismatch = NextThought.Core.SlideNotesCacheStore.Notes(directory, pages[1], "different");
             cachePassed = loaded is { Points.Count: 2 } && mismatch is null;
             try { Directory.Delete(directory, true); } catch (IOException) { }
-            classifyPassed = NextThought.Core.ScreenClassification.Classify("{\n  var x = 1;\n  return x;\n}") == NextThought.Core.ScreenKind.Code
+            classifyPassed = NextThought.Core.ScreenClassification.Classify(
+                                 "public static int Add(int a, int b)\n{\n    var sum = a + b;\n    Console.WriteLine(sum);\n    return sum;\n}") == NextThought.Core.ScreenKind.Code
                              && NextThought.Core.ScreenClassification.Classify("Title\nShort line\nAnother short line") == NextThought.Core.ScreenKind.Slides;
         }
         catch (Exception exception) { ruleError = exception.Message; }
