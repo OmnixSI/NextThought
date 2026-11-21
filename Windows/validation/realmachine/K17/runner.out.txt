@@ -1,1 +1,1 @@
-slide-follow-check: failed
+slide-follow-check: passed
