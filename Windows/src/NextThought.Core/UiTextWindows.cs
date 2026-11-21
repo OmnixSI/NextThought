@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1115;
+    public const int Count = 1116;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1127,5 +1127,6 @@ internal static class UiTextWindowsEnglish
         ["；已经记录的内容已保存。"] = "; what was recorded is saved.",
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
+        ["语义模型路径无效。"] = "The semantic model path is invalid.",
     };
 }

@@ -172,86 +172,23 @@ public partial class AppState
     }
 
 
-    /// <summary>E9: jump to the first slide whose title appears in the final line.</summary>
-    private void TryFollowSlide(string text)
-    {
-        if (!Settings.FollowSlides || text.Length < 2) return;
-        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
-        for (var index = 0; index < slides.Count; index++)
-        {
-            var title = slides[index].Text.Split('\n').FirstOrDefault(line => line.Trim().Length > 0)?.Trim() ?? "";
-            if (title.Length < 2) continue;
-            if (!text.Contains(title, StringComparison.OrdinalIgnoreCase)) continue;
-            if (index == slideIndex) return;
-            slideIndex = index;
-            OnPropertyChanged(nameof(SlideStatus));
-            OnPropertyChanged(nameof(CurrentSlideText));
-            SetStatus(UiText.Format("已跟随讲话切到第 %lld 页。", slides[index].Number));
-            return;
-        }
-    }
-
 
     /// <summary>E9: follow the deck from a screenshot's OCR text.</summary>
     public void FollowSlideFromCapture(string screenText) => FollowSlideFromScreen(screenText);
 
-    private void FollowSlideFromScreen(string screenText)
-    {
-        if (!Settings.FollowSlides || screenText.Trim().Length == 0) return;
-        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
-        if (slides.Count == 0) return;
-        var pages = slides.Select(info => new NextThought.Core.SlidePage
-        {
-            Page = info.Number, PageCount = slides.Count, DocumentName = info.DocumentName, Text = info.Text
-        }).ToList();
-        var follower = new NextThought.Core.SlideFollower(pages);
-        if (follower.Observe(screenText) is not { } matched) return;
-        var index = slides.ToList().FindIndex(info => info.Number == matched.Page);
-        if (index < 0 || index == slideIndex) return;
-        slideIndex = index;
-        OnPropertyChanged(nameof(SlideStatus));
-        OnPropertyChanged(nameof(CurrentSlideText));
-        OnPropertyChanged(nameof(CurrentSlidePointsText));
-        OnPropertyChanged(nameof(HasCurrentSlidePoints));
-        SetStatus(UiText.Format("已按屏幕切到第 %lld 页。", matched.Page));
-    }
+    /// <summary>E9: Mac followSlide/slideIsManual live in AppState.SlideFollow.</summary>
+    private void FollowSlideFromScreen(string screenText) => FollowSlideFromScreenCore(screenText);
 
 
-    private readonly Dictionary<int, string> slideNotesCache = [];
-
-    /// <summary>E9: cached talking points for the current slide (first lines of its text).</summary>
-    public string CurrentSlidePointsText
-    {
-        get
-        {
-            if (CurrentSlide is not { } slide) return "";
-            if (!slideNotesCache.TryGetValue(slide.Number, out var cached))
-            {
-                var lines = slide.Text.Split('\n')
-                    .Select(line => line.Trim().TrimStart('#', '-', '*', ' '))
-                    .Where(line => line.Length > 1)
-                    .Take(4)
-                    .Select((line, index) => $"{index + 1}. {line}");
-                cached = string.Join("\n", lines);
-                slideNotesCache[slide.Number] = cached;
-            }
-            return cached;
-        }
-    }
+    /// <summary>E9: cached talking points for the current slide (AppState.SlideFollow + SlideNotesCache).</summary>
+    public string CurrentSlidePointsText => CurrentSlidePoints();
 
     /// <summary>E26b: while presenting, the Mac presenterSlideNotes key decides whether the island
     /// shows this slide's notes.</summary>
     public bool HasCurrentSlidePoints => CurrentSlidePointsText.Length > 0
                                          && (!PresenterLayoutActive || Settings.PresenterSlideNotes);
 
-    private void MoveSlide(int delta)
-    {
-        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
-        if (slides.Count == 0) { SetStatus("还没有导入 PPTX，导入后可翻页。", true); return; }
-        slideIndex = Math.Clamp(slideIndex + delta, 0, slides.Count - 1);
-        OnPropertyChanged(nameof(SlideStatus));
-        SetStatus(UiText.Format("幻灯片：%@ · %@", SlideStatus, slides[slideIndex].Text[..Math.Min(80, slides[slideIndex].Text.Length)]));
-    }
+    private void MoveSlide(int delta) => StepSlide(delta);
 
     public void OpenMaterial(SourceCitation citation) => Library.OpenCitation(citation);
 }

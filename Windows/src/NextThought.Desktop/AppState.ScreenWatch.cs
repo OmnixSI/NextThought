@@ -55,11 +55,12 @@ public partial class AppState
                 return;
             }
             var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
-            if (hash != lastScreenText)
-            {
-                lastScreenText = hash;
-                if (Settings.InsightFollowSlides) FollowSlideFromScreen(text);
-            }
+            lastScreenText = hash;
+            // Mac screenRead: re-evaluate even unchanged pixels (the question or speaker may have
+            // changed) and classify the frame for the insights panel.
+            ScreenContextText = text;
+            NoteScreenObservation(text);
+            if (Settings.InsightFollowSlides) FollowSlideFromScreen(text);
             ScreenWatchStatus = UiText.Format("已读屏 · %lld 字", text.Length);
             ScreenWatchError = "";
         }

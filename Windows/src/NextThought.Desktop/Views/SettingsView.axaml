@@ -319,6 +319,7 @@
                       SelectedItem="{Binding Settings.InsightScreenInterval}" />
           </Grid>
           <TextBlock Text="{Binding ScreenWatchStatus}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{Binding ScreenWatchObservation}" Classes="caption" FontSize="11" />
           <TextBlock Text="{Binding ScreenWatchError}" Classes="caption" FontSize="11" Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
           <CheckBox Content="{loc:Tr 跟随演示文稿}" IsChecked="{Binding Settings.InsightFollowSlides}"
                     IsEnabled="{Binding Settings.InsightScreenWatch}" />

@@ -205,6 +205,10 @@ public sealed record SlideNotes
     /// <summary>The points are the presenter's own speaker notes, not a suggestion.</summary>
     public bool IsScript { get; init; }
 
+    /// <summary>Same for the navigable slide info the settings/insights UI carries.</summary>
+    public static SlideNotes? Script(SlidePageInfo page, SlidePageInfo? next) =>
+        Script(page.ToSlidePage(), next?.ToSlidePage());
+
     /// <summary>The presenter's script, one sentence at a time; null when the notes are a stub.</summary>
     public static SlideNotes? Script(SlidePage page, SlidePage? next)
     {

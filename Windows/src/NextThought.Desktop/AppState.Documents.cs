@@ -131,7 +131,7 @@ public partial class AppState
             var store = new EmbeddingModelStore(Paths);
             var root = Path.GetFullPath(store.Root);
             if (!root.StartsWith(Path.GetFullPath(Paths.Models) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("语义模型路径无效。");
+                throw new InvalidOperationException(UiText.T("语义模型路径无效。"));
             if (Directory.Exists(root)) Directory.Delete(root, true);
             DocumentSetupStatus = "";
             RefreshDocumentComponents();
