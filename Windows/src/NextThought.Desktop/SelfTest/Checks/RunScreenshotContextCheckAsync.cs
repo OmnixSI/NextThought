@@ -190,6 +190,14 @@ public partial class MainWindow
         Console.WriteLine(passed ? "screenshot-context-check: passed" : "screenshot-context-check: failed " + (error ?? ""));
         var idle = DateTime.UtcNow.AddSeconds(20);
         while (DateTime.UtcNow < idle && state.Working) await Task.Delay(100);
+        // E13: the pickers leave extra top-level windows open; the classic lifetime would keep the
+        // process alive after this check closes the main window.
+        if (Avalonia.Application.Current?.ApplicationLifetime
+            is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            foreach (var window in desktop.Windows.ToArray())
+            {
+                try { window.Close(); } catch { }
+            }
         Close();
     }
 }

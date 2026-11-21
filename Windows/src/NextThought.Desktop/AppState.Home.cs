@@ -272,6 +272,7 @@ public partial class AppState
         var path = ScreenshotPreviewPath;
         ScreenshotPreviewPath = "";
         ScreenshotPreview = null;
+        ClearPendingScreenshotImage();
         try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 
@@ -283,28 +284,24 @@ public partial class AppState
         ScreenshotPreview = null;
         ScreenshotPreviewPath = "";
         try { await AnalyzeScreenshotFileAsync(path); }
-        finally
+        catch
         {
-            // E13: the temporary picture is deleted after the question, even when analysis fails.
+            // E13: a failed analysis must not leave the temporary picture behind.
+            ClearPendingScreenshotImage();
             try { if (File.Exists(path)) File.Delete(path); } catch { }
+            throw;
         }
     }
 
     /// <summary>The old capture tail (archive → library OCR → prompt → slide follow), shared with live capture.</summary>
     public async Task AnalyzeScreenshotFileAsync(string path)
     {
-        try
-        {
-            await ArchiveScreenshotAsync(path);
-            await Library.ImportAsync([path]);
-            PromptAboutScreenshot(Library.SelectedPreview);
-            FollowSlideFromCapture(Library.SelectedPreview);
-        }
-        finally
-        {
-            // E13: Mac keeps the temp file until the question is asked, then deletes it.
-            try { if (File.Exists(path)) File.Delete(path); } catch { }
-        }
+        await ArchiveScreenshotAsync(path);
+        await Library.ImportAsync([path]);
+        // E13: the picture becomes the next question's model input; it is deleted after the
+        // answer (ClearPendingScreenshotImage in AnswerAsync), like the Mac.
+        PromptAboutScreenshot(Library.SelectedPreview, path);
+        FollowSlideFromCapture(Library.SelectedPreview);
     }
 
     // ---- page refresh ----------------------------------------------------------------

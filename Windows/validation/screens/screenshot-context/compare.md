@@ -1,3 +1,5 @@
+> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 # E13 截图提问与屏幕上下文：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/ScreenshotService.swift`（211 行全文：availableWindows/availableDisplays/captureForReading/captureWindow/crop/writePNG/optimizedImageURL/WindowCoordinator）、`Sources/NextThought/ContentView.swift`（WindowPickerSheet 217-239、share/region sheet 挂载 57-70）、`Sources/NextThought/ScreenRegionSheet.swift`（全文）、`Sources/NextThought/ScreenContextService.swift`（全文：QuestionScreenContext/refresh/recognize/enhance/questionImage）
