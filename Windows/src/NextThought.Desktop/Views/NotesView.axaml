@@ -322,7 +322,10 @@
               <DataTemplate x:DataType="local:TranscriptRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
                   <StackPanel.ContextMenu>
-                    <ContextMenu>
+                    <ContextMenu Name="TranscriptRowMenu" Opening="TranscriptRowMenu_Opening">
+                      <MenuItem Header="{loc:Tr 这句是谁说的}" Name="LineSpeakerMenu" />
+                      <MenuItem Header="{loc:Tr 改这一句…}" Tag="{Binding}" Click="EditTranscriptLine_Click" />
+                      <Separator />
                       <MenuItem Header="{loc:Tr 加入术语表…}" Tag="{Binding}" Click="AddTranscriptToGlossary_Click" />
                     </ContextMenu>
                   </StackPanel.ContextMenu>

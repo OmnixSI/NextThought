@@ -1258,6 +1258,7 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 
 | 中文 | 英文 | Mac 原文 | 位置 |
 |---|---|---|---|
+| 改这一句… | Edit this sentence… | — | Windows 会后转写右键（task-62 E16） |
 | 一句话印象 | One-line impression | — | Windows 会后纪要（task-62 E15） |
 | 用了多少 | How much you've recorded | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
 | 本月 | This month | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |

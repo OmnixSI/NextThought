@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1204;
+    public const int Count = 1205;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1183,6 +1183,7 @@ internal static class UiTextWindowsEnglish
         ["；已经记录的内容已保存。"] = "; what was recorded is saved.",
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
+        ["改这一句…"] = "Edit this sentence…",
         ["一句话印象"] = "One-line impression",
         ["用了多少"] = "How much you've recorded",
         ["本月"] = "This month",
