@@ -1,19 +1,7 @@
-﻿namespace NextThought.Desktop.Views;
+namespace NextThought.Desktop.Views;
 
 public partial class MainWindow
 {
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    private struct SlideProbeRect
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool GetWindowRect(IntPtr handle, out SlideProbeRect rect);
-
     private async Task RunSlideFollowCheckAsync(string path)
     {
         await Task.Delay(300);
