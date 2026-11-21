@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1273;
+    public const int Count = 1276;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1184,6 +1184,9 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["返回首页"] = "Back to home",
+        ["重试读取"] = "Retry reading",
+        ["自动识别 · 中英互译"] = "Auto-detect · Chinese ↔ English",
         ["截图会裁切到选中范围。请把题目、代码或公式完整框入。"] = "The screenshot is cropped to the selection. Frame the question, code or formula completely.",
         ["屏幕选区无效，请重新框选。"] = "The screen selection is invalid. Frame it again.",
         ["选择持续读取的区域"] = "Choose the area to keep reading",
