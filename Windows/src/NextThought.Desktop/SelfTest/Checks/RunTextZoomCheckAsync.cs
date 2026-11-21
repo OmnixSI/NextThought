@@ -59,6 +59,28 @@ public partial class MainWindow
                 restored is { } pair && Math.Abs(pair.Actual - pair.Base) < 0.001,
                 restored is { } r ? $"{r.Base:0.##} == {r.Actual:0.##}" : "no probe");
 
+            // 决议 §3.1 zoom 2: content that appears after the zoom is already at the zoom. The
+            // old 600 ms catch-up timer used to patch late content after it had painted at 100 %.
+            TextZoomService.SetFactorForCheck(1.45);
+            Console.WriteLine("zoom-check: before late window");
+            var lateWindow = new Window
+            {
+                Width = 280,
+                Height = 140,
+                Content = new TextBlock { Text = "zoom probe", FontSize = 15 }
+            };
+            lateWindow.Show(this);
+            Console.WriteLine("zoom-check: late window shown");
+            await PumpTextZoomAsync();
+            Console.WriteLine("zoom-check: late window pumped");
+            var lateProbe = TextZoomService.Probe(lateWindow);
+            var lateExpected = lateProbe is { } late ? Math.Round(late.Base * 1.45, MidpointRounding.AwayFromZero) : -1;
+            Check("new-content-scales-immediately",
+                lateProbe is { } foundLate && Math.Abs(foundLate.Actual - lateExpected) < 0.001,
+                lateProbe is { } lp ? $"{lp.Base:0.##} -> {lp.Actual:0.##} (expected {lateExpected:0.##})" : "no probe");
+            lateWindow.Close();
+            Console.WriteLine("zoom-check: late window closed");
+
             // Persistence: write through the normal save callback, then reload the file.
             TextZoomService.SetFactorForCheck(1.2);
             TextZoomService.SaveForCheck();

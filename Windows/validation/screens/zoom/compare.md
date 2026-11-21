@@ -1,9 +1,11 @@
+> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 # 文字缩放（J7 · Mac TextZoom / DesignSystem.swift ↔ Windows TextZoomService）
 
 - 日期：2026-11-21（windows/parity）
 - Mac 基准：v3.4.0 `f015e8c6`，`Sources/NextThought/DesignSystem.swift` 的 `TextZoom`（六档 0.9/1/1.1/1.2/1.3/1.45、`Font.zoomed`、`textZoom` 键）与菜单快捷键 ⌘+ / ⌘− / ⌘0
 - Windows 证据：本目录 `zoom-<档位>-<home|live>-<light|dark>.png`（1120×820，100% 缩放；`--demo --screenshots` 生成）
-- 自检：`--self-test zoom` → 11/11 通过：三档缩放按 `TextZoom.Scaled` 取整生效（13→12/16/19）、三档均无截断、重置恢复、`textZoom` 写盘后重读仍是该档、提词岛与回答浮窗不跟全局
+- 自检：`--self-test zoom` → 12/12 通过：三档缩放按 `TextZoom.Scaled` 取整生效（13→12/16/19）、三档均无截断、重置恢复、`textZoom` 写盘后重读仍是该档、提词岛与回答浮窗不跟全局、新窗口内容即时按当前档缩放（无 600 ms 定时器）
 
 ## 对照
 
@@ -22,7 +24,7 @@
 ## 未解决项
 
 1. ~~`textZoom` 尚未并入注册表~~：E25 已完成——`textZoom` 在 114 键 `MacPreferences`/`MacPreferenceMap` 中（默认 1.0，SettingsStore 以 settings.json 同名键读写），`SETTINGS_PARITY.md` 行与 `RecordSessionsAndTextZoomPreferenceTests` 覆盖；旧 `TextZoom.json` 仅作迁移兜底。
-2. 新出现的内容由 600 ms 定时器补缩放（任务 81 的 zoom 2，不属本任务）。
+2. ~~新出现的内容由 600 ms 定时器补缩放~~：task-81 的 zoom 2 已完成——`TextZoomService` 改为窗口列表事件 + 每个窗口布局事件驱动的合并应用（无定时器），新内容在挂到可视树后的同一帧内按当前缩放显示；自检新增 `new-content-scales-immediately`（新窗口 15pt → 1.45 档 22pt）并通过；结构性测试断言源码不再含 `DispatcherTimer`/`Watcher`/600 ms。
 3. 已接受差别 zoom 3（缩放步进外的个别内容近似，见 `ACCEPTED_DIFFERENCES.md`）。
 
 ## 结论
