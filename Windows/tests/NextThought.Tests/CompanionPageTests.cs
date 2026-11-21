@@ -46,13 +46,14 @@ public sealed class CompanionPageTests
             var socketUrl = await WaitForTarget(port);
             using var socket = new ClientWebSocket();
             await socket.ConnectAsync(new Uri(socketUrl), CancellationToken.None);
-            await Task.Delay(2500);
-            var text = await Evaluate(socket, "document.body.innerText");
+            // CI runners can be slow to finish the first paint: wait for the rendered text instead of
+            // reading it after a fixed delay.
+            var text = await WaitForText(socket, "手机问题", TimeSpan.FromSeconds(20));
             var diagnostics = await Evaluate(socket, "JSON.stringify({href:location.href,ready:document.readyState,html:document.documentElement.outerHTML.slice(0,1200),text:document.body.innerText.slice(0,500)})");
-            Assert.True(text.Contains("手机问题") && text.Contains("手机回答"), diagnostics);
+            Assert.True(text.Contains("手机回答"), diagnostics);
             server.Publish(new CompanionSnapshot(Status: "页面自检", Question: "更新问题", Answer: "更新回答"));
-            var updated = await WaitForText(socket, "更新问题", TimeSpan.FromSeconds(8));
-            Assert.Contains("更新回答", updated);
+            var updated = await WaitForText(socket, "更新回答", TimeSpan.FromSeconds(15));
+            Assert.Contains("更新问题", updated);
             await Evaluate(socket, "document.querySelector('[data-action=\"previous\"]').click()");
             Assert.Equal("previous", await performed.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         }
