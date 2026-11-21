@@ -42,8 +42,29 @@
                             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                               <TextBlock Text="{Binding Time}" Classes="caption" FontSize="11"
                                          IsVisible="{Binding HasTime}" VerticalAlignment="Center" />
+                              <!-- Mac VerdictBadge: 待改进 (improve) / 答得好 (good). -->
+                              <Border IsVisible="{Binding ShowsImprove}" BorderThickness="0.5"
+                                      BorderBrush="{DynamicResource Caution}" CornerRadius="{DynamicResource D4CornerRadius_4}" Padding="{DynamicResource D4Padding_6_2}">
+                                <TextBlock Text="{Binding ImproveLabel}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Caution}" />
+                              </Border>
+                              <Border IsVisible="{Binding ShowsGood}" BorderThickness="0.5"
+                                      BorderBrush="{DynamicResource Ready}" CornerRadius="{DynamicResource D4CornerRadius_4}" Padding="{DynamicResource D4Padding_6_2}">
+                                <TextBlock Text="{Binding GoodLabel}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Ready}" />
+                              </Border>
+                              <!-- Mac ConfirmBadge: the model was not sure. -->
+                              <Border IsVisible="{Binding Uncertain}" BorderThickness="0.5"
+                                      BorderBrush="{DynamicResource Caution}" CornerRadius="{DynamicResource D4CornerRadius_4}" Padding="{DynamicResource D4Padding_6_2}">
+                                <TextBlock Text="{Binding ConfirmLabel}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Caution}" />
+                              </Border>
                               <Button Classes="quiet" Content="{loc:Tr 我已核实}" Tag="{Binding}"
                                       IsVisible="{Binding Uncertain}" Click="ConfirmNoteItem_Click" />
+                            </StackPanel>
+                            <StackPanel Spacing="{DynamicResource D4Spacing_1}" IsVisible="{Binding HasBetter}">
+                              <TextBlock Text="{Binding BetterHeading}" Classes="overline" />
+                              <SelectableTextBlock Text="{Binding Better}" Classes="body" TextWrapping="Wrap" />
                             </StackPanel>
                           </StackPanel>
                         </DataTemplate>
@@ -70,9 +91,7 @@
                 <DataTemplate x:DataType="local:SessionEvidenceRow">
                   <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                      <Border Classes="chip">
-                        <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
-                      </Border>
+                      <c:MetricPill Text="{Binding Badge}" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{Binding Claim}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />

@@ -305,10 +305,14 @@ public partial class AppState
             var start = Math.Max(0, ((line.StartedAt ?? line.Date) - session.StartedAt).TotalSeconds);
             var finish = Math.Max(start, (end - session.StartedAt).TotalSeconds);
             var segment = new SpokenSegment(line.Speaker != "remote", start, finish, line.Text);
-            coach.Ingest(segment);
-            coachSummary?.Ingest(segment);
-            // E10: our own finished line keeps the eye-contact speaking window open (Mac ingest).
-            if (line.Speaker != "remote") NoteGazeSpeech();
+            // Mac LiveCoach.ingest guards on isEnabled; the summary accumulator follows it.
+            if (Settings.CoachEnabled)
+            {
+                coach.Ingest(segment);
+                coachSummary?.Ingest(segment);
+                // E10: our own finished line keeps the eye-contact speaking window open (Mac ingest).
+                if (line.Speaker != "remote") NoteGazeSpeech();
+            }
         }
     }
 
@@ -316,6 +320,12 @@ public partial class AppState
     private void CoachTick(DateTimeOffset now)
     {
         if (coach is null || CurrentSession is not { } session) return;
+        // §3.3 coach 1: Mac LiveCoach.refresh is a no-op while the coach is switched off.
+        if (!Settings.CoachEnabled)
+        {
+            if (CoachHint.Length > 0) CoachHint = "";
+            return;
+        }
         coachTicks++;
         if (coachTicks % 5 != 0) return;
         var snapshot = coach.Snapshot((now - session.StartedAt).TotalSeconds);

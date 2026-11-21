@@ -1,0 +1,14 @@
+text	Client call
+text	General
+text	Group discussion
+text	Group project
+text	Interview
+text	Lab meeting
+text	Lecture / Class
+text	Open main window
+text	Pick a scene to start right away.
+text	Presentation / Defense
+text	Start a meeting
+text	Work meeting
+text	
+title	NextThought Cue island

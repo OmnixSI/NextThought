@@ -1,7 +1,10 @@
-> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 
 
 # 会中主界面（LiveSessionView.swift ↔ LiveView.axaml）逐元素对照 — §6.5 重做版
+
+> 结论：逐条一致；另有 20 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
 
 - 对照标准：Mac 3.4.0（`Sources/NextThought/LiveSessionView.swift` 全文 1619 行，含 `LiveTopBar`、`RecordingTimer`、`PauseResumeButton`、`AnswerSettingsMenu`、`TranscriptColumn`、`SpeakerLabel`、`TranscriptLine`、`QuestionMark`、`PartialLines`、`CandidateStrip`、`TranscriptStatus`、`RightColumn`、`LiveNotesColumn`、`AnswerColumn`、`AnswerText`、`WebStatusLine`、`WebSources`、`RefinementRow`、`AnswerMoreMenu`、`EvidenceLine`、`EvidenceDetails`、`LiveComposer`）；E7 另对照 `Sources/NextThought/InsightsPanel.swift` 全文。
 - Mac 参考图：浅色 [live-light](../../mac-screens/live/live-light.png)、深色 [live-dark](../../mac-screens/live/live-dark.png)；右栏实时纪要 [live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)；20 种状态在 [mac-screens/live-states/](../../mac-screens/live-states/)（normal / busy / streaming / focus / selection / stale / save-recovery / unavailable …）。

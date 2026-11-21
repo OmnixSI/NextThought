@@ -1,0 +1,65 @@
+content	复制纪要
+content	导出…
+content	所有记录
+content	按模板整理
+content	校对转写
+content	校正原话
+content	系列
+content	结束后自动整理
+content	编辑纪要
+content	详细信息
+content	重新整理
+content	首页
+placeholder	在转写里查找（听错的写法也会找出来）
+text	15:35:26 · 系统声音
+text	15:35:41 · 麦克风
+text	15:36:03 · 系统声音
+text	15:36:09 · 系统声音
+text	15:36:10 · 麦克风
+text	15:36:41 · 麦克风
+text	2026-11-20 15:37 · 44 min · 线上
+text	›
+text	会中回答
+text	后端二面：缓存一致性与项目经历
+text	嗯，这个挺关键的。
+text	在转写里查找（听错的写法也会找出来）
+text	复制纪要
+text	复盘
+text	好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。
+text	导出…
+text	已校对 2 处识别错误
+text	我主要负责订单服务的缓存层，把核心查询从数据库迁移到 Redis。
+text	我们用的是先更新数据库、再删除缓存的方式。
+text	我的笔记
+text	所有会议
+text	所有记录
+text	按模板整理
+text	提纲
+text	数据库和缓存同时更新的时候你们是怎么保证一致性的
+text	整理这场会议
+text	校对转写
+text	校正原话
+text	演示模式：内置样本数据，不会写入你的资料。
+text	系列
+text	结束后自动整理
+text	编辑纪要
+text	观点对照
+text	详细信息
+text	转写
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+text	重新整理
+text	面试复盘
+text	首页
+text	鱼骨图
+text	
+title	NextThought
+tooltip	会议信息
+tooltip	关闭
+tooltip	只更正名字与术语的识别错误，改动写入 corrections.json
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	导出 Markdown
+tooltip	最大化
+tooltip	最小化
+tooltip	查看校正转写
+tooltip	纪要模板：章节由模板决定，模型只填内容
+tooltip	设置

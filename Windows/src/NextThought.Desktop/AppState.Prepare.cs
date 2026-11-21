@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using NextThought.Desktop.Controls;
@@ -632,8 +632,27 @@ public partial class AppState
         return new SolidColorBrush(Color.FromArgb(0x21, color.R, color.G, color.B));
     }
 
-    private static IBrush SecondaryBrush =>
-        Application.Current?.FindResource("Secondary") as IBrush ?? new SolidColorBrush(Color.Parse("#6B6963"));
+    /// <summary>
+    /// §5 dark-contrast: Application.FindResource returns the first (light) Secondary definition, so a
+    /// dark theme page would paint unselected chips with #6B6963 on #1B1B19 (ratio 3.14). Resolve the
+    /// resource in the active theme variant so the dark Secondary (#A3A19B) is used.
+    /// </summary>
+    private static IBrush SecondaryBrush
+    {
+        get
+        {
+            var app = Application.Current;
+            if (app is not null)
+            {
+                if (app.TryGetResource("Secondary", app.ActualThemeVariant, out var themed) && themed is IBrush themedBrush)
+                    return themedBrush;
+                if (app.FindResource("Secondary") is IBrush fallback) return fallback;
+            }
+            return new SolidColorBrush(ParseSecondaryFallback());
+        }
+    }
+
+    private static Color ParseSecondaryFallback() => Color.Parse("#6B6963");
 
     /// <summary>Raised by RaisePrepareDraft so every new prepare-page block re-reads its state.</summary>
     private void RaisePrepareLayout()

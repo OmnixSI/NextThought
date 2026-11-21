@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 23 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # E21 知识复核收尾：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/KnowledgeReviewSection.swift`（287 行全文：KnowledgeReviewSection / SeriesChangeCandidateCard / KnowledgeCandidateCard）、`Sources/NextThought/ProjectLibrarySupport.swift`（103 行全文：WorkspaceRecordsTab / MaterialReviewSheet）

@@ -163,6 +163,9 @@ public sealed record AppSettings
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
 
+    /// <summary>Mac <c>coachEnabled</c> (default true): the in-meeting gentle nudges (pace, monologue, talk share).</summary>
+    public bool CoachEnabled { get; set; } = true;
+
     /// <summary>E10: Mac <c>coachWatchesGaze</c> 鈥?the camera eye-contact coach, off until asked.</summary>
     public bool CoachWatchesGaze { get; set; }
 

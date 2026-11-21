@@ -139,9 +139,7 @@
                       <StackPanel Spacing="{DynamicResource D4Spacing_2}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                           <TextBlock Text="{Binding Canonical}" Classes="label" TextTrimming="CharacterEllipsis" />
-                          <Border Classes="chip" IsVisible="{Binding IsPerson}" VerticalAlignment="Center">
-                            <TextBlock Text="{loc:Tr 人名}" FontSize="10.5" Foreground="{DynamicResource Secondary}" />
-                          </Border>
+                          <controls:MetricPill Text="{loc:Tr 人名}" IsVisible="{Binding IsPerson}" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{Binding VariantsLine}" Classes="caption" FontSize="11"
                                    Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasVariants}"

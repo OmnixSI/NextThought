@@ -20,11 +20,14 @@ public partial class SeriesEditorWindow : Window
     public SeriesEditorWindow()
     {
         InitializeComponent();
+        SectionTabs.ItemsSource = new[] { UiText.T("记录"), UiText.T("资料"), UiText.T("经验积累") };
+        SectionTabs.SelectedIndex = 0;
         Opened += (_, _) => PopulateConfigTypeMenu();
         Closing += OnClosing;
     }
 
     private string currentSection = "records";
+    private bool syncingSection;
     private string? pendingSection;
     private bool pendingClose;
     private bool allowClose;
@@ -124,19 +127,32 @@ public partial class SeriesEditorWindow : Window
         BasicSection.IsVisible = section == "basic";
         RequirementsSection.IsVisible = section == "requirements";
         SkillsSection.IsVisible = section == "skills";
-        SetTab(RecordsTab, section == "records");
-        SetTab(DocumentsTab, section == "documents");
-        SetTab(KnowledgeTabButton, section == "knowledge");
+        syncingSection = true;
+        try
+        {
+            SectionTabs.SelectedIndex = section switch
+            {
+                "documents" => 1,
+                "knowledge" => 2,
+                _ => 0
+            };
+        }
+        finally { syncingSection = false; }
         EditActionsBar.IsVisible = section is "basic" or "requirements";
         EditActionsLabel.Text = section == "basic" ? UiText.T("正在编辑系列信息") : UiText.T("正在编辑回答要求");
         _ = primary;
     }
 
-    private static void SetTab(Button tab, bool active) => tab.Classes.Set("active", active);
-
-    private void SectionRecords_Click(object? sender, RoutedEventArgs e) => RequestSection("records");
-    private void SectionDocuments_Click(object? sender, RoutedEventArgs e) => RequestSection("documents");
-    private void SectionKnowledge_Click(object? sender, RoutedEventArgs e) => RequestSection("knowledge");
+    private void SectionTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (syncingSection) return;
+        RequestSection(SectionTabs.SelectedIndex switch
+        {
+            1 => "documents",
+            2 => "knowledge",
+            _ => "records"
+        });
+    }
     private void SectionBasic_Click(object? sender, RoutedEventArgs e) => RequestSection("basic");
     private void SectionRequirements_Click(object? sender, RoutedEventArgs e) => RequestSection("requirements");
     private void SectionSkills_Click(object? sender, RoutedEventArgs e) => RequestSection("skills");
@@ -234,7 +250,8 @@ public partial class SeriesEditorWindow : Window
         foreach (var category in state.SeriesEditorImportCategories)
         {
             var pickedCategory = category;
-            var item = new MenuItem { Header = UiText.Format("导入到 %@", category) };
+            // Mac localizedCategory: the category value stays canonical, only the label is localized.
+            var item = new MenuItem { Header = UiText.Format("导入到 %@", UiText.T(category)) };
             item.Click += async (_, _) => await PickAndImportSeriesDocumentsAsync(pickedCategory);
             menu.Items.Add(item);
         }
@@ -251,7 +268,7 @@ public partial class SeriesEditorWindow : Window
             if (storage is null) return;
             var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = category is null ? UiText.T("自动归类") : UiText.Format("导入到 %@", category),
+                Title = category is null ? UiText.T("自动归类") : UiText.Format("导入到 %@", UiText.T(category)),
                 AllowMultiple = true,
                 FileTypeFilter =
                 [

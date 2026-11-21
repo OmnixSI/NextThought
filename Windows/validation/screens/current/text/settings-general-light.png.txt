@@ -1,0 +1,153 @@
+content	下载
+content	会议结束后自动创建恢复点
+content	保存术语表
+content	准备声纹组件（约 26 MB）
+content	区分会议中的说话人（本机实验功能）
+content	只看要点
+content	只记录
+content	启动后自动检查更新（每 6 小时）
+content	回答与资料
+content	场景
+content	完成
+content	客户沟通
+content	导入…
+content	导入时同时导入设置（回答服务、识别、快捷键等）
+content	导出全部数据…
+content	小组作业
+content	小组讨论
+content	工作会议
+content	录入 / 管理我的声音
+content	所有记录
+content	打开数据文件夹
+content	打开术语表
+content	打开系统设置
+content	提词与教练
+content	检查更新
+content	汇报 / 答辩
+content	立即备份
+content	第三方许可与版权说明
+content	简洁
+content	系列
+content	纪要
+content	组会 / 研究讨论
+content	编辑
+content	自动回答
+content	讲座 / 课程
+content	设置
+content	详细
+content	跟随系统
+content	逐句
+content	通用
+content	面试复盘
+content	首页
+content	高级
+placeholder	Kubernetes | K8s | 库伯奈提斯
+同济大学 | 同技大学
+OpenSees | open sees
+placeholder	搜索设置
+text	.ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。
+text	0.9.0
+text	Kubernetes | K8s | 库伯奈提斯
+同济大学 | 同技大学
+OpenSees | open sees
+text	NextThought 把会议讨论留在本机，变成可以带走的结论。
+text	「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。
+text	下载
+text	仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。
+text	会中
+text	会议结束后自动创建恢复点
+text	保存术语表
+text	保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。
+text	准备声纹组件（约 26 MB）
+text	区分会议中的说话人（本机实验功能）
+text	区分说话人
+text	只在本机运行，声纹只是一组数字。
+text	只看要点
+text	只记录
+text	各场景开会时的设置
+text	名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。
+text	启动后自动检查更新（每 6 小时）
+text	回答
+text	回答与资料
+text	回答引擎
+text	场景
+text	备份与恢复
+text	外观
+text	完成
+text	客户沟通
+text	导入…
+text	导入会合并，不删除现有数据；先预览，再决定恢复什么。
+text	导入导出选项
+text	导入时同时导入设置（回答服务、识别、快捷键等）
+text	导出全部数据…
+text	小组作业
+text	小组讨论
+text	工作会议
+text	工作布置
+text	已允许 · 临场教练用它留意眼神，画面不保存、不上传
+text	已允许 · 你说的话标记为“我”
+text	开始一场会时按这里的设置来；会中仍可随时切换。
+text	当前场景
+text	录入 / 管理我的声音
+text	必需：选择服务商，粘贴 API Key
+text	恢复点最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。
+text	我的声音
+text	所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。
+text	所有记录
+text	打开数据文件夹
+text	打开术语表
+text	打开系统设置
+text	提词
+text	提词与教练
+text	搜索设置
+text	摄像头
+text	数据与关于
+text	更新
+text	术语和人名
+text	术语表（人名与专有名词）
+text	权限
+text	检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。
+text	检查更新
+text	每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。
+text	汇报 / 答辩
+text	流式模型：未安装或待修复　整句精修：未安装
+text	演示模式：内置样本数据，不会写入你的资料。
+text	界面语言 / Language
+text	立即备份
+text	第三方许可与版权说明
+text	简洁
+text	系列
+text	纪要
+text	纪要模板
+text	组会
+text	组会 / 研究讨论
+text	组会讨论
+text	编辑
+text	自动回答
+text	自定义
+text	讲座 / 课程
+text	设置
+text	设置清单
+text	详细
+text	语音识别
+text	跟随系统
+text	还没有录入
+text	还没有术语。
+text	还没有自动备份。
+text	逐句
+text	通用
+text	面试
+text	面试 · 6 份资料 · 本机解析
+text	面试复盘
+text	首页
+text	高级
+text	麦克风
+text	
+text	
+text	
+title	NextThought
+tooltip	关闭
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

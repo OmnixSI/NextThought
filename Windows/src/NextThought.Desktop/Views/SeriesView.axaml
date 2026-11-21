@@ -8,20 +8,6 @@
              x:Class="NextThought.Desktop.Views.SeriesView"
              x:DataType="local:AppState">
   <UserControl.Styles>
-    <!-- WorkspacesView detail sections: 记录 / 资料 / 经验积累 as 13px underline tabs. -->
-    <Style Selector="TabItem">
-      <Setter Property="FontSize" Value="13" />
-      <Setter Property="MinHeight" Value="34" />
-      <Setter Property="Padding" Value="8,10" />
-      <Setter Property="BorderThickness" Value="0,0,0,2" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-    </Style>
-    <Style Selector="TabItem:selected">
-      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
-    </Style>
-    <Style Selector="TabItem:pointerover /template/ Border#PART_SelectedPipe">
-      <Setter Property="Background" Value="{DynamicResource Sunken}" />
-    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
@@ -106,10 +92,11 @@
             <Button Content="{loc:Tr 移出}" Command="{Binding RemoveCurrentFromSeriesCommand}" />
           </StackPanel>
 
-          <TabControl Grid.Row="2" Background="Transparent" Padding="{DynamicResource D4Padding_0}"
-                      Margin="{DynamicResource D4Margin_0_6_0_0}">
+          <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="{DynamicResource D4Margin_0_6_0_0}">
+            <c:UnderlineTabs x:Name="SeriesTabs" Grid.Row="0" HorizontalAlignment="Left"
+                             SelectionChanged="SeriesTabs_SelectionChanged" />
             <!-- 记录：每行场景点、标题、时间与结果摘要，点击打开会议。 -->
-            <TabItem Header="{loc:Tr 记录}">
+            <Panel x:Name="SeriesRecordsPage" Grid.Row="1">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_8_0_0}">
                   <ItemsControl ItemsSource="{Binding SeriesMeetings}">
@@ -118,8 +105,8 @@
                         <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                 Tag="{Binding}" Click="OpenSeriesRecord_Click" Padding="{DynamicResource D4Padding_8_6}">
                           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
-                            <Border Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
-                                    Background="{Binding ModeTintBrush}" VerticalAlignment="Center" />
+                            <c:StatusDot Grid.Column="0" DotSize="7" Background="{Binding ModeTintBrush}"
+                                         VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
                               <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" />
                               <TextBlock Text="{Binding Details}" Classes="caption" FontSize="11"
@@ -127,9 +114,8 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                                         VerticalAlignment="Center">
-                              <Border Classes="chip" IsVisible="{Binding HasSummary}">
-                                <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
-                              </Border>
+                              <c:StatusDot Tone="Ready" DotSize="6" IsVisible="{Binding HasSummary}"
+                                         Content="{loc:Tr 有纪要}" FontSize="10" />
                               <TextBlock Text="{Binding TimeText}" Classes="caption" FontSize="11"
                                          Foreground="{DynamicResource Secondary}" TextWrapping="NoWrap" />
                             </StackPanel>
@@ -142,10 +128,10 @@
                              IsVisible="{Binding !HasSeriesRecords}" TextWrapping="Wrap" />
                 </StackPanel>
               </ScrollViewer>
-            </TabItem>
+            </Panel>
 
             <!-- 资料：系列资料（Mac WorkspaceDocumentsTab 的只读侧），导入/移除在系列编辑器里。 -->
-            <TabItem Header="{loc:Tr 资料}">
+            <Panel x:Name="SeriesDocumentsPage" Grid.Row="1">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_8_0_0}">
                   <ItemsControl ItemsSource="{Binding SelectedSeriesDocuments}">
@@ -172,10 +158,10 @@
                              IsVisible="{Binding !HasSelectedSeriesDocuments}" TextWrapping="Wrap" />
                 </StackPanel>
               </ScrollViewer>
-            </TabItem>
+            </Panel>
 
             <!-- 经验积累：决定/待办、经验、知识候选与题库。 -->
-            <TabItem Header="{loc:Tr 经验积累}">
+            <Panel x:Name="SeriesKnowledgePage" Grid.Row="1">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_8_0_0}">
                   <Border Classes="card" Padding="{DynamicResource D4Padding_12}" IsVisible="{Binding HasSeriesChanges}">
@@ -230,8 +216,10 @@
                     </StackPanel>
                   </Border>
 
-                  <TabControl Background="Transparent" Padding="{DynamicResource D4Padding_0}">
-                    <TabItem Header="{Binding SeriesLessonsHeader}">
+                  <Grid RowDefinitions="Auto,*">
+                    <c:UnderlineTabs x:Name="KnowledgeTabs" Grid.Row="0" HorizontalAlignment="Left"
+                                     SelectionChanged="KnowledgeTabs_SelectionChanged" />
+                    <Panel x:Name="SeriesLessonsPage" Grid.Row="1">
                       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
                         <ItemsControl ItemsSource="{Binding SeriesLessons}">
                           <ItemsControl.ItemTemplate>
@@ -256,9 +244,9 @@
                           </Button>
                         </Grid>
                       </StackPanel>
-                    </TabItem>
+                    </Panel>
 
-                    <TabItem Header="{Binding SeriesCandidatesHeader}">
+                    <Panel x:Name="SeriesCandidatesPage" Grid.Row="1">
                       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
                         <TextBlock Text="{loc:Tr 知识候选}" Classes="section" />
                         <TextBlock Text="{loc:Tr 候选先保留在待审阅区；确认后才会影响后续回答。}" Classes="caption" TextWrapping="Wrap" />
@@ -313,9 +301,9 @@
                         <TextBlock Text="{loc:Tr 没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。}"
                                    Classes="caption" IsVisible="{Binding !HasSeriesCandidates}" TextWrapping="Wrap" />
                       </StackPanel>
-                    </TabItem>
+                    </Panel>
 
-                    <TabItem Header="{Binding SeriesBankHeader}">
+                    <Panel x:Name="SeriesBankPage" Grid.Row="1">
                       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
                         <ItemsControl ItemsSource="{Binding SeriesBank}">
                           <ItemsControl.ItemTemplate>
@@ -333,12 +321,12 @@
                         <TextBlock Text="{loc:Tr 题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。}"
                                    Classes="caption" IsVisible="{Binding !HasSeriesBank}" TextWrapping="Wrap" />
                       </StackPanel>
-                    </TabItem>
-                  </TabControl>
+                    </Panel>
+                  </Grid>
                 </StackPanel>
               </ScrollViewer>
-            </TabItem>
-          </TabControl>
+            </Panel>
+          </Grid>
         </Grid>
       </Border>
     </Grid>

@@ -155,6 +155,56 @@ public sealed class SettingsStructureTests
     }
 
     [Fact]
+    public void TheCoachCardHasTheMacMasterSwitchAndConditionalGazeRows()
+    {
+        var xaml = Xaml();
+        string Card(string heading)
+        {
+            var at = xaml.IndexOf("Text=\"{loc:Tr " + heading + "}\"", StringComparison.Ordinal);
+            Assert.True(at > 0, "heading 未找到：" + heading);
+            var start = xaml.LastIndexOf("<Border", at, StringComparison.Ordinal);
+            var tagAt = xaml.IndexOf("Tag=\"", start, StringComparison.Ordinal);
+            var tag = xaml[(tagAt + 5)..xaml.IndexOf('"', tagAt + 5)];
+            var end = xaml.IndexOf("</Border>", start, StringComparison.Ordinal);
+            return tag + "|" + xaml[start..end];
+        }
+        var card = Card("临场教练");
+        Assert.StartsWith("Coach|", card);
+        // §3.3 coach 1: Mac LiveCoach.isEnabled — 会中轻提示 master switch, default on.
+        Assert.Contains("{loc:Tr 会中轻提示：语速、说得太久、发言占比}", card);
+        Assert.Contains("{Binding Settings.CoachEnabled}", card);
+        // §3.3 coach 2: 灵敏度 / 校准 / 摄像头权限 sit in a container shown only while 留意眼神 is on.
+        Assert.Contains("{loc:Tr 留意眼神是否离开镜头（使用摄像头）}", card);
+        Assert.Contains("IsVisible=\"{Binding Settings.CoachWatchesGaze}\"", card);
+        var gazeAt = card.IndexOf("{loc:Tr 灵敏度}", StringComparison.Ordinal);
+        var watchesAt = card.IndexOf("Settings.CoachWatchesGaze", StringComparison.Ordinal);
+        Assert.True(gazeAt > watchesAt, "灵敏度 must follow the 留意眼神 toggle");
+        Assert.Contains("{loc:Tr 校准：看着摄像头 2 秒}", card);
+        Assert.Contains("{loc:Tr 画面只在这台电脑上分析成几个特征点，不保存、不上传。}", card);
+
+        // Behaviour: the master switch gates the island hint, the per-second coach tick, the ingest
+        // path and the end-of-meeting summary (Mac LiveCoach isEnabled guards), and turning it off
+        // lets go of the camera immediately.
+        var cue = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Cue.cs"));
+        Assert.Contains("CueIslandCoachEnabled => coach is not null && Recording && Settings.CoachEnabled", cue);
+        var coach = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Coach.cs"));
+        Assert.Contains("ApplyCoachEnabledAsync(bool enabled)", coach);
+        Assert.Contains("if (!CoachEnabledSaved())", coach);
+        Assert.Contains("if (!Settings.CoachEnabled) { CoachSummaryText = \"\"; return; }", coach);
+        Assert.Contains("await SettingsStore.SaveMacPreferencesAsync", coach);
+        Assert.Contains("\"coachEnabled\"", coach);
+        var notes = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("if (!Settings.CoachEnabled)", notes);
+        Assert.True(notes.Contains("if (Settings.CoachEnabled)"), "ingest gate missing");
+        // SettingsViewModel writes coachEnabled immediately on toggle and loads/builds it.
+        var viewModel = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "ViewModels", "SettingsViewModel.cs"));
+        Assert.Contains("OnCoachEnabledChanged", viewModel);
+        Assert.Contains("state.ApplyCoachEnabledAsync(value)", viewModel);
+        Assert.Contains("CoachEnabled = settings.CoachEnabled;", viewModel);
+        Assert.Contains("CoachEnabled = CoachEnabled,", viewModel);
+    }
+
+    [Fact]
     public void TheSearchMatchesAcrossAllPagesLikeTheMac()
     {
         var code = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));

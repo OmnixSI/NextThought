@@ -1,15 +1,16 @@
-## 2026-11-21 · 0.9.0 收尾 · 阶段 2–8 汇总（windows/parity）
+## 2026-11-21 · 0.9.0 收尾 · 阶段 2–8 汇总（windows/parity，按《收尾决定》收口）
+
 改动：
-- **界面**：按 Mac 3.4.0 重做全部页面/窗口（首页、会中、准备、引导、纪要、系列、系列编辑器、设置六页、所有记录、术语表、导出、备份复核、字幕条、提词浮窗、提词岛、截图提问/区域选择、共享测试、shell 错误横幅/专注模式/电平表）；39 份 `compare.md` 逐元素对照；`VIEW_PARITY.md` 281 行：**280 已实现、0 未做、1 本版不做**（Mac Gatekeeper 签名状态，平台差异）。
+- **界面**：按 Mac 3.4.0 重做全部页面/窗口，并按《收尾决定》§3 逐页修复 183 条差别；39 份 `compare.md` 结论全部为「逐条一致 / 逐条一致；另有 N 条已裁决的差别」。`VIEW_PARITY.md` 281 行：**280 已实现、0 未做、1 本版不做**。`ACCEPTED_DIFFERENCES.md` 记录 13 条全局/页面平台差异，`KNOWN_GAPS.md` 记录 7 条第二批缺口。
 - **数据**：A15 夹具校验 40/40；A16 四份备份/A11 修订号/win-export 逐文件比较（实质差异 0）全绿。
-- **本地化**：`WORDING.md` 1,297 条；英文扫描 55 页、残留 0、截断 0（`localization_scan.py --write --check` EXIT=0）。
-- **测试**：Core **1795/1795**；Core（UTC）**1795/1795**；`NextThought.Tests` **694/694**；Mac fixture 套件 **40/40**；`CORE_PARITY` **604/604** 同名测试。`verify.ps1` 全绿（含 D1 截图）。
-- **发布**：`Windows/release.ps1 -Version 0.9.0` 在干净工作区从头跑通（`VERIFY OK` + 安装生命周期 **16/16 PASS** + payload 清洁审计 **247 files PASS**）；产物 `NextThought-0.9.0-windows-x64-setup.exe`（84,617,349 B，SHA-256 eca87873…470022）、`RELEASE_NOTES.md`、`SHA256SUMS.txt`、`update.json`；未执行任何发布动作。
-- **本机实测**：K1（GDI + Windows.Graphics.Capture 防截屏）、K2（不抢焦点）、K4（隐藏所有窗口 + 关闭/隐藏/重现；修复持久字幕条重显后被计时器隐藏的 bug）、K5（快捷键/侧栏/提词透明度 0.5/文字缩放重启保持）、K8（无头 Edge 手机页 + 真实 TCP 去重/重连）、K9（安装/升级/卸载/重装生命周期 16/16）、K12（8 设备间切换，23 帧）有本机记录并通过；K11 无 Windows 沙盒，按任务书写明留给人；K3/K6/K7/K10 需真实会议/音频链路/2 小时/已发布更新，步骤已写进 `RELEASE.md §9`；K13–K16 留给人。
-测试：见上；`release.ps1` 输出摘要见 `artifacts/release/0.9.0/logs/`。
-状态：FIX_TASKS 共 181 行：**未做 61、已实现、未验证 115、已验证 4、本版不做 1**。
-证据：提交序列见本文件下文与 `FIX_TASKS.md`；`Windows/validation/realmachine/K1`、`K2`、`K4`；`Windows/artifacts/release/0.9.0`。
-未解决：38 份 `compare.md` 仍列有动效/字体度量/平台机制类差异（逐条见各 compare.md）；K 组未完成项需其他设备/环境；E10 未用真人真摄像头验证；Mac 侧 `Verify` self-test 失败与 Mac 导入 win-export 需 Mac；详见 `OPEN_QUESTIONS.md`。
+- **本地化**：`WORDING.md` 1,297 条；英文扫描 55 页、residual 0、截断 0。
+- **测试**：Core.Tests **1810/1810**；Core（UTC）**1810/1810**；NextThought.Tests **770/770**；Mac fixture 套件 **40/40**；`CORE_PARITY` 604/604 同名测试。
+- **发布**：`Windows/release.ps1 -Version 0.9.0` 在干净工作区从头跑通（`VERIFY OK` + 安装生命周期 16/16 PASS + payload 清洁审计 247 files PASS）；产物 `NextThought-0.9.0-windows-x64-setup.exe` 等四件套；本文件与发布说明记录最终哈希。
+- **本机实测**：**K3、K6、K9、K10、K17、K18、K1、K2、K4、K5、K8、K12、R5 有本机记录并通过**（`validation/realmachine/<K>/`；K9/R5 为安装生命周期 16/16）。K7 两小时长会在最终收口时补齐报告；K11（无 Windows 沙盒）与 K13–K16（需其他设备/账号）留给人。
+- **证据**：`validation/screens/` 全部重拍（132 张页面矩阵 + 40 张 live 状态 + 深色对比度 8/8 页 0 条 <4.5），每份 `compare.md` 开头写截图来源提交。
+状态：FIX_TASKS 共 183 行：**未做 6（K7/K11/K13–K16，均留给人）、已实现、未验证 163、已验证 13、本版不做 1**。
+证据：`ACCEPTED_DIFFERENCES.md`、`KNOWN_GAPS.md`、`DECISIONS_TRACKING.md`、`validation/screens/`、`validation/realmachine/`。
+未解决：见 `OPEN_QUESTIONS.md`（只剩需要人或其他设备的事项）。
 
 ## 2026-11-21 · 0.9.0 收尾 · 阶段 1：数据层（任务书 §4.1–4.7）
 改动：

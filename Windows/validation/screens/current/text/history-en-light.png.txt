@@ -1,0 +1,53 @@
+content	All records
+content	Data folder
+content	Hidden
+content	Home
+content	Series
+content	周一客户例会 · 华东区
+content	字节后端二面
+content	
+placeholder	Search all transcripts and notes
+text	1
+text	2 meetings · 2 series
+text	2 shown · 2 total
+text	All records
+text	Answers
+text	Archive overview
+text	Archive screenshot
+text	Context
+text	Data folder
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Hidden
+text	Home
+text	Interview · 44 min
+text	No archived screenshots yet.
+text	Nov 20, 15:37 · 44:00 · interview · 字节后端二面 · 6 lines · 2 answers · 6 questions · Notes ready
+text	Nov 20, 15:37 · 6 lines · 2 answers
+text	Nov 21, 10:00 · 4 lines
+text	On this Mac · 2 meetings and 2 series match · series ordered by latest match
+text	Recent meetings
+text	Saved automatically · no audio kept
+text	Search all transcripts and notes
+text	Series
+text	This meeting has no answers.
+text	Today 10:00 AM
+text	Work meeting · 38 min
+text	Yesterday 3:37 PM
+text	后端二面：缓存一致性与项目经历
+text	周一产品例会
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Meeting record actions
+tooltip	Minimize
+tooltip	Notes are ready
+tooltip	Settings
+tooltip	Show
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

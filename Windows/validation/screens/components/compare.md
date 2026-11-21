@@ -1,4 +1,11 @@
-> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+> 结论：逐条一致；另有 30 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
 
 
 # 阶段 3 §6.1 通用设计系统组件：Mac ↔ Windows 对照
@@ -86,4 +93,13 @@ Windows 实现：`Windows/src/NextThought.Desktop/Controls/DesignSystemComponent
 - `NotesView.axaml` 格式选择：4 个手写 chip RadioButton → `PillTabs`（`SelectedIndex={Binding NotesFormatIndex}`，`AppState.DesignSystemIndex.cs` 桥接 `SelectedNotesFormat`，Mac 顺序 复盘/提纲/鱼骨图/观点对照）。
 - `CorrectedTranscriptView.axaml` 版本选择：2 个 chip RadioButton → `PillTabs`（`SelectedIndex={Binding CorrectedTranscriptVersionIndex}` 桥接 `CorrectedTranscriptShowOriginal`）。
 - `NotesEditorWindow.axaml` 的「查看 AI 原稿」→ `InkSwitch`（前一次 E16 提交）。
-- 仍待接：NotesView 的 3 个信息 badge（自动/未完成等）改 `MetricPill`。
+- NotesView 的 3 个信息 badge（证据 Badge / 自动 / 未完成）已改用 `MetricPill`，页面不再有 `Classes="chip"`。
+
+## components-6 替换（2026-11-21 收尾）
+
+- `LiveView.axaml` 录制的两个手写 on-air `Ellipse` → `components:StatusDot Tone=Live/Idle`；回答服务未就绪的角标 `Ellipse` → `components:StatusDot Tone=Caution DotSize=6`（保留 `LiveAnswerEngineDot` 名字）
+- `Home/StartComposer.axaml` 手写快捷键 chip `Border` → `c:ShortcutHint`
+- `NotesEditorWindow.axaml` 证据 Badge 手写 chip → `c:MetricPill`
+- `GlossaryWindow.axaml` 「人名」手写 chip → `controls:MetricPill`
+- `NotesView.axaml` 「会中回答」正文 `TextBlock` → `views:MarkdownText`（Mac MarkdownText：加粗/列表/行内代码/表格/公式）
+- 验证：`ComponentReplacementTests` 3/3，构建 0 错误。

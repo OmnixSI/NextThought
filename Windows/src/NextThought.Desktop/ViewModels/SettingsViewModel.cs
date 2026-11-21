@@ -621,6 +621,29 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool insightScreenWatch;
     [ObservableProperty] private double insightScreenInterval = 1;
     [ObservableProperty] private bool insightFollowSlides = true;
+    [ObservableProperty] private string selectedInsightCaptureTarget = "";
+
+    /// <summary>Mac InsightSettingsView.captureTargets: displays plus the other on-screen windows.</summary>
+    public IReadOnlyList<string> InsightCaptureTargetLabels => BuildInsightCaptureTargets();
+
+    private static IReadOnlyList<string> BuildInsightCaptureTargets()
+    {
+        var labels = new List<string> { UiText.T("主显示器") };
+        try
+        {
+            foreach (var window in ScreenCapture.AvailableWindows().Take(30))
+                labels.Add(window.DisplayTitle + " · " + window.Owner);
+        }
+        catch { }
+        return labels;
+    }
+
+    partial void OnSelectedInsightCaptureTargetChanged(string value)
+    {
+        if (value.Length == 0) return;
+        InsightScreenSource = value == UiText.T("主显示器") ? "display" : "window";
+    }
+
     [ObservableProperty] private string insightScreenSource = "display";
     [ObservableProperty] private string insightScreenRegion = "";
 
@@ -631,6 +654,15 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("standard", "标准"),
         new("strict", "严格")
     ];
+
+    // §3.3 coach 1: Mac LiveCoach.isEnabled — the in-meeting gentle nudges master switch.
+    [ObservableProperty] private bool coachEnabled = true;
+
+    partial void OnCoachEnabledChanged(bool value)
+    {
+        if (loadingCoachGaze) return;
+        _ = state.ApplyCoachEnabledAsync(value);
+    }
 
     [ObservableProperty] private bool coachWatchesGaze;
     [ObservableProperty] private GazeSensitivityChoice? selectedGazeSensitivity;
@@ -904,6 +936,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightScreenSource = settings.InsightScreenSource;
         InsightScreenRegion = settings.InsightScreenRegion;
         loadingCoachGaze = true;
+        CoachEnabled = settings.CoachEnabled;
         CoachWatchesGaze = settings.CoachWatchesGaze;
         SelectedGazeSensitivity = GazeSensitivityValues.FirstOrDefault(choice => choice.Value == settings.CoachGazeSensitivity)
             ?? GazeSensitivityValues[1];
@@ -1039,6 +1072,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightFollowSlides = InsightFollowSlides,
         InsightScreenSource = InsightScreenSource,
         InsightScreenRegion = InsightScreenRegion,
+        CoachEnabled = CoachEnabled,
         CoachWatchesGaze = CoachWatchesGaze,
         CoachGazeSensitivity = SelectedGazeSensitivity?.Value ?? "standard",
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",

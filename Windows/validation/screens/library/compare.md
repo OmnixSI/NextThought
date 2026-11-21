@@ -1,3 +1,11 @@
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 资料库：Mac 3.4.0 图对照（task-48，Windows 专有页面）
 
 - Windows 最新批次：`validation/screens/current/library-light.png` / `library-dark.png`（`--demo --screenshots`，未入库）。

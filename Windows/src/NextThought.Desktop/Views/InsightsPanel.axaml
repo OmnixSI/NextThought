@@ -37,8 +37,12 @@
         <TextBlock Text="{StaticResource IconRectangleOnRectangle}" FontFamily="{StaticResource IconFont}" FontSize="12"
                    Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
         <TextBlock Grid.Column="1" Text="{loc:Tr 屏幕与讲稿}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-        <Button Grid.Column="2" Classes="pill" Content="{loc:Tr 立即识别}" FontSize="11" MinHeight="{DynamicResource IvMinHeight_24}"
-                Command="{Binding RequestScreenReadCommand}" IsEnabled="{Binding !ScreenIsReading}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+          <Button Classes="pill" Content="{loc:Tr 立即识别}" FontSize="11" MinHeight="{DynamicResource IvMinHeight_24}"
+                  Command="{Binding RequestScreenReadCommand}" IsEnabled="{Binding !ScreenIsReading}" />
+          <Button Classes="quiet" Content="{Binding SlideNotesCacheClearLabel}" FontSize="11"
+                  Command="{Binding ClearSlideNotesCacheCommand}" />
+        </StackPanel>
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
           <ProgressBar IsIndeterminate="True" Width="36" Height="3" IsVisible="{Binding ScreenIsReading}" VerticalAlignment="Center" />
           <Button Classes="quiet" Width="26" Height="26" Padding="{DynamicResource D4Padding_0}" Click="OpenInsightSettings_Click"

@@ -1,0 +1,22 @@
+content	Example
+content	Shorter
+text	12:36
+text	2 / 2
+text	Example
+text	Shorter
+text	我们采用先更新数据库、再删除缓存，并用 binlog 订阅兜底，保证最终一致。
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+text	󰮜
+text	
+text	
+text	
+text	
+title	NextThought Cue island
+tooltip	Add an example
+tooltip	Keep the cue island open
+tooltip	Larger text
+tooltip	Next answer
+tooltip	Open main window
+tooltip	Previous answer
+tooltip	Shorten answer
+tooltip	Smaller text

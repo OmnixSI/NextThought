@@ -12,6 +12,12 @@
       <TextBlock Text="{loc:Tr 详细信息}" Classes="section" />
       <TextBlock Text="{Binding MeetingTitle}" Classes="caption" TextTrimming="CharacterEllipsis" />
     </StackPanel>
+    <StackPanel Grid.Row="1" x:Name="EmptyPanel" Spacing="{DynamicResource D4Spacing_6}"
+                VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="False">
+      <TextBlock Text="{loc:Tr 还没有可显示的会议信息。}" Classes="caption" TextWrapping="Wrap"
+                 TextAlignment="Center" Foreground="{DynamicResource Secondary}" />
+      <Button Classes="quiet" Content="{loc:Tr 重试}" Click="Retry_Click" HorizontalAlignment="Center" />
+    </StackPanel>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
       <ItemsControl Name="InfoItems">
         <ItemsControl.ItemTemplate>

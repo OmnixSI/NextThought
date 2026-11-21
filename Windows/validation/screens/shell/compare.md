@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 5 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # Shell / 会中组件样板（E4 · §6.7）Mac 3.4.0 源码 ↔ Windows 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`ContentView.swift`（ErrorBanner / FocusModeView / LevelMeters）、`LiveWindowController.swift`（LiveWindowMenu）、`LiveSessionAcceptanceComponentSamples.swift`

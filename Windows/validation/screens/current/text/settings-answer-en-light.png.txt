@@ -1,0 +1,133 @@
+content	Advanced
+content	All records
+content	Answers and materials
+content	Automatic answers
+content	Brief
+content	Check connection
+content	Client call
+content	Cue and coach
+content	Delete
+content	Detailed
+content	Done
+content	Fetch list
+content	General
+content	Group discussion
+content	Group project
+content	Home
+content	Import .md files…
+content	Install sample skill
+content	Interview review
+content	Key points
+content	Lab meeting / research discussion
+content	Lecture / Class
+content	Line by line
+content	New preset
+content	New skill
+content	Notes
+content	Presentation / Defense
+content	Read materials
+content	Record only
+content	Rename
+content	Save key
+content	Scenes
+content	Series
+content	Use local Codex CLI account
+content	Work meeting
+edit	https://api.openai.com/v1
+placeholder	Name
+placeholder	Search settings
+placeholder	Tavily API key (optional)
+placeholder	gpt-5.2-codex
+placeholder	https://api.openai.com/v1
+placeholder	sk-…
+text	A meeting starts with these settings. You can still switch during the meeting.
+text	A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab.
+text	API Key
+text	Advanced
+text	All records
+text	Allow web verification (needs TAVILY_API_KEY)
+text	Answer
+text	Answer model
+text	Answer service
+text	Answers and materials
+text	Applies only to reasoning models supported by the provider. Keep the default if unsure.
+text	Automatic answers
+text	Brief
+text	Built into the Mac, offline, nothing to download. Fine for plain text; complex tables and formulas may lose their structure.
+text	Chat Completions-compatible API URL
+text	Check connection
+text	Choose one method. System recognition can read PDFs, images and plain text without a model download.
+text	Client call
+text	Codex model (empty uses the account default)
+text	Cue and coach
+text	Custom
+text	Default (not specified)
+text	Delete
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Detailed
+text	Done
+text	Fetch list
+text	General
+text	Group discussion
+text	Group meeting
+text	Group project
+text	Home
+text	How materials are read
+text	Import .md files…
+text	In meeting
+text	Install sample skill
+text	Interview
+text	Interview review
+text	Key points
+text	Lab meeting
+text	Lab meeting / research discussion
+text	Lecture / Class
+text	Line by line
+text	Materials
+text	Model
+text	Name
+text	New preset
+text	New skill
+text	No key saved yet; optional for local services.
+text	No skills loaded.
+text	No skills yet. Import a SKILL.md or create one from a template.
+text	Notes
+text	Notes model (empty uses the answer model)
+text	Notes template
+text	OpenAI
+text	Original files remain on this Mac. Materials are sent to a service only when you choose online reading or online answers.
+text	Preferences live in settings.json in the local data folder; the API key is encrypted for the current Windows user and never written to backups.
+text	Presentation / Defense
+text	Presets
+text	Prompt
+text	Read materials
+text	Reasoning effort
+text	Record only
+text	Rename
+text	Save key
+text	Save settings
+text	Saved · 15:37:14
+text	Scenes
+text	Search settings
+text	Searches Tavily for the latest prices, versions or news and passes linked results to the answer; stays offline without a key.
+text	Series
+text	Settings
+text	Settings for each scene
+text	Skills
+text	Skills can apply to all series, or be chosen per series.
+text	System recognition
+text	Tavily API key (optional)
+text	The key is stored only for the current Windows user; TAVILY_API_KEY still works too.
+text	Transcripts stay on this device. With a remote answer service, the question and relevant transcript are sent to that service.
+text	Use local Codex CLI account
+text	Work assignment
+text	Work meeting
+text	gpt-5.2-codex
+text	sk-…
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

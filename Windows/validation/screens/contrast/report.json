@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "failures": 0,
+  "pages": [
+    {
+      "page": "home",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "prepare",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "live",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "notes",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "history",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "series",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "library",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    },
+    {
+      "page": "settings",
+      "failures": [],
+      "whiteBlocks": [],
+      "passed": true
+    }
+  ],
+  "note": "对比度 = WCAG 相对亮度比；背景为从最近不透明祖先逐层把半透明层合成后的有效颜色；跳过图标字形与隐藏模板。"
+}

@@ -35,7 +35,13 @@ public sealed class SeriesEditorClosureTests
         var window = Read("Views", "SeriesEditorWindow.axaml.cs");
         Assert.Contains("MenuFlyout", window, StringComparison.Ordinal);
         Assert.Contains("UiText.T(\"自动归类\")", window, StringComparison.Ordinal);
-        Assert.Contains("UiText.Format(\"导入到 %@\", category)", window, StringComparison.Ordinal);
+        Assert.Contains("UiText.Format(\"导入到 %@\", UiText.T(category))", window, StringComparison.Ordinal);
+        // Mac categories(profile): the mode's slots plus every category already used by a document.
+        Assert.Contains("ModeProfile.For(CurrentEditorMode).DocumentCategories", state, StringComparison.Ordinal);
+        Assert.Contains("if (categories.Count == 0) categories.Add(SeriesMaterials.OtherCategory)", state, StringComparison.Ordinal);
+        // Null category = auto classify; explicit category applies to the whole selection.
+        Assert.Contains("category is null", state, StringComparison.Ordinal);
+        Assert.Contains("DocumentClassifier.Classify", state, StringComparison.Ordinal);
         var xaml = Read("Views", "SeriesEditorWindow.axaml");
         Assert.Contains("按内容自动归类", xaml, StringComparison.Ordinal);
     }

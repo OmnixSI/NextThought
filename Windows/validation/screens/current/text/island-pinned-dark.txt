@@ -1,0 +1,12 @@
+text	12:36
+text	I am not fully convinced by the term physics informed. Many model-based methods already use the array response.
+text	In RQ2 the map is learned without labels. How do you know the learned prior is correct?
+text	RQ2 没有真实信道作标签，怎么确认学到的先验是对的？
+text	The prior is not guaranteed to be exactly correct without ground-truth labels.
+text	安装条件变了它仍然匹配，固定映射做不到。
+text	对方在说
+text	我不太认同“物理信息”这个说法。很多基于模型的方法已经用了阵列响应。
+text	我用留出的服务导频评估，并和更简单的基线比较。
+text	没有真实标签，这个先验不能保证完全正确。
+text	
+title	NextThought 提词岛

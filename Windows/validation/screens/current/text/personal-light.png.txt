@@ -1,0 +1,58 @@
+content	复制纪要
+content	导出…
+content	所有记录
+content	按模板整理
+content	校对转写
+content	系列
+content	结束后自动整理
+content	编辑纪要
+content	详细信息
+content	重新整理
+content	首页
+text	2026-11-20 15:37 · 44 min · 线上
+text	gpt-5.5-mini
+text	›
+text	会中回答
+text	后端二面：缓存一致性与项目经历
+text	复制纪要
+text	复盘
+text	导出…
+text	我们采用**先更新数据库、再删除缓存**，并用 binlog 订阅兜底，保证最终一致。
+
+- **Cache Aside**：写库成功后删除缓存，读请求未命中时回源并回填，避免并发写导致脏数据。
+- **删除失败兜底**：删除失败的 key 进入重试队列；同时用 **Canal 订阅 binlog** 异步再删一次。
+- **并发读写窗口**：对热点 key 做**延迟双删**（约 500 ms），把旧值被回填的概率降到很低。
+- **取舍**：这是最终一致方案，对强一致场景（如余额）直接读库或加分布式锁。
+text	我的笔记
+text	我负责订单服务的缓存层……
+text	所有会议
+text	所有记录
+text	按模板整理
+text	提纲
+text	整理这场会议
+text	校对转写
+text	演示模式：内置样本数据，不会写入你的资料。
+text	简单介绍一下你负责的部分
+text	系列
+text	结束后自动整理
+text	编辑纪要
+text	自动
+text	观点对照
+text	详细信息
+text	转写
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+text	重新整理
+text	面试复盘
+text	首页
+text	鱼骨图
+text	
+title	NextThought
+tooltip	会议信息
+tooltip	关闭
+tooltip	只更正名字与术语的识别错误，改动写入 corrections.json
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	导出 Markdown
+tooltip	最大化
+tooltip	最小化
+tooltip	纪要模板：章节由模板决定，模型只填内容
+tooltip	设置

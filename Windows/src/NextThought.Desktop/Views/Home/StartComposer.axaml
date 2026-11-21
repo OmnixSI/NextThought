@@ -3,6 +3,7 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:c="using:NextThought.Desktop.Controls"
              x:Class="NextThought.Desktop.Views.Home.StartComposer"
              x:DataType="local:AppState">
   <UserControl.Styles>
@@ -90,9 +91,7 @@
       </StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-          <Border Classes="chip" Padding="{DynamicResource D4Padding_6_2}" CornerRadius="{DynamicResource RadiusSmall}">
-            <TextBlock Text="Ctrl+Alt+N" Classes="caption" FontSize="11" />
-          </Border>
+          <c:ShortcutHint Text="Ctrl+Alt+N" VerticalAlignment="Center" />
           <TextBlock Text="{loc:Tr 不挑场合，立即记录}" Classes="caption" VerticalAlignment="Center" />
         </StackPanel>
         <Button Grid.Column="2" Classes="secondary" Content="{loc:Tr 先准备资料}" Click="Prepare_Click" />

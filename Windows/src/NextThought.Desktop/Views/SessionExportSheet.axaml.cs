@@ -79,9 +79,21 @@ public partial class SessionExportSheet : Window
         ReadIssueText.Text = readIssue;
         ExportButton.IsEnabled = readIssue.Length == 0 && text.Length > 0;
 
-        // Derived notes stale / no source revision: the Windows archive does not track the derived
-        // content status yet, so the Mac notice is kept hidden (see compare.md §6.7 E21).
-        StaleNotice.IsVisible = false;
+        // Derived notes/hand notes may be stale, or came from an old archive without a source revision
+        // (Mac projection.derivedContentStatus); the window shows the Mac caution/secondary notice.
+        var derivedStatus = state.SessionExportDerivedContentStatus;
+        var showDerivedNotice = SessionExportContent.UsesPageLayout(format)
+                                && state.SessionExportHasDerivedNotes
+                                && derivedStatus != SessionDerivedContentStatus.Current;
+        StaleNotice.IsVisible = showDerivedNotice;
+        if (showDerivedNotice)
+        {
+            var isStale = derivedStatus == SessionDerivedContentStatus.Stale;
+            StaleIcon.Text = ResourceString(isStale ? "IconExclamationmarkTriangleFill" : "IconInfoCircle");
+            StaleIcon.Foreground = ResourceBrush(isStale ? "Caution" : "Secondary");
+            StaleText.Text = state.SessionExportDerivedContentNotice;
+            StaleText.Foreground = ResourceBrush(isStale ? "Caution" : "Secondary");
+        }
 
         // Subtitle formats only: estimated endings and possibly stale translations.
         var (estimated, stale) = state.SessionExportSubtitleWarnings(SelectedVariant, SelectedLanguage);
@@ -126,6 +138,14 @@ public partial class SessionExportSheet : Window
     }
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
+
+    /// <summary>Theme resource lookup for the stale notice (Application.TryFindResource).</summary>
+    private static string ResourceString(string key) =>
+        Avalonia.Application.Current?.TryFindResource(key, out var value) == true && value is string text ? text : "";
+
+    private static IBrush ResourceBrush(string key) =>
+        Avalonia.Application.Current?.TryFindResource(key, out var value) == true && value is IBrush brush
+            ? brush : Brushes.Gray;
 
     /// <summary>E21 evidence hook: selects a format/variant/language and refreshes the preview.</summary>
     public void SelectForCheck(int formatIndex, int variantIndex = 0, int languageIndex = 0)

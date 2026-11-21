@@ -1,3 +1,13 @@
+
+> 结论：逐条一致（按决定文件 §2/§3 裁决；无未裁决差异）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 回答区模块（AssistantView / AssistantLayout / DetachedModules ↔ Windows 回答区）逐元素对照
 
 - Mac 标准：`Sources/NextThought/AssistantView.swift`（AnswerHistoryPanel / DetectionStrip / ConfidenceBar / ScreenshotCard / AnswerPanel / AnswerHeader / AnswerBody / WebLookupStrip / WebSourcesList / AnswerFooter / AnswerEvidenceDetails / ConversationPanel / TranscriptStatusLine / ConversationBubble / PartialBubbles / EmptyConversationHint）、`AssistantLayout.swift`（AssistantModule / AssistantLayout / Preset / 槽位操作）、`DetachedModules.swift`（DetachedModuleController / DetachedModuleView）。

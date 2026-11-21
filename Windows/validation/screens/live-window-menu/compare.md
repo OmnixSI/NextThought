@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 3 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # §6.2/§6.5：会中窗口菜单 LiveWindowMenu（对照 LiveWindowController.swift）
 
 Mac 参照：`Sources/NextThought/LiveWindowController.swift:99` 的 `LiveWindowMenu`（菜单：会中窗口 inline picker 三个模式 + 分隔线 + 「按 … 在三者之间切换」；按钮是 28px glass 图标 `captions.bubble`，help「会中窗口 · 快捷键」）。

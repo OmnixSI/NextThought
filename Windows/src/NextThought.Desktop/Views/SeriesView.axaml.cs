@@ -6,7 +6,43 @@ namespace NextThought.Desktop.Views;
 
 public partial class SeriesView : UserControl
 {
-    public SeriesView() => InitializeComponent();
+    public SeriesView()
+    {
+        InitializeComponent();
+        SeriesTabs.ItemsSource = new[] { UiText.T("记录"), UiText.T("资料"), UiText.T("经验积累") };
+        SeriesTabs.SelectedIndex = 0;
+        SeriesRecordsPage.IsVisible = true;
+        SeriesDocumentsPage.IsVisible = false;
+        SeriesKnowledgePage.IsVisible = false;
+        DataContextChanged += (_, _) => SyncKnowledgeHeaders();
+        SyncKnowledgeHeaders();
+    }
+
+    /// <summary>decisions §3.1 components 6: the knowledge tab titles carry their live counts.</summary>
+    private void SyncKnowledgeHeaders()
+    {
+        if (DataContext is not AppState state) return;
+        KnowledgeTabs.ItemsSource = new[] { state.SeriesLessonsHeader, state.SeriesCandidatesHeader, state.SeriesBankHeader };
+        if (KnowledgeTabs.SelectedIndex < 0) KnowledgeTabs.SelectedIndex = 0;
+    }
+
+    private void SeriesTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (SeriesRecordsPage is null) return;
+        var index = SeriesTabs.SelectedIndex;
+        SeriesRecordsPage.IsVisible = index == 0;
+        SeriesDocumentsPage.IsVisible = index == 1;
+        SeriesKnowledgePage.IsVisible = index == 2;
+    }
+
+    private void KnowledgeTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (SeriesLessonsPage is null) return;
+        var index = KnowledgeTabs.SelectedIndex;
+        SeriesLessonsPage.IsVisible = index == 0;
+        SeriesCandidatesPage.IsVisible = index == 1;
+        SeriesBankPage.IsVisible = index == 2;
+    }
 
     /// <summary>The screenshots and acceptance runs open a specific tab with --series-tab=N.</summary>
     protected override void OnLoaded(RoutedEventArgs e)

@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1293;
+    public const int Count = 1297;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1151,6 +1151,7 @@ internal static class UiTextWindowsEnglish
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
         ["改这一句…"] = "Edit this sentence…",
+        ["还没有可显示的会议信息。"] = "No meeting details are available yet.",
         ["一句话印象"] = "One-line impression",
         ["用了多少"] = "How much you've recorded",
         ["本月"] = "This month",
@@ -1174,6 +1175,9 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["讲稿缓存已清除"] = "Script cache cleared.",
+        ["讲稿提示没有按格式返回，可以点“重新生成”。"] = "The script hint came back in the wrong format; you can tap “Regenerate”.",
+        ["清除缓存"] = "Clear cache",
         ["讲稿提示生成失败：%@"] = "Generating the script hint failed: %@",
         ["用户手动联网"] = "Manual web lookup",
         ["联网搜索未配置"] = "Web search is not configured",

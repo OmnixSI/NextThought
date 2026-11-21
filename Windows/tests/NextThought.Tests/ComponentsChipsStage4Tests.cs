@@ -47,4 +47,13 @@ public sealed class ComponentsChipsStage4Tests
         Assert.Contains("OnCorrectedTranscriptVersionIndexChanged", state);
         Assert.Contains("CorrectedTranscriptShowOriginal", state);
     }
+
+    [Fact]
+    public void TheNotesBadgesUseMetricPill()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("<c:MetricPill", view);
+        Assert.DoesNotContain("Classes=\"chip\"", view);
+        Assert.Contains("{Binding AutomaticLabel}", view);
+    }
 }

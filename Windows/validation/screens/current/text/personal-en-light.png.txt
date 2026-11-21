@@ -1,0 +1,58 @@
+content	All records
+content	Copy notes
+content	Details
+content	Edit notes
+content	Export…
+content	Home
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
+content	Series
+content	Summarize automatically after ending
+text	2026-11-20 15:37 · 44 min · Online
+text	All records
+text	Automatic
+text	Copy notes
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Details
+text	Edit notes
+text	Export…
+text	Fishbone
+text	Home
+text	Interview review
+text	Live answers
+text	Meetings
+text	My notes
+text	Organize with template
+text	Outline
+text	Proofread transcript
+text	Review
+text	Rewrite notes
+text	Series
+text	Summarize automatically after ending
+text	Summarize this meeting
+text	Transcript
+text	Viewpoints
+text	gpt-5.5-mini
+text	›
+text	后端二面：缓存一致性与项目经历
+text	我们采用**先更新数据库、再删除缓存**，并用 binlog 订阅兜底，保证最终一致。
+
+- **Cache Aside**：写库成功后删除缓存，读请求未命中时回源并回填，避免并发写导致脏数据。
+- **删除失败兜底**：删除失败的 key 进入重试队列；同时用 **Canal 订阅 binlog** 异步再删一次。
+- **并发读写窗口**：对热点 key 做**延迟双删**（约 500 ms），把旧值被回填的概率降到很低。
+- **取舍**：这是最终一致方案，对强一致场景（如余额）直接读库或加分布式锁。
+text	我负责订单服务的缓存层……
+text	简单介绍一下你负责的部分
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+text	
+title	NextThought
+tooltip	Close
+tooltip	Export Markdown
+tooltip	Maximize
+tooltip	Meeting info
+tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
+tooltip	Settings
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

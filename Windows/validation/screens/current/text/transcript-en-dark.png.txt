@@ -1,0 +1,65 @@
+content	All records
+content	Copy notes
+content	Corrected transcript
+content	Details
+content	Edit notes
+content	Export…
+content	Home
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
+content	Series
+content	Summarize automatically after ending
+placeholder	Find in transcript (misheard spellings too)
+text	15:35:26 · System audio
+text	15:35:41 · Microphone
+text	15:36:03 · System audio
+text	15:36:09 · System audio
+text	15:36:10 · Microphone · possible echo
+text	15:36:41 · Microphone
+text	2 recognition errors fixed
+text	2026-11-20 15:37 · 44 min · Online
+text	All records
+text	Copy notes
+text	Corrected transcript
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Details
+text	Edit notes
+text	Export…
+text	Find in transcript (misheard spellings too)
+text	Fishbone
+text	Home
+text	Interview review
+text	Live answers
+text	Meetings
+text	My notes
+text	Organize with template
+text	Outline
+text	Proofread transcript
+text	Review
+text	Rewrite notes
+text	Series
+text	Summarize automatically after ending
+text	Summarize this meeting
+text	Transcript
+text	Viewpoints
+text	›
+text	后端二面：缓存一致性与项目经历
+text	嗯，这个挺关键的。
+text	好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。
+text	我主要负责订单服务的缓存层，把核心查询从数据库迁移到 Redis。
+text	我们用的是先更新数据库、再删除缓存的方式。
+text	数据库和缓存同时更新的时候你们是怎么保证一致性的
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+text	
+title	NextThought
+tooltip	Close
+tooltip	Export Markdown
+tooltip	Maximize
+tooltip	Meeting info
+tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
+tooltip	Settings
+tooltip	View corrected transcript
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

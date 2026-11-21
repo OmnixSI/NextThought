@@ -253,7 +253,7 @@ public partial class AppState
 
     // ---- coach ear -------------------------------------------------------------------------
 
-    public bool CueIslandCoachEnabled => coach is not null && Recording;
+    public bool CueIslandCoachEnabled => coach is not null && Recording && Settings.CoachEnabled;
 
     /// <summary>The coach's nudge (Mac state.coach.nudge); empty while the coach is quiet. The
     /// eye-contact cue (Mac state.coach.shouldLookUp) outranks nudges while it applies.</summary>

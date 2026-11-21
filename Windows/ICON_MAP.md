@@ -93,11 +93,16 @@ Microsoft；系统 `Segoe Fluent Icons` 作为回退）。字形的码点来自 
 | person.crop.rectangle（场景图标） | `ic_fluent_person_board_24_regular` | `U+F5CE` | `IconPersonCropRectangle` |
 | slider.horizontal.3（自定义场景） | `ic_fluent_options_24_regular` | `U+F588` | `IconSliderHorizontal3` |
 | 加载中状态 | `ic_fluent_arrow_sync_24_regular` | `U+F191` | `IconSync` |
+| 说话人标记（SpeakerMark，circle） | `ic_fluent_circle_24_regular` | `U+F2BC` | `IconCircle` |
+| 说话人标记（SpeakerMark，square） | `ic_fluent_square_24_regular` | `U+F292` | `IconSquare` |
+| 说话人标记（SpeakerMark，triangle） | `ic_fluent_triangle_24_regular` | `U+F03A5` | `IconTriangle` |
+| 说话人标记（SpeakerMark，diamond） | `ic_fluent_diamond_24_regular` | `U+E4BC` | `IconDiamond` |
 
 ## 暂未使用的资源
 
 - `IconFolder` — 收录未用（decisions 收尾；用到时直接引用）
 - `IconIphone` — 收录未用（设置页手机连接入口待接）
+- `IconSquare` / `IconTriangle` / `IconDiamond` — 说话人标记由 `SpeakerRow.MarkGlyph` 按字形码点引用（图标测试只扫描 Views 里的 StaticResource），已在「场景主题与 Windows 专用图标」表登记；保留同一字体表的码点来源。
 
 以下资源已收录但当前界面还没有引用；保留给对应的 E 组页面（用到时直接引用，不需要再改字体表）。
 

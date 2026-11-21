@@ -43,10 +43,16 @@ public sealed class SeriesPageParityTests
     [Fact]
     public void DetailHasTheThreeMacTabs()
     {
+        // decisions §3.1 components 6: the underline strip is the design-system UnderlineTabs; the
+        // three pages switch by selection instead of a TabControl.
         var view = Read("Views", "SeriesView.axaml");
-        Assert.Contains("TabItem Header=\"{loc:Tr 记录}\"", view);
-        Assert.Contains("TabItem Header=\"{loc:Tr 资料}\"", view);
-        Assert.Contains("TabItem Header=\"{loc:Tr 经验积累}\"", view);
+        Assert.Contains("x:Name=\"SeriesTabs\"", view);
+        Assert.Contains("UnderlineTabs", view);
+        Assert.Contains("x:Name=\"SeriesRecordsPage\"", view);
+        Assert.Contains("x:Name=\"SeriesDocumentsPage\"", view);
+        Assert.Contains("x:Name=\"SeriesKnowledgePage\"", view);
+        Assert.Contains("SeriesTabs_SelectionChanged", view);
+        Assert.DoesNotContain("TabItem", view);
         Assert.Contains("SeriesMeetings", view);
         Assert.Contains("SelectedSeriesDocuments", view);
         Assert.Contains("SeriesLessons", view);
@@ -54,6 +60,16 @@ public sealed class SeriesPageParityTests
         Assert.Contains("OpenSeriesRecord_Click", view);
         var code = Read("Views", "SeriesView.axaml.cs");
         Assert.Contains("OpenSeriesRecordAsync", code);
+        foreach (var title in new[] { "记录", "资料", "经验积累" })
+            Assert.Contains(title, code);
+    }
+
+    [Fact]
+    public void RecordRowsUseTheDesignSystemStatusDot()
+    {
+        var view = Read("Views", "SeriesView.axaml");
+        Assert.Contains("c:StatusDot", view);
+        Assert.DoesNotContain("Width=\"7\" Height=\"7\"", view);
     }
 
     [Fact]

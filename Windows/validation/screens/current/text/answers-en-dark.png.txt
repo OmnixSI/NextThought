@@ -1,0 +1,54 @@
+content	All records
+content	Copy notes
+content	Details
+content	Edit notes
+content	Export…
+content	Home
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
+content	Save personal notes
+content	Series
+content	Summarize automatically after ending
+placeholder	Personal notes are saved to user-content.json and never overwrite generated notes.
+text	2026-11-20 15:37 · 44 min · Online
+text	All records
+text	Copy notes
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Details
+text	Edit notes
+text	Export…
+text	Fishbone
+text	Home
+text	Interview review
+text	Live answers
+text	Meetings
+text	My notes
+text	No highlights yet. Choose Highlight in the transcript to keep that line, with its original timestamp, in your personal notes.
+text	Organize with template
+text	Outline
+text	Personal notes are saved to user-content.json and never overwrite generated notes.
+text	Proofread transcript
+text	Review
+text	Rewrite notes
+text	Save personal notes
+text	Saved on this Mac
+text	Series
+text	Summarize automatically after ending
+text	Summarize this meeting
+text	Transcript
+text	Viewpoints
+text	Write down your own thoughts, other people's feedback and questions to look up. Regenerating the notes won't overwrite this.
+text	›
+text	后端二面：缓存一致性与项目经历
+text	
+title	NextThought
+tooltip	Close
+tooltip	Export Markdown
+tooltip	Maximize
+tooltip	Meeting info
+tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
+tooltip	Settings
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

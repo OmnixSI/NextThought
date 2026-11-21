@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 4 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 文档读取设置视图对照（E23/E30）
 
 Mac 参照：`Sources/NextThought/DocumentModelSettings.swift`（`DocumentReadingSettings` 第 29–101 行、`DocumentComponentsAdvanced` 第 105–246 行、`DocumentChoiceSummary` 第 249–265 行、`ManagedModelRow` 第 267–298 行）、`LocalDocumentAssets.swift`、`DocumentFeatureSetup.swift`、`DocumentRuntimeInstaller.swift`、`DocumentRuntime.swift`、`CodexDocumentReader.swift`、`DocumentPreparation.swift`。
@@ -57,4 +67,4 @@ Windows 参照：`Windows/src/NextThought.Desktop/Views/DocumentReadingSettings.
 
 ## 结论
 
-逐条一致；另有 1 条已裁决的差别（`KNOWN_GAPS.md` #7：回答服务不能像 Mac 一样直读原文件/图片，Windows 先转文本/OCR）。
+逐条一致；另有 2 条已裁决的差别（KNOWN_GAPS #7、ACCEPTED_DIFFERENCES #12）。

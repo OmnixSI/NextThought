@@ -1,3 +1,13 @@
+
+> 结论：逐条一致（按决定文件 §2/§3 裁决；无未裁决差异）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 共享可见性测试 + QRCodeView（E13 · §6.7）Mac 3.4.0 源码 ↔ Windows 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`ContentView.swift`（ShareTestSheet / QRCodeView）、`AppState+Live.swift`（runShareVisibilityTest）

@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 11 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # E15 会议页：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/NotesPageView.swift`（1327 行）、`Sources/NextThought/SessionInfoView.swift`（202 行全文）、`Sources/NextThought/OutlineView.swift`（91 行全文）、`Sources/NextThought/NotesRegeneration.swift`（49 行全文）
@@ -26,7 +36,7 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 | 格式栏：文字纪要 / 鱼骨图 / 要点大纲 / 观点对照（推荐格式带点、未生成时点击即生成） | 格式栏四选项；未生成时提示+「生成这种纪要」按钮 | 一致（推荐格式标记未做） |
 | 鱼骨图画成骨图、观点对照画成矩阵 | 既有 FishboneView / ViewpointMatrixView | 一致 |
 | **要点大纲用 OutlineView 真视图**：编号章节、要点、子要点、每条时间可点击跳转，关键概念（term+meaning），待复习 | 已补真提纲视图：`NotesOutlineRows`（编号/标题/时间）、要点/子要点（前缀 •/–、时间）、关键概念表、待复习；时间按钮跳转 | 已补 |
-| NotesSectionView：结构化纪要分章节条目 + ConfirmBadge/VerdictBadge + 条目编辑 sheet | Windows 结构化纪要仍以 Markdown 渲染（`StructuredMarkdown`）；证据栏可编辑证据行；条目级编辑 sheet 未做 → 未解决 | 部分 |
+| NotesSectionView：结构化纪要分章节条目 + ConfirmBadge/VerdictBadge + 条目编辑 sheet | 编辑器侧（`NotesEditorWindow`）已按 Mac：分节标题、逐条 TextBox、时间、**待改进/答得好 VerdictBadge**、**待确认 ConfirmBadge**、更好答法展示、「我已核实」；只读会议页仍以 Markdown 渲染结构化纪元（页面徽标列后续） | 编辑器侧一致 |
 | 系列知识回看（KnowledgeReviewSection） | 原「回顾」标签内容并入纪要页（已确认经验/题库） | 已补 |
 | 教练小结（CoachSummary） | 既有卡片 | 一致 |
 
@@ -82,11 +92,11 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 
 ## 9. 未解决 / 待补
 
-1. 结构化纪要条目级编辑 sheet（NotesItemEditSheet）与 ConfirmBadge/VerdictBadge 未做：Windows 仍用 Markdown 渲染结构化纪要，证据行可编辑但无条目级编辑/确认/评价徽标。
+1. 结构化纪要编辑器侧已补齐（本轮 E15）：分节标题 + 逐条编辑 + 时间 + 待改进/答得好 VerdictBadge + 待确认 ConfirmBadge + 更好答法；会议页只读视图仍用 Markdown（NotesPageView 展示侧徽标仍列后续）。
 2. 来源过期提示：**已完成**——`RefreshNotesStatus` 检查 summary.json 的 `transcriptSourceRevision`，缺失时显示 Mac 原句「部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。」；读取问题条：**已完成**——`RefreshNotesReadIssues(skippedLines)` 在打开会议时把损坏行数显示为 Mac 原句「已跳过 %lld 行损坏记录，其余内容仍可查看。」+「详情」（切到转写标签）；归档状态条：**已完成**——`RefreshNotesArchiveStatus` 在 summary 处于 saving/scanning/pending 时显示「正在整理纪要 · 通常 1–3 分钟」；blocked/unacked 的确认文案仍无对应 Mac key，记录为后续。
 3. 「AI 新版本」行：**已完成**——会议页标题区 `HasAiNewVersion` 条（Mac 原句「AI 整理出了新版本。现在显示的仍是你改过的版本。」）+「查看新版」（打开编辑器并切 AI 原稿）与「保留我的修订」（`basedOnGeneratedAt` 记到新 AI 时间后关闭提示）；数据比较用 summary.json generatedAt vs basedOnGeneratedAt。
 4. 会议页回答列表：**已完成**——改用 `HistoryAnswerRow`（时间+模型+首字 `MetaLine`、`IsComplete` 未完成 chip、`HasScreenshot`/`ScreenshotPath`、自动/手动 chip）；评价徽标（答得好/待改进）仍只在历史页数据里，记录为后续。
-5. 转写 tab 内嵌版本切换/查找/逐行撤销未做（E17 的 CorrectedTranscriptView 窗口已实现，可从按钮进入）；跳转滚动为近似最近行。
+5. 转写 tab 内嵌版本切换/查找/逐行撤销：**已完成**——「校正原话」现在切到内嵌视图（PillTabs 校正/原始、查找框、逐行 `ToggleFix` 撤销/恢复），普通转写列表在内嵌视图打开时隐藏；跳转滚动仍为近似最近行。
 6. 个人笔记选中重点联动证据侧栏：**已完成**——点重点时 `SelectNotesEvidenceForHighlight` 在 `NotesEvidence` 里找同一句并显示「已定位证据」行（`HasSelectedNotesEvidence`/`SelectedNotesEvidenceText`）；标签名已在 E15 改为「我的笔记」。
 7. 会议信息缺不可用空状态、unqueued 丢失确认/重试保存；无 Mac v3.3 会议页深色截图（v3 只有 notes.png）。
 
@@ -118,7 +128,7 @@ Windows 最新批次：`validation/screens/current/notes-*.png`、`transcript-*.
 | 7 | 格式分段「复盘 / 提纲 / 鱼骨图 / 观点对照」（白色块选中） | 同名同序 chip（本轮改名/换序：复盘/提纲/鱼骨图/观点对照） | 逐条一致 |
 | 8 | 标签「复盘 / 转写 / 我的笔记 / 会中回答」（会中回答无内容时隐藏） | 同名同序四标签（本轮改名/换序；会中回答按 `HasSessionAnswers` 隐藏） | 逐条一致 |
 | 9 | 「一句话印象」AI 卡片（一句话 + 复制按钮） | 卡片保留（本轮改标题 + AI 图标，绑定 `CoachSummaryText`）；演示数据没有教练摘要时整卡隐藏，截图里看不到 | 部分一致：标题/图标一致；演示数据未补，Mac 截图的示例句没有对应 demo 数据（记录） |
-| 10 | 「逐题回放」：题号 + 问题 + [时间] + 答得好/待改进 chip + 我答 + 更好的答法卡 | 未实现；当前以 Markdown「问题清单」呈现问题/我的回答要点 | 不一致：逐题回放/反馈 chip 未做（最大剩余差距，记录） |
+| 10 | 「逐题回放」：题号 + 问题 + [时间] + 答得好/待改进 chip + 我答 + 更好的答法卡 | 编辑器侧已实现评价徽标与更好答法展示（E15）；只读 Markdown 视图仍是文字版 | 编辑器侧一致，展示侧列后续 |
 | 11 | 复盘内容按模板段落渲染（标题/摘要/一句话印象/问题清单等） | Markdown 纪要卡（模板生成）+ 右侧「证据」常驻卡 | 部分不一致：Mac 是结构化段落 + 复盘中不常驻证据；Windows 证据卡常驻（E18 设计），记录 |
 | 12 | 顶部标题区无「会后纪要」大页头 | 已移除旧「会后纪要」页头/说明，改成面包屑+标题+事实行 | 逐条一致 |
 

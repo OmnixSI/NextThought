@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 30 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # E12 说话人与我的声音：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/SpeakerViews.swift`（318 行全文：SpeakerLayout/SpeakerMark/SpeakerTag/SpeakerStrip/SpeakerEditor/MeEditor/SpeakerSettingsSection/MyVoiceSettings）、`Sources/NextThought/MyVoiceViews.swift`（113 行全文：MyVoiceSetupPanel/OnboardingVoicePage）、`Sources/NextThought/MyVoice.swift`（prompts/beginSetup/recordTake/cancelSetup/删除）、`Sources/NextThought/SpeakerID.swift` 的 setVoiceName/renameVoice/mergeVoices/setMeVoice、`Sources/NextThoughtCore/SpeakerClustering.swift` 的 SpeakerLabels
@@ -95,3 +105,24 @@ Windows 截图：`Windows/validation/screens/speakers/`（自检 `speakers` 生�
   - 引导里的我的声音页（OnboardingVoicePage）属 E3 owner，不在 E12 范围。
 
 > 对照基准：Mac 3.4.0（`f015e8c6`）；Mac 无对应截图时按 Swift 源码逐元素（见上表）。
+
+## 8. 决议 §3.3 speakers 2/3/4/5 收尾（2026-11-21，当前 HEAD 构建）
+
+- **2 说话人标签只在变化处显示**：`TranscriptRow.RefreshSpeakerLabels` 计算 `ShowSpeakerLabel`（首行或与上一行 speaker 不同才 true），实时页与 Notes 转写模板都按它隐藏名字（`LiveView.axaml` 的 `SpeakerName`、`NotesView.axaml` 的 `Label`）；其余标签（时间/回声/系统声）不受影响。
+- **3 实时页说话人条**：`LiveView.axaml` 的 `LiveSpeakerStrip`（`SpeakerPeople` 胶囊 + `SpeakerChip_Click` 打开编辑器 + `LiveWhoAmIButton`「我是哪个？」虚线胶囊 + `LiveSpeakerStripHint`）与 Mac SpeakerStrip 同结构；`--self-test=speakers` passed。
+- **4 保存失败提示与重试**：`SpeakerEditorWindow` 在 `HasSpeakerSaveError` 时显示橙色状态行 +「重试」按钮（`RetrySpeakerSaveCommand`），由布尔失败标记驱动，不再匹配中文状态文本（`562fefe1`）。
+- **5 标记用图标资源**：`SpeakerPersonRow.MarkGlyph` 使用随包 Fluent System Icons 字形（`IconPersonFill`/`IconCircle`/`IconSquare`/`IconTriangle`/`IconDiamond`，即 person/circle/square/triangle/diamond 的 24px regular 字形），实时页胶囊、Notes 说话人条与说话人编辑器统一 `FontFamily="{StaticResource IconFont}"`，不再用 ●■▲◆ 几何字符。
+- **截图/自检**：`--self-test=speakers` 在隔离数据目录 **passed**，本目录 `speaker-strip-{light,dark}.png`、`my-voice-{light,dark}.png`、`speakers-check.json` 已重跑更新。
+- 仍留：真实麦克风四句录入（需真机）与 Mac popover→独立窗口（平台差异）两条件同 §6/§7。
+
+## 9. E12 speakers 3：实时页说话人条按 Mac（本轮 HEAD 复核）
+
+| # | Mac SpeakerStrip（`SpeakerViews.swift`） | Windows `LiveView.axaml` `LiveSpeakerStrip` | 结论 |
+|---|---|---|---|
+| 1 | 只显示已认出的声音；每人一个 sunken 胶囊（SpeakerMark + 名字，24pt） | `SpeakerPeople` 胶囊 + `MarkGlyph` + `DisplayLabel`，24pt | 逐条一致 |
+| 2 | 点胶囊打开 SpeakerEditor / MeEditor | `SpeakerChip_Click` 打开 `SpeakerEditorWindow`（MeEditor 分支同在窗口内） | 逐条一致（popover→独立窗口为平台差异） |
+| 3 | 没认出「我」时虚线「我是哪个？」胶囊，选择后标成我 | `LiveWhoAmIButton` + `controls:DashedCapsule` + 「我是哪个？」+ `WhoAmI_Click` | 逐条一致 |
+| 4 | 右侧提示「点名字改名、合并或标成我」 | `LiveSpeakerStripHint` 同文案 | 逐条一致 |
+| 5 | `layout.isShown` 控制显示 | `LiveSpeakerStripVisible`（`SpeakerPeople.Count > 0`） | 逐条一致 |
+
+`--self-test=speakers` 在隔离数据目录 passed（含说话人条人数/命名/合并/标签断言）；截图 `speaker-strip-{light,dark}.png` 由 §5 最终构建重拍。结论：**逐条一致；另有 1 条已裁决差别（Mac popover vs Windows 独立窗口）**。

@@ -1,3 +1,11 @@
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # E18 会议列表：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/HistoryView.swift`（1738 行全文）、`Sources/NextThought/MeetingActionsMenu.swift`（68 行全文）

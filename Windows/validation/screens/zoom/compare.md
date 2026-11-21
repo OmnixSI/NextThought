@@ -1,4 +1,12 @@
-> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+> 结论：逐条一致；另有 1 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
 
 # 文字缩放（J7 · Mac TextZoom / DesignSystem.swift ↔ Windows TextZoomService）
 

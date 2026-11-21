@@ -60,9 +60,21 @@ public partial class AppState
         catch { return "standard"; }
     }
 
+    private bool CoachEnabledSaved()
+    {
+        try { return SettingsStore.LoadMacValue("coachEnabled") is not false; }
+        catch { return true; }
+    }
+
     /// <summary>Meeting start: honour the saved 留意眼神 setting (off by default).</summary>
     public void ApplyCoachGazeSettings()
     {
+        // §3.3 coach 1: the master switch off keeps the camera off for the whole meeting.
+        if (!CoachEnabledSaved())
+        {
+            _ = StopGazeWatchingAsync();
+            return;
+        }
         if (CoachWatchesGazeSaved() && Recording) _ = StartGazeWatchingAsync();
         else if (!CoachWatchesGazeSaved()) _ = StopGazeWatchingAsync();
     }
@@ -81,6 +93,28 @@ public partial class AppState
         catch { }
         if (watchesGaze) await StartGazeWatchingAsync();
         else await StopGazeWatchingAsync();
+    }
+
+    /// <summary>§3.3 coach 1: Mac LiveCoach.isEnabled didSet — persist and let go of the camera when off.</summary>
+    public async Task ApplyCoachEnabledAsync(bool enabled)
+    {
+        try
+        {
+            await SettingsStore.SaveMacPreferencesAsync(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["coachEnabled"] = enabled
+            });
+        }
+        catch { }
+        if (!enabled)
+        {
+            CoachHint = "";
+            await StopGazeWatchingAsync();
+        }
+        else if (CoachWatchesGazeSaved() && Recording)
+        {
+            await StartGazeWatchingAsync();
+        }
     }
 
     private async Task StartGazeWatchingAsync()
@@ -184,6 +218,8 @@ public partial class AppState
     public void BuildCoachSummary()
     {
         if (CurrentSession is not { } meta) return;
+        // Mac LiveCoach.end: the summary is nil while the coach is switched off.
+        if (!Settings.CoachEnabled) { CoachSummaryText = ""; return; }
         var accumulator = new CoachSummaryAccumulator();
         var rows = Transcript.ToList();
         for (var index = 0; index < rows.Count; index++)

@@ -68,7 +68,7 @@ public partial class AppState
             {
                 var value = doc.Sections[section].Items[item];
                 row.Items.Add(new NotesEditorItemRow(section, item, value.Text, value.Time, value.Uncertain,
-                    () => MarkNotesEditorStructuredDirty()));
+                    value.Verdict, value.Better, () => MarkNotesEditorStructuredDirty()));
             }
             NotesEditorSections.Add(row);
         }
@@ -89,7 +89,7 @@ public partial class AppState
             {
                 var value = doc.Sections[section].Items[item];
                 row.Items.Add(new NotesEditorItemRow(section, item, value.Text, value.Time, value.Uncertain,
-                    () => MarkNotesEditorStructuredDirty()));
+                    value.Verdict, value.Better, () => MarkNotesEditorStructuredDirty()));
             }
             NotesEditorSections.Add(row);
         }
@@ -167,7 +167,8 @@ public partial class NotesEditorItemRow : ObservableObject
 {
     private readonly Action changed;
 
-    public NotesEditorItemRow(int sectionIndex, int itemIndex, string text, string? time, bool uncertain, Action changed)
+    public NotesEditorItemRow(int sectionIndex, int itemIndex, string text, string? time, bool uncertain,
+        string? verdict, string? better, Action changed)
     {
         SectionIndex = sectionIndex;
         ItemIndex = itemIndex;
@@ -175,7 +176,21 @@ public partial class NotesEditorItemRow : ObservableObject
         this.text = text;
         timeText = time ?? "";
         this.uncertain = uncertain;
+        Verdict = verdict;
+        Better = better;
     }
+
+    /// <summary>Mac NotesPageView VerdictBadge: questions carry "good" or "improve".</summary>
+    public string? Verdict { get; }
+    public string? Better { get; }
+    public bool HasBetter => !string.IsNullOrWhiteSpace(Better);
+    public bool ShowsImprove => Verdict is { Length: > 0 } verdict
+        && (verdict.ToLowerInvariant().StartsWith("improve", StringComparison.Ordinal) || verdict == "待改进");
+    public bool ShowsGood => Verdict?.ToLowerInvariant() == "good";
+    public string BetterHeading => UiText.T("更好的答法");
+    public string ImproveLabel => UiText.T("待改进");
+    public string GoodLabel => UiText.T("答得好");
+    public string ConfirmLabel => UiText.T("待确认");
 
     public int SectionIndex { get; }
     public int ItemIndex { get; }

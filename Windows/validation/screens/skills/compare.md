@@ -1,3 +1,13 @@
+
+> 结论：逐条一致（按决定文件 §2/§3 裁决；无未裁决差异）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 技能设置对照（E28）
 
 Mac 参照：`Sources/NextThought/SettingsView.swift` 的 `SkillSettings`（第 742–798 行）与 `SkillEditor`（第 800–827 行）、`SkillLibrary.swift` 的 `create/delete/update/installDemo`；系列页参照 `WorkspacesView.swift` 的 `WorkspaceSkillsSection`（第 933–966 行）；示例技能取自 `DemoMode.swift` 的 `installDemo([spoken, design, rebuttal])`（第 409–412 行）。

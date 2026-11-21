@@ -165,4 +165,33 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasScreenshot}", view);
         Assert.Contains("{Binding AutomaticLabel}", view);
     }
+
+    [Fact]
+    public void TheMeetingInfoSheetHasAnEmptyStateAndRetry()
+    {
+        var view = Read("Views", "SessionInfoWindow.axaml");
+        Assert.Contains("EmptyPanel", view);
+        Assert.Contains("{loc:Tr 还没有可显示的会议信息。}", view);
+        Assert.Contains("Retry_Click", view);
+        var code = Read("Views", "SessionInfoWindow.axaml.cs");
+        Assert.Contains("EmptyPanel.IsVisible", code);
+        Assert.Contains("Retry_Click", code);
+    }
+
+    [Fact]
+    public void TheTranscriptTabEmbedsTheCorrectedView()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding CorrectedTranscriptInline}", view);
+        Assert.Contains("{Binding CorrectedTranscriptVersionIndex}", view);
+        Assert.Contains("{Binding CorrectedTranscriptFind}", view);
+        Assert.Contains("{Binding CorrectedTranscriptRows}", view);
+        Assert.Contains("InlineToggleFix_Click", view);
+        Assert.Contains("{Binding ToggleInlineCorrectedTranscriptCommand}", view);
+        var state = Read("AppState.Proofread.cs");
+        Assert.Contains("ToggleInlineCorrectedTranscript", state);
+        Assert.Contains("OnCorrectedTranscriptInlineChanged", state);
+        var code = Read("Views", "NotesView.axaml.cs");
+        Assert.Contains("ToggleCorrectedTranscriptFixCommand", code);
+    }
 }

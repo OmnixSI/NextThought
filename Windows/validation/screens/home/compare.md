@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 11 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 首页（HomeView.swift ↔ HomeView.axaml）逐元素对照
 
 - 对照基准：Mac 3.4.0（`f015e8c6`）。Mac 参考图：[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21，1120×820 pt @2x = 1600×1171 px）。

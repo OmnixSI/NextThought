@@ -167,4 +167,21 @@ public sealed class InsightsPanelParityTests
         var state = Read("AppState.Insights.cs");
         Assert.DoesNotContain("Mac extension placeholder", state);
     }
+
+    [Fact]
+    public void ThePanelAndSettingsCarryThePresenter24Controls()
+    {
+        var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop",
+            "Views", "InsightsPanel.axaml"));
+        Assert.Contains("ClearSlideNotesCacheCommand", panel);
+        Assert.Contains("SlideNotesCacheClearLabel", panel);
+        var settings = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop",
+            "Views", "SettingsView.axaml"));
+        Assert.Contains("InsightCaptureTargetLabels", settings);
+        Assert.Contains("SelectedInsightCaptureTarget", settings);
+        var model = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop",
+            "ViewModels", "SettingsViewModel.cs"));
+        Assert.Contains("BuildInsightCaptureTargets", model);
+        Assert.Contains("AvailableWindows", model);
+    }
 }

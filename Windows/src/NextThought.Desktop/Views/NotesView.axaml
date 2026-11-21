@@ -256,9 +256,7 @@
                     <DataTemplate x:DataType="local:SessionEvidenceRow">
                       <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                          <Border Classes="chip">
-                            <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
-                          </Border>
+                          <c:MetricPill Text="{Binding Badge}" />
                           <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
@@ -281,7 +279,7 @@
         <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                       Margin="{DynamicResource D4Margin_22_12_22_0}">
-            <Button Content="{loc:Tr 校正原话}" Command="{Binding OpenCorrectedTranscriptCommand}"
+            <Button Content="{loc:Tr 校正原话}" Command="{Binding ToggleInlineCorrectedTranscriptCommand}"
                     ToolTip.Tip="{loc:Tr 查看校正转写}" />
             <TextBlock Text="{Binding CorrectedTranscriptStatus}" Classes="caption" FontSize="11"
                        VerticalAlignment="Center" IsVisible="{Binding HasCorrectedTranscriptStatus}" />
@@ -302,7 +300,7 @@
                   <Button Classes="quiet" Tag="{Binding}" Click="OpenSpeakerStrip_Click" ToolTip.Tip="{Binding Tooltip}"
                           Margin="{DynamicResource D4Margin_0_0_6_4}" Padding="{DynamicResource D4Padding_10_3}">
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                      <TextBlock Text="{Binding Mark}" FontSize="10" />
+                      <TextBlock Text="{Binding MarkGlyph}" FontSize="10" FontFamily="{StaticResource IconFont}" />
                       <TextBlock Text="{Binding DisplayLabel}" Classes="caption" />
                     </StackPanel>
                   </Button>
@@ -341,7 +339,43 @@
               </ItemsControl>
             </ScrollViewer>
           </Border>
-          <ListBox Grid.Row="4" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
+<Grid Grid.Row="4" IsVisible="{Binding CorrectedTranscriptInline}">
+            <Grid RowDefinitions="Auto,Auto,*">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_22_8_22_0}">
+                <c:PillTabs SelectedIndex="{Binding CorrectedTranscriptVersionIndex}">
+                  <ListBoxItem Content="{loc:Tr 校正转写}" />
+                  <ListBoxItem Content="{loc:Tr 原始转写}" />
+                </c:PillTabs>
+                <Button Classes="quiet" Content="{loc:Tr 关闭}" Command="{Binding ToggleInlineCorrectedTranscriptCommand}" />
+              </StackPanel>
+              <TextBox Grid.Row="1" Text="{Binding CorrectedTranscriptFind}" Margin="{DynamicResource D4Margin_22_8_22_0}"
+                       PlaceholderText="{loc:Tr 在转写里查找（听错的写法也会找出来）}" />
+              <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_22_8_22_16}">
+                <ItemsControl ItemsSource="{Binding CorrectedTranscriptRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="views:CorrectedTranscriptRow">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_12}">
+                        <Grid ColumnDefinitions="64,64,*">
+                          <TextBlock Text="{Binding Time}" Classes="caption" VerticalAlignment="Top" />
+                          <TextBlock Grid.Column="1" Text="{Binding Speaker}" Classes="label" TextWrapping="Wrap" VerticalAlignment="Top" />
+                          <TextBlock Grid.Column="2" Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Fixes}" IsVisible="{Binding HasFixes}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="views:CorrectedTranscriptFix">
+                              <Button Classes="quiet" Content="{Binding ActionLabel}" Tag="{Binding}"
+                                      Click="InlineToggleFix_Click" HorizontalAlignment="Left" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Grid>
+          </Grid>
+                    <ListBox Grid.Row="4" Name="TranscriptListBox" IsVisible="{Binding !CorrectedTranscriptInline}" ItemsSource="{Binding Transcript}"
                    Background="Transparent" Margin="{DynamicResource D4Margin_22_0_22_16}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="local:TranscriptRow">
@@ -355,7 +389,8 @@
                     </ContextMenu>
                   </StackPanel.ContextMenu>
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}"
+                               IsVisible="{Binding ShowSpeakerLabel}" />
                     <TextBlock Text="{loc:Tr ★ 高亮}" FontSize="11" Foreground="{DynamicResource Caution}"
                                IsVisible="{Binding IsHighlighted}" />
                   </StackPanel>
@@ -379,14 +414,10 @@
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                    <Border Classes="chip">
-                      <TextBlock Text="{Binding AutomaticLabel}" Classes="overline" FontSize="10" />
-                    </Border>
-                    <Border Classes="chip" IsVisible="{Binding !IsComplete}">
-                      <TextBlock Text="{loc:Tr 未完成}" Classes="overline" FontSize="10" Foreground="{DynamicResource Caution}" />
-                    </Border>
+                    <c:MetricPill Text="{Binding AutomaticLabel}" />
+                    <c:MetricPill Text="{loc:Tr 未完成}" Foreground="{DynamicResource Caution}" IsVisible="{Binding !IsComplete}" />
                   </StackPanel>
-                  <TextBlock Text="{Binding AnswerText}" Classes="body" TextWrapping="Wrap" />
+                  <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" />
                   <TextBlock Text="{Binding MetaLine}" Classes="caption" />
                   <TextBlock Text="{Binding ScreenshotPath}" Classes="caption" FontSize="10"
                              IsVisible="{Binding HasScreenshot}" TextWrapping="Wrap" />

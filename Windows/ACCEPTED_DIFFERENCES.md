@@ -14,7 +14,9 @@
 8. **A15 非纯数据夹具 — CryptoKit HKDF/AES-GCM、SQLite DocumentJob、Darwin ProcessLineReader、CoreGraphics ScrollFollow、Sherpa Zipformer 五类按 README 跳过** — Windows 无对应实现；加密部分已有 `CompanionCryptoTests` 固定向量覆盖。
 9. **更新通道 — 只有正式版本一个通道** — 任务书 §2.8 允许；`SETTINGS_PARITY.md` 的 12 个内部键同属本版不做。
 10. **全局术语 — Mac 的「资料夹」在 Windows 统一改称「系列」** — J4 任务书决定（界面里搜不到「资料夹」），与 Mac 3.4.0 个别原句不同；`HomeStage4Tests` 断言此命名，`BackupRestoreReview` 等句已按 J4 保留「系列」。
-10. **提示音与系统通知 — 用 Windows 通知/声音代替 Mac 的 NSUserNotification 等** — 平台机制差异（任务书 §2.8 的 Mac 独有行为）。
+11. **提示音与系统通知 — 用 Windows 通知/声音代替 Mac 的 NSUserNotification 等** — 平台机制差异（任务书 §2.8 的 Mac 独有行为）。
+12. **文档组件 — Windows 的 OCR 运行包是本机 Python venv（无归档），「扫描本机已有组件/选择其他目录」只复用模型文件** — 平台构建方式差异；Mac 从归档安装。
+13. **数据与维护 — 「绑定本机签名」展示 Windows 本机签名状态，不是 Mac 的公证/签名流程** — Windows 本版不签名发布，平台机制差异。
 
 ## 按页面
 

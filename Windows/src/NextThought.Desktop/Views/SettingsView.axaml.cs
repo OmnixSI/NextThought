@@ -28,6 +28,16 @@ public partial class SettingsView : UserControl
 
     private void OnLanguagePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(AppState.SettingsRequestedPage) && sender is AppState requested
+            && requested.SettingsRequestedPage is { Length: > 0 } page)
+        {
+            var anchor = requested.SettingsRequestedAnchor;
+            requested.SettingsRequestedPage = "";
+            requested.SettingsRequestedAnchor = "";
+            ShowPage(page);
+            if (anchor.Length > 0) ScrollToSection(anchor);
+            return;
+        }
         if (e.PropertyName != nameof(AppState.LanguageGeneration)) return;
         RefreshScreens();
     }

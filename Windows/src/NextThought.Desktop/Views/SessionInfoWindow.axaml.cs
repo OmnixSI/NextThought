@@ -23,7 +23,11 @@ public partial class SessionInfoWindow : Window
             group = rowGroup;
         }
         InfoItems.ItemsSource = items;
+        InfoItems.IsVisible = items.Count > 0;
+        EmptyPanel.IsVisible = items.Count == 0;
     }
+
+    private void Retry_Click(object? sender, RoutedEventArgs e) => Load();
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }

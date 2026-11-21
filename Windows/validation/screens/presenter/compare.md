@@ -1,3 +1,13 @@
+
+> 结论：逐条一致；另有 6 条已裁决的差别（逐条见 ACCEPTED_DIFFERENCES.md / KNOWN_GAPS.md 与下文「差异 / 未解决」）。
+> 截图来源：提交 `6d65a019`（2026-11-21 18:14，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
+
+
+
+
 # 讲稿与屏幕观察对照（E9）
 
 Mac 参照：`Sources/NextThought/AppState+Insights.swift`（startScreenWatch / screenRead / followSlide / followSpeech / prepareSlideNotes）、`LiveInsightsState.swift`（slideSource / slideIsManual / manualSlideAnchor / slideNotes / generatingNotes）、`PresenterMode.swift`、`SlideNotesCache.swift`、`SettingsPresenter.swift`、`InsightSettingsView.swift`、`ScreenContextService.swift`、`ScreenText`（NextThoughtCore/LiveInsights.swift）。
