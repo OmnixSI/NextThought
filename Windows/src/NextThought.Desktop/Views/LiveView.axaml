@@ -656,12 +656,18 @@
               </StackPanel>
             </Grid>
 
-            <!-- WebStatusLine (Mac WebStatusLine): only while a web lookup exists. -->
+            <!-- WebStatusLine (Mac WebStatusLine): only while a web lookup exists. The pill switches
+                 between the original answer and the web version (§3.3 live 4 / web-search 3). -->
             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                         Margin="{DynamicResource LvMargin_24_0_24_4}" IsVisible="{Binding HasWebResults}">
               <TextBlock Text="{StaticResource IconGlobe}" FontFamily="{StaticResource IconFont}" FontSize="11"
                          Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding LiveWebStatusLine}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding WebLookupStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         IsVisible="{Binding HasWebLookup}" />
+              <Button x:Name="LiveWebAnswerToggle" Classes="pill" Content="{Binding WebAnswerToggleLabel}" FontSize="11"
+                      MinHeight="{DynamicResource LvMinHeight_24}" Command="{Binding ToggleWebAnswerCommand}"
+                      IsVisible="{Binding CanToggleWebAnswer}" ToolTip.Tip="{loc:Tr 看原回答}" />
               <Button Classes="quiet" Content="{loc:Tr 重试}" FontSize="11" Command="{Binding LookUpDisplayedAnswerCommand}"
                       ToolTip.Tip="{loc:Tr 重新联网查一下当前回答}" />
             </StackPanel>
