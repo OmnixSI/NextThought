@@ -1,7 +1,10 @@
-NextThought Windows Preview
-Upstream snapshot: OmnixSI/NextThought af60a4def90c750872197f81ac8b91c726d05b63.
+NextThought for Windows 0.9.0
+Upstream snapshot: OmnixSI/NextThought Mac v3.4.0, commit f015e8c6.
 The upstream application has no top-level open-source license. This local port does not change its licensing.
 
+Avalonia 12.1.6 (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent): MIT, https://github.com/AvaloniaUI/Avalonia; licenses/Avalonia-LICENSE.txt
+CommunityToolkit.Mvvm 8.4.2: MIT, https://github.com/CommunityToolkit/dotnet; licenses/CommunityToolkit-Mvvm-LICENSE.txt
+Microsoft.ML.OnnxRuntime.Managed 1.28.0: MIT, https://github.com/microsoft/onnxruntime
 Sherpa-ONNX 1.13.8: Apache-2.0, https://github.com/k2-fsa/sherpa-onnx
 ONNX Runtime distributed with Sherpa-ONNX: MIT, https://github.com/microsoft/onnxruntime
 NAudio.Core / NAudio.Wasapi 2.2.1: MIT, https://github.com/naudio/NAudio

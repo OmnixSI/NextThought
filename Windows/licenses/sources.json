@@ -66,5 +66,15 @@
     "file": "MediaPipe-Blendshape-V2-Model-Card.pdf",
     "source": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker/resolve/cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1/Model%20Card%20Blendshape%20V2.pdf",
     "sha256": "c8e9cf60a39998f4b341740623917590e050d1c97004e2de4568d84e026445ae"
+  },
+  {
+    "file": "Avalonia-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/12.1.6/licence.md",
+    "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+  },
+  {
+    "file": "CommunityToolkit-Mvvm-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/CommunityToolkit/dotnet/v8.4.2/License.md",
+    "sha256": "1e1101b893f295b4526da2c167e4234610f1078e2fe43a0e814c1a883656877b"
   }
 ]
