@@ -83,11 +83,11 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 ## 9. 未解决 / 待补
 
 1. 结构化纪要条目级编辑 sheet（NotesItemEditSheet）与 ConfirmBadge/VerdictBadge 未做：Windows 仍用 Markdown 渲染结构化纪要，证据行可编辑但无条目级编辑/确认/评价徽标。
-2. 来源过期提示：**已完成**——`RefreshNotesStatus` 检查 summary.json 的 `transcriptSourceRevision`，缺失时显示 Mac 原句「部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。」；读取问题条（readIssues+详情）与归档状态条（saving/blocked/unacked）**仍待做**。
+2. 来源过期提示：**已完成**——`RefreshNotesStatus` 检查 summary.json 的 `transcriptSourceRevision`，缺失时显示 Mac 原句「部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。」；读取问题条：**已完成**——`RefreshNotesReadIssues(skippedLines)` 在打开会议时把损坏行数显示为 Mac 原句「已跳过 %lld 行损坏记录，其余内容仍可查看。」+「详情」（切到转写标签）；归档状态条：**已完成**——`RefreshNotesArchiveStatus` 在 summary 处于 saving/scanning/pending 时显示「正在整理纪要 · 通常 1–3 分钟」；blocked/unacked 的确认文案仍无对应 Mac key，记录为后续。
 3. 「AI 新版本」行：**已完成**——会议页标题区 `HasAiNewVersion` 条（Mac 原句「AI 整理出了新版本。现在显示的仍是你改过的版本。」）+「查看新版」（打开编辑器并切 AI 原稿）与「保留我的修订」（`basedOnGeneratedAt` 记到新 AI 时间后关闭提示）；数据比较用 summary.json generatedAt vs basedOnGeneratedAt。
-4. 会议页回答列表缺时间/首 token/未完成/分答截图/评价徽标（这些在历史页归档概览有）。
+4. 会议页回答列表：**已完成**——改用 `HistoryAnswerRow`（时间+模型+首字 `MetaLine`、`IsComplete` 未完成 chip、`HasScreenshot`/`ScreenshotPath`、自动/手动 chip）；评价徽标（答得好/待改进）仍只在历史页数据里，记录为后续。
 5. 转写 tab 内嵌版本切换/查找/逐行撤销未做（E17 的 CorrectedTranscriptView 窗口已实现，可从按钮进入）；跳转滚动为近似最近行。
-6. 个人笔记选中高亮时联动证据侧栏未做；标签名「个人笔记」与 Mac「我的笔记」用词不同。
+6. 个人笔记选中重点联动证据侧栏：**已完成**——点重点时 `SelectNotesEvidenceForHighlight` 在 `NotesEvidence` 里找同一句并显示「已定位证据」行（`HasSelectedNotesEvidence`/`SelectedNotesEvidenceText`）；标签名已在 E15 改为「我的笔记」。
 7. 会议信息缺不可用空状态、unqueued 丢失确认/重试保存；无 Mac v3.3 会议页深色截图（v3 只有 notes.png）。
 
 ## Mac 3.4.0 参考图与逐图核对（task-48）

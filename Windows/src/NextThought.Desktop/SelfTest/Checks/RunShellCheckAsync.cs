@@ -29,16 +29,7 @@ public partial class MainWindow
             state.NavigateCommand.Execute("Home");
             await Pump();
             CaptureVisual(this, Path.Combine(directory, "shell-normal-light.png"));
-            Step("shell 布局：标题胶囊 + 内容 + 状态栏", true, "主窗口已渲染");
-
-            // LevelMeters: two capsules fed by the live audio levels (macOS echo flag N/A).
-            state.UpdateAudioLevels(0.82, 0.35);
-            await Pump();
-            var meter = this.GetVisualDescendants().OfType<LevelMeters>().FirstOrDefault();
-            Step("LevelMeters：对方（系统声音）与我（麦克风）两条电平",
-                meter is not null && state.ShellSystemLevel > 0.5 && state.ShellMicrophoneLevel > 0.1,
-                UiText.Format("系统 %.0f%% · 麦克风 %.0f%%", state.ShellSystemLevel * 100, state.ShellMicrophoneLevel * 100));
-            CaptureVisual(this, Path.Combine(directory, "shell-meters-light.png"));
+            Step("shell 布局：标题胶囊 + 内容（无底部常驻文字条）", true, "主窗口已渲染");
 
             // ErrorBanner: caution triangle + message + 关闭提示, floating card on top.
             state.SetStatus("操作失败：E4 自检错误横幅", true);
@@ -56,6 +47,17 @@ public partial class MainWindow
             state.CloseStatusCommand.Execute(null);
             await Pump();
             Step("ErrorBanner 关闭后恢复", !state.StatusIsError, "StatusIsError=false");
+            // decisions §3.1 shell 1: the save queue's blocked state shows 重试保存 in the same banner.
+            state.SetSaveBlockedForCheck(true);
+            await Pump();
+            Step("ErrorBanner「重试保存」：保存队列受阻时显示重试", state.ShowErrorBanner
+                    && state.ErrorBannerText.Contains("保存受阻", StringComparison.Ordinal)
+                    && state.GetType().GetProperty("ShowRetrySave") is not null,
+                state.ErrorBannerText);
+            CaptureVisual(this, Path.Combine(directory, "shell-save-blocked-light.png"));
+            state.SetSaveBlockedForCheck(false);
+            await Pump();
+            Step("ErrorBanner 保存队列恢复后隐藏", !state.ShowErrorBanner, "forced blocked cleared");
             if (Avalonia.Application.Current is { } darkApp)
             {
                 darkApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
@@ -79,6 +81,14 @@ public partial class MainWindow
             // the shortcut hint; screenshot the real flyout content, not a mock.
             state.NavigateCommand.Execute("Live");
             await Pump();
+            // LevelMeters lives in the live top bar (Mac expandedControls), not in a shell status bar.
+            state.UpdateAudioLevels(0.82, 0.35);
+            await Pump();
+            var meter = this.GetVisualDescendants().OfType<LevelMeters>().FirstOrDefault();
+            Step("LevelMeters：live 顶栏的对方/我两条电平",
+                meter is not null && state.ShellSystemLevel > 0.5 && state.ShellMicrophoneLevel > 0.1,
+                UiText.Format("系统 %.0f%% · 麦克风 %.0f%%", state.ShellSystemLevel * 100, state.ShellMicrophoneLevel * 100));
+            CaptureVisual(this, Path.Combine(directory, "shell-meters-light.png"));
             var menuButton = this.GetVisualDescendants().OfType<Button>()
                 .FirstOrDefault(button => button.Name == "LiveWindowMenuButton");
             var flyout = menuButton?.Flyout as Flyout;

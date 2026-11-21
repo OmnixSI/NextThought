@@ -13,7 +13,7 @@ public sealed class LiveSaveStatusTests
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
             if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "App.axaml")))
-                return Path.Combine(directory.FullName, "Windows");
+                return directory.FullName;
         }
         throw new DirectoryNotFoundException("repository root");
     }

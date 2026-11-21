@@ -166,3 +166,19 @@ Windows 没有硬件刘海，因此按 Mac 参考截图使用的 **demo-notch �
 9. **屏幕共享**：Mac 岛内 `shareAvoiding` 自行隐藏；Windows 由主窗口 shell 的屏幕共享检测收回整窗（E19 已实现），岛内不再重复一套。
 10. **英文截图**：本目录只存中文界面截图（与 Mac 参考一致）；英文证据是 `text/island-*-en.txt`（内容）与 `text/island-*-en.truncation.txt`（全空）。英文场景名、按钮、tooltip 均来自 `UiText`；title 为 `NextThought Cue island`。
 11. **中文演示数据**：英文截图里的答案/标题/原话仍是 Mac demo 的中文（用户数据，localization 扫描已按用户数据允许）。
+
+## decisions §3.2 修复记录（本轮构建）
+
+| # | 裁决 | 做法 | 证据 |
+|---|---|---|---|
+| 5 | 修：悬停或钉住时整块面板接管点击，收起整体穿透 | `CueIslandWindow.Track()` 改用 `model.WantsClicks`（`!shareAvoiding && (hovering || pinned || peeking)`）；不再逐按钮 hit-test | 交互项，现有岛截图状态不变；`CueIslandParityTests` 断言 |
+| 6 | 修：主窗口在前台时不自动弹出提词 | `CueIslandViewModel.MainWindowFront`：主窗口 active 时 `covered` 保持 Compact（「上一条」`ForceCue` 仍可强制展开） | 行为项，同上 |
+| 7 | 修：讲稿「手动」标签 + 持久化讲稿来源 | `AppState.SlideFollow.lastSlideSource`/`SlideIsManual`；岛 Slide 面板「手动」tag 绑定；来源在会话内保留 | `island-slide-*` + 断言 |
+| 8 | 修：看镜头提示接上 | E10/G9 的 `GazeShouldLookUp` 驱动 `CueIslandCoachHint`（「看镜头」）与 `CueIslandCoachSymbol`（eye） | `island-pinned-*`/coach 截图 |
+| 9 | 修：屏幕共享时岛自己按 shareAvoiding 隐藏 | 岛每 2s 查 `ScreenShareDetector.IsSharingActive()` → `ShareAvoiding` → `ComputePhase` 返回 Hidden（复用仓库现有检测器，无新增重复 API） | 行为项；`RunShareHideCheck` 覆盖 |
+
+## 结论：逐条一致；另有 6 条已裁决的差别（接受：1/2/3/4/10/11）
+
+- 接受：1、2、3、4、10、11（decisions §3.2 island）。
+- 截图说明：本轮为最终全量重拍前的行为验证；岛 22 张状态图在 §5 全量重拍时一并刷新。
+

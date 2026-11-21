@@ -24,8 +24,8 @@ public partial class HistoryView : UserControl
         try
         {
             if (sender is not Button { Tag: RecentMeetingRow row } || StateOf(sender) is not { } state) return;
-            await state.SelectHistoryAsync(row.Meta);
-            state.RefreshHistoryHitsForSelection();
+            
+            if (state.HasHistoryHits) state.OpenHistoryHitInMeeting(state.HistoryHits[state.HistoryHitIndex].Hit);
         }
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }

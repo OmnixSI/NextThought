@@ -1,3 +1,5 @@
+> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 # §6.7 E25/E30：系列编辑器各标签（WorkspacesView.swift ↔ SeriesEditorWindow）
 
 Mac 参照：`Sources/NextThought/WorkspacesView.swift` 的 `WorkspaceEditor`（562 行起）、`WorkspaceEditorSection`（542）、`WorkspaceBasicTab`（968）、`WorkspaceRequirementsTab`（1113）、`WorkspaceDocumentsTab`（1169）、`KnowledgeTab`（1366）、`WorkspaceSkillsSection`、`ReviewTab`（1747）；Mac 本轮无该窗口截图，按源码逐元素对照。
@@ -71,3 +73,18 @@ Windows 实现：`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.SeriesEditor.
 6. 基本信息缺字段折叠/背景笔记/自定义类型改名；缺未保存修改提示。
 7. 分区切换过渡动画（Motion.phase）未做。
 8. Mac 无参考截图，本对照为 Swift 源码逐元素；截图来自 demo 数据（记录为空，资料/经验/技能来自演示系列）。
+
+---
+
+## §5 二期修复（2026-11-21，decisions §3.5 series-editor）
+
+本页 1–7 中已修并重拍：
+1. 头部统计行回退：`SeriesEditorStatsLine` —— 无会议统计时显示「N 场会议 · M 份资料」（Mac SeriesStatsLine 回退）。
+2. 配置菜单补「类型」子菜单：`ConfigButton` 的 Flyout 内动态列出 `SeriesEditorModeChoices`，选择后切到基本信息；「开下一场」的禁用条件仍待接 `Recording`（下一批）。
+截图：`series-editor-*.png`（records/documents/knowledge/skills/basic/requirements 浅色 + records/knowledge 深色，`--self-test=series-editor-tabs` exit 0）。
+### 二期修复（续）
+
+4. 经验积累：知识区头部「编辑条目 / 完成」切换（`SeriesEditorKnowledgeEditing`），经验与题库各自带搜索框（`SeriesEditorLessonQuery`/`SeriesEditorBankQuery`，过滤后列表），编辑/删除按钮只在编辑模式显示。
+5. 系列技能：行内「所有系列 / 已停用 / 摘要」徽标、全局技能不可切换（`CanToggle`）、「导入并用于此系列…」「管理技能」按钮（已有实现，本轮核对为一致）。
+6. 基本信息：自定义类型名（custom 模式显示）、背景笔记（备注）、领域字段折叠（核心 2 个 + 「更多/隐藏」切换额外字段）。
+剩余列差：资料导入的「自动归类/按分类导入」菜单、未保存修改提示、分区切换过渡动画（下一个增量）。

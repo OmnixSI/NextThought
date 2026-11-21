@@ -135,6 +135,10 @@ public sealed record AppSettings
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";
     public string Model { get; set; } = "";
     public string NotesModel { get; set; } = "";
+
+    /// <summary>Mac keys <c>notesReasoning</c> (default high) and <c>notesLanguage</c> (default auto).</summary>
+    public string NotesReasoning { get; set; } = "high";
+    public string NotesLanguage { get; set; } = "auto";
     public string ReasoningEffort { get; set; } = "";
     public string LocalModel { get; set; } = "xasr480";
     public bool SecondPass { get; set; } = true;
@@ -292,6 +296,9 @@ public sealed record AppSettings
 
     /// <summary>Mac key <c>reducedEffects</c>: the app's own "less visual effects" switch (macOS default off).</summary>
     public bool ReducedEffects { get; set; }
+
+    /// <summary>Mac key <c>keepOnTop</c> (default true): the main window stays above other apps.</summary>
+    public bool KeepOnTop { get; set; } = true;
 
     /// <summary>Mac key <c>textZoom</c> (3.4.0): global text scale, Mac default 1, steps 0.9/1/1.1/1.2/1.3/1.45 (J7).</summary>
     public double TextZoom { get; set; } = 1.0;

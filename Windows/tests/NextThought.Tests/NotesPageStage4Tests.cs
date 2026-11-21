@@ -116,4 +116,56 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasNotesStaleHint}", view);
         Assert.Contains("{Binding NotesStaleHintText}", view);
     }
+
+    [Fact]
+    public void TheReadIssuesRowReportsSkippedLines()
+    {
+        var state = Read("AppState.NotesStatus.cs");
+        Assert.Contains("RefreshNotesReadIssues", state);
+        Assert.Contains("已跳过 %lld 行损坏记录，其余内容仍可查看。", state);
+        Assert.Contains("ShowNotesReadIssues", state);
+        var history = Read("AppState.StructuredNotes.cs");
+        Assert.Contains("RefreshNotesReadIssues(data.SkippedLines)", history);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasNotesReadIssues}", view);
+        Assert.Contains("{Binding NotesReadIssueText}", view);
+        Assert.Contains("ShowNotesReadIssuesCommand", view);
+    }
+
+    [Fact]
+    public void SelectingAHighlightLinksTheEvidence()
+    {
+        var state = Read("AppState.NotesEvidenceLink.cs");
+        Assert.Contains("SelectNotesEvidenceForHighlight", state);
+        Assert.Contains("SelectedNotesEvidenceText", state);
+        Assert.Contains("HasSelectedNotesEvidence", state);
+        var notes = Read("Views", "MeetingUserNotes.axaml.cs");
+        Assert.Contains("SelectNotesEvidenceForHighlight", notes);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasSelectedNotesEvidence}", view);
+        Assert.Contains("{Binding SelectedNotesEvidenceText}", view);
+    }
+
+    [Fact]
+    public void TheArchiveStatusBarExplainsThePendingJob()
+    {
+        var state = Read("AppState.NotesStatus.cs");
+        Assert.Contains("RefreshNotesArchiveStatus", state);
+        Assert.Contains("HasNotesArchiveStatus", state);
+        Assert.Contains("正在整理纪要 · 通常 1–3 分钟", state);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasNotesArchiveStatus}", view);
+        Assert.Contains("{Binding NotesArchiveStatusText}", view);
+    }
+
+    [Fact]
+    public void TheAnswersTabShowsTheArchiveMetadata()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HistoryAnswers}", view);
+        Assert.Contains("{Binding MetaLine}", view);
+        Assert.Contains("{Binding !IsComplete}", view);
+        Assert.Contains("{Binding HasScreenshot}", view);
+        Assert.Contains("{Binding AutomaticLabel}", view);
+    }
 }

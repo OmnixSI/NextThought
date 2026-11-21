@@ -169,15 +169,34 @@ public partial class AppState
         var attached = series?.SkillIds ?? [];
         foreach (var skill in skills)
         {
-            var isAttached = attached.Any(id => Guid.TryParse(id, out var parsed) && parsed == Guid.Parse(skill.Id));
-            SeriesSkills.Add(new SeriesSkillRow(skill, isAttached, ToggleSeriesSkill));
+            var attachedHere = attached.Any(id => Guid.TryParse(id, out var parsed) && parsed == Guid.Parse(skill.Id));
+            // Mac WorkspaceSkillsSection: attached = skill.global || workspace.skillIDs.contains(id).
+            SeriesSkills.Add(new SeriesSkillRow(skill, skill.Global || attachedHere, ToggleSeriesSkill));
         }
+        OnPropertyChanged(nameof(HasSeriesSkills));
+        OnPropertyChanged(nameof(SeriesSkillsHeading));
+    }
+
+    /// <summary>Mac 技能 N heading: the number of skills that answer with this series.</summary>
+    public string SeriesSkillsHeading => UiText.T("技能") + " " + SeriesSkills.Count(row => row.IsAttached).ToString();
+
+    /// <summary>Mac SkillLibrary.importFiles(global: false) then setSkill(id, attached: true).</summary>
+    public void AttachSkillToSelectedSeries(string skillId)
+    {
+        if (SelectedSeries is null || workspace.Find(SelectedSeries.Id) is not { } series) return;
+        var parsedSkill = Guid.TryParse(skillId, out var skillGuid) ? skillGuid : Guid.Empty;
+        var ids = (series.SkillIds ?? []).Where(id => !(Guid.TryParse(id, out var existing) && existing == parsedSkill)).ToList();
+        if (parsedSkill != Guid.Empty) ids.Add(skillId);
+        workspace = workspace.WithSeries(series with { SkillIds = ids });
+        SaveWorkspace();
+        RefreshSeriesSkills();
     }
 
     public void RefreshSeriesSkillsForCheck() => RefreshSeriesSkills();
 
     private void ToggleSeriesSkill(SeriesSkillRow row)
     {
+        if (row.IsGlobal) return;
         if (SelectedSeries is null || workspace.Find(SelectedSeries.Id) is not { } series) return;
         var ids = (series.SkillIds ?? []).Where(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Parse(row.SkillId)).ToList();
         if (row.IsAttached) ids.Add(row.SkillId);
@@ -603,12 +622,23 @@ public sealed partial class SeriesSkillRow : ObservableObject
     {
         SkillId = skill.Id;
         Name = skill.Name;
+        IsGlobal = skill.Global;
+        Enabled = skill.Enabled;
+        Summary = skill.Summary;
         this.changed = changed;
         this.isAttached = isAttached;
     }
 
     public string SkillId { get; }
     public string Name { get; }
+
+    /// <summary>Mac row badges: 所有系列 / 已停用 and the one-line summary.</summary>
+    public bool IsGlobal { get; }
+    public bool Enabled { get; }
+    public string Summary { get; }
+    public bool IsDisabled => !Enabled;
+    public bool HasSummary => Summary.Length > 0;
+    public bool CanToggle => !IsGlobal;
 
     [ObservableProperty] private bool isAttached;
 

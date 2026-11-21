@@ -11,7 +11,7 @@ namespace NextThought.Desktop;
 /// Core queue and are flushed one line at a time every 500 ms. The queue's snapshot drives the
 /// live top-bar status: 保存中 / 保存受阻 · N 项未保存 · 重试 / 确认缺失。
 /// </summary>
-public partial class AppState
+public partial class AppState : ISaveStatusUi
 {
     public enum SaveStatusKind { Idle, Saving, Blocked }
 
@@ -50,7 +50,8 @@ public partial class AppState
         foreach (var name in new[]
                  {
                      nameof(SaveStatus), nameof(SaveStatusText), nameof(SaveUnqueuedCount),
-                     nameof(HasSaveStatus), nameof(SaveIsBlocked), nameof(CanAcknowledgeSaveLoss)
+                     nameof(HasSaveStatus), nameof(SaveIsBlocked), nameof(CanAcknowledgeSaveLoss),
+                     nameof(ShowErrorBanner), nameof(ErrorBannerText), nameof(ShowRetrySave), nameof(ShowAcknowledgeLoss)
                  })
             OnPropertyChanged(name);
     }
@@ -77,6 +78,7 @@ public partial class AppState
         if (!result.Queued) archiveWriteQueue.Fail("待保存队列已满；部分新写入没有入队。");
         EnsureArchiveWriteTimer();
         RaiseSaveStatusUi();
+        ((ISaveStatusUi)this).SaveStatusChanged();
         if (result.Queued) _ = FlushArchiveQueueAsync();
         return completion.Task;
     }

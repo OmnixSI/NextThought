@@ -314,6 +314,16 @@
           <TextBlock Name="AnchorNotesAdvanced" Text="{loc:Tr 纪要高级}" Classes="section" />
           <TextBlock Text="{loc:Tr 纪要模型（留空沿用回答模型）}" Classes="label" />
           <TextBox Text="{Binding Settings.NotesModel}" HorizontalAlignment="Stretch" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.NotesReasoningChoices}"
+                      SelectedItem="{Binding Settings.NotesReasoning}" Width="140" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 语言}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.NotesLanguageChoices}"
+                      SelectedItem="{Binding Settings.SelectedNotesLanguage}" Width="160" />
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -507,19 +517,19 @@
           </StackPanel>
           <TextBlock Text="{loc:Tr 兼容 Chat Completions 的 API 地址}" Classes="label" />
           <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
-          <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-            <TextBlock Text="{loc:Tr 回答模型名称}" Classes="label" />
-            <TextBox Text="{Binding Settings.Model}" />
+          <!-- §3.6 A3: Mac AnswerServiceViews "模型" overline + 模型名 field + 获取列表 + status. -->
+          <TextBlock Text="{loc:Tr 模型}" Classes="overline" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBox Text="{Binding Settings.Model}" PlaceholderText="{loc:Tr 模型名}" Width="240" />
+            <ComboBox ItemsSource="{Binding Settings.ApiModelChoices}" SelectedItem="{Binding Settings.Model}"
+                      PlaceholderText="{loc:Tr 请选择模型}" Width="220" />
+            <Button Classes="quiet" Content="{loc:Tr 获取列表}" Command="{Binding Settings.FetchApiModelsCommand}"
+                    ToolTip.Tip="{loc:Tr 从服务商读取可用的模型}" />
           </StackPanel>
+          <TextBlock Text="{Binding Settings.ApiModelsStatus}" Classes="caption" FontSize="11" />
           <TextBlock Text="API Key" Classes="label" />
           <TextBox Text="{Binding Settings.ApiKey}" PasswordChar="•" PlaceholderText="sk-…" />
           <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" FontSize="11" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{loc:Tr 模型}" Classes="label" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding Settings.ApiModelChoices}" SelectedItem="{Binding Settings.Model}" Width="220" />
-            <Button Content="{loc:Tr 获取列表}" Command="{Binding Settings.FetchApiModelsCommand}" />
-          </StackPanel>
-          <TextBlock Text="{Binding Settings.ApiModelsStatus}" Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.ApiEffortChoices}" SelectedItem="{Binding Settings.SelectedApiEffort}" Width="180" />
@@ -574,7 +584,45 @@
       </Border>
 
       <!-- R6 / Mac SettingsView.swift UpdateAdvanced: 更新渠道 + GitHub 访问 on the 高级 page. -->
+      <!-- Phone companion (LAN channel) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Text="{loc:Tr 手机伴侣}" Classes="section" />
+          <TextBlock Text="{loc:Tr 手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。}"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。}"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 中转地址（可选）}" Classes="label" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Settings.CompanionRelayUrl}" PlaceholderText="https://relay.example.com" MinWidth="320" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr 填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。}"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。}"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
+                      MinWidth="260">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="platform:CompanionAddress">
+                  <TextBlock Text="{Binding}" FontSize="13" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="{loc:Tr 刷新网络地址}" Command="{Binding RefreshCompanionAddressesCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
+            <Button Content="{loc:Tr 复制配对链接}" Click="CopyCompanion_Click" />
+          </StackPanel>
+          <controls:QRCodeView Text="{Binding CompanionLink}" Width="168" Height="168"
+                               HorizontalAlignment="Left" IsVisible="{Binding CompanionRunning}" />
+          <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
+          <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+<Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAdvancedUpdate" Text="{loc:Tr 更新（高级）}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
@@ -618,7 +666,10 @@
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+              <!-- §3.6 V4: Mac 数据与维护 toggles. -->
+              <CheckBox Content="{loc:Tr 减少视觉特效}" IsChecked="{Binding Settings.ReducedEffects}" />
+              <CheckBox Content="{loc:Tr 工作台置顶}" IsChecked="{Binding Settings.KeepOnTop}" />
               <TextBlock Text="{Binding VersionText}" Classes="overline" />
               <TextBlock Text="{loc:Tr NextThought 把会议讨论留在本机，变成可以带走的结论。}"
                          Classes="caption" FontSize="11" />
@@ -628,45 +679,7 @@
           </Border>
         </StackPanel>
       </Border>
-      <!-- Phone companion (LAN channel) -->
-      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="{loc:Tr 手机伴侣}" Classes="section" />
-          <TextBlock Text="{loc:Tr 手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。}"
-                     Classes="caption" FontSize="11" />
-          <TextBlock Text="{loc:Tr 局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。}"
-                     Classes="caption" FontSize="11" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{loc:Tr 中转地址（可选）}" Classes="label" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Settings.CompanionRelayUrl}" PlaceholderText="https://relay.example.com" MinWidth="320" />
-          </StackPanel>
-          <TextBlock Text="{loc:Tr 填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。}"
-                     Classes="caption" FontSize="11" />
-          <TextBlock Text="{loc:Tr 蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。}"
-                     Classes="caption" FontSize="11" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
-                      MinWidth="260">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="platform:CompanionAddress">
-                  <TextBlock Text="{Binding}" FontSize="13" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <Button Content="{loc:Tr 刷新网络地址}" Command="{Binding RefreshCompanionAddressesCommand}" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
-            <Button Content="{loc:Tr 复制配对链接}" Click="CopyCompanion_Click" />
-          </StackPanel>
-          <controls:QRCodeView Text="{Binding CompanionLink}" Width="168" Height="168"
-                               HorizontalAlignment="Left" IsVisible="{Binding CompanionRunning}" />
-          <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
-          <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-                  <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
+                        <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <views:BackupSettingsSection />

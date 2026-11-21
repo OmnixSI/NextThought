@@ -25,7 +25,7 @@ public partial class AppState
 
     /// <summary>Mac: 「第 N / M 页」 (SlideSection).</summary>
     public string SlidePositionText => CurrentSlide is { } slide
-        ? UiText.Format("第 %lld 页，共 %lld 页", slide.Number, slides.Count)
+        ? UiText.Format("第 %lld / %lld 页", slide.Number, slides.Count)
         : "";
 
     public bool HasSlidePoints => SlidePointRows.Count > 0;
@@ -297,6 +297,7 @@ public partial class AppState
                      nameof(ScreenTitleText), nameof(ScreenAgeText), nameof(LiveShowsInsightsPanel),
                      nameof(HasAnswerProgress), nameof(AnswerProgressCounterText), nameof(AnswerProgressMetricText),
                      nameof(NextAnswerPointText), nameof(AnswerProgressCoveredCount), nameof(AnswerProgressTotal),
+                     nameof(AnswerProgressIsDone), nameof(AnswerProgressBrush),
                      nameof(AnswerProgressPointTexts)
                  })
             OnPropertyChanged(name);

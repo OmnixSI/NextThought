@@ -6,6 +6,7 @@
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              xmlns:components="using:NextThought.Desktop.Controls"
              xmlns:views="using:NextThought.Desktop.Views"
+             xmlns:viewsshell="using:NextThought.Desktop.Views"
              xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
@@ -206,6 +207,10 @@
                      IsVisible="{Binding !AnswerEngineReady}" IsHitTestVisible="False"
                      ToolTip.Tip="{loc:Tr 还没有连接回答服务，听到问题也不会自动回答}" />
           </Panel>
+
+          <!-- E4 / ContentView.swift LevelMeters: them (system audio) and me (microphone), in the top bar. -->
+          <viewsshell:LevelMeters Width="11" Height="16" Margin="{DynamicResource D4Margin_0_0_8_0}"
+                                  VerticalAlignment="Center" ToolTip.Tip="{Binding AudioLevelsText}" />
 
           <!-- 回答浮窗 (Mac teleprompterButton). -->
           <Button x:Name="LiveTeleprompterButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"

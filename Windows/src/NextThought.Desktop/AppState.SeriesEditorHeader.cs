@@ -20,7 +20,23 @@ public partial class AppState
             : UiText.T(SessionModes.Parse(w.Mode).Title()))
         : "";
 
+    /// <summary>WorkspaceEditor header: SeriesStatsLine plus the editor fallback for empty stats.</summary>
+    public string SeriesEditorStatsLine => SelectedSeriesStatsLine.Length > 0
+        ? SelectedSeriesStatsLine
+        : UiText.Meetings(SelectedSeries?.Count ?? 0) + " · " + UiText.Materials(SelectedSeries?.DocumentCount ?? 0);
+
     public bool HasSeriesSkills => SeriesSkills.Count > 0;
+
+    /// <summary>Mac state.openSettings(.skills) — the settings overlay consumes this request.</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string settingsRequestedPage = "";
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string settingsRequestedAnchor = "";
+
+    public void OpenSettingsPage(string page, string anchor = "")
+    {
+        SettingsRequestedAnchor = anchor;
+        SettingsRequestedPage = page;
+        Navigate("Settings");
+    }
 
     /// <summary>Stage review in the knowledge section is always editable (Mac ReviewTab).</summary>
     public bool IsSeriesEditorReadOnly => false;

@@ -165,15 +165,17 @@
           <!-- AnswerProgressStrip: 已讲 x/y and 下一句：… (Mac MetricPill + next point). -->
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                       IsVisible="{Binding HasAnswerProgress}">
-            <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+            <Border BorderBrush="{Binding AnswerProgressBrush}" BorderThickness="0.5"
                     CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_8_2}"
                     ToolTip.Tip="{Binding AnswerProgressMetricText}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
                 <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                           Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
-                <TextBlock Text="{loc:Tr 已讲}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                           Foreground="{Binding AnswerProgressBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 已讲}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center"
+                           Foreground="{Binding AnswerProgressBrush}" />
                 <TextBlock Text="{Binding AnswerProgressCounterText}" FontSize="12" FontWeight="Medium"
-                           FontFamily="{StaticResource MonoFamily}" VerticalAlignment="Center" />
+                           FontFamily="{StaticResource MonoFamily}" VerticalAlignment="Center"
+                           Foreground="{Binding AnswerProgressBrush}" />
               </StackPanel>
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">

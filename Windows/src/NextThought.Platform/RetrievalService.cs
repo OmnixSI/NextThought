@@ -84,5 +84,26 @@ public sealed class RetrievalService(AppPaths paths, EmbeddingModelStore? modelS
     }
     private Task SaveAsync(CancellationToken ct) => VectorCache.SaveAsync(CacheFile, Identity, EmbeddingModelStore.Manifest.Dimension, chunks.Where(c => vectors!.ContainsKey(c.Id)).ToDictionary(c => c.Id, c => vectors![c.Id]), ct);
     private static double Dot(float[] left, float[] right) { double sum = 0; for (int i = 0; i < left.Length; i++) sum += (double)left[i] * right[i]; return sum; }
+    /// <summary>§3.5 document-settings: Mac rebuildSemanticIndex — discard the cached vectors and
+    /// rebuild the corpus on the next search (the keyword index is rebuilt immediately).</summary>
+    public void RebuildIndex()
+    {
+        gate.Wait();
+        try
+        {
+            embedder?.Dispose();
+            embedder = null;
+            vectors = null;
+            fittedSnapshot = null;
+            snapshot = null;
+            lexical = null;
+            chunks = [];
+            warning = null;
+            try { if (File.Exists(CacheFile)) File.Delete(CacheFile); }
+            catch (IOException) { }
+        }
+        finally { gate.Release(); }
+    }
+
     public void Dispose() { gate.Wait(); try { if (disposed) return; disposed = true; embedder?.Dispose(); embedder = null; } finally { gate.Release(); } }
 }

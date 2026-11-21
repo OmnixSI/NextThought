@@ -29,6 +29,18 @@ public sealed class RecordSessionsAndTextZoomPreferenceTests
     }
 
     [Fact]
+    public void KeepOnTopIsMappedForTheDataMaintenanceToggle()
+    {
+        var preference = MacPreferences.All.Single(item => item.Key == "keepOnTop");
+        Assert.Equal(MacPreferenceKind.Bool, preference.Kind);
+        Assert.Equal(true, preference.Default);
+        Assert.True(MacPreferenceMap.IsMapped("keepOnTop"));
+        Assert.Equal(true, MacPreferenceMap.Read(new AppSettings(), "keepOnTop"));
+        var mapped = MacPreferenceMap.ToJsonObject(new AppSettings { KeepOnTop = false });
+        Assert.False(mapped["keepOnTop"]!.GetValue<bool>());
+    }
+
+    [Fact]
     public void TextZoomIsMappedInThePreferenceRegistry()
     {
         var preference = MacPreferences.All.Single(item => item.Key == "textZoom");

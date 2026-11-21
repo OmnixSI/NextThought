@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1275;
+    public const int Count = 1297;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1181,6 +1181,28 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["未完成"] = "Not finished",
+        ["纪要高级"] = "Notes: advanced",
+        ["还没有记录。从这个系列开始一场会议，记录会出现在这里。"] = "No records yet. Start a meeting in this series and it will appear here.",
+        ["还没有资料。点「编辑系列」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。"] = "No materials yet. Open Edit series to add PDF, Word, PPT, Excel, Markdown or images to this series.",
+        ["正在复用 %@…"] = "Reusing %@…",
+        ["第 %lld / %lld 页"] = "Page %lld of %lld",
+        ["待保存队列已满，会议内容未能入队。"] = "The save queue is full; the meeting content could not be queued.",
+        ["待保存队列已满；部分新写入没有入队。"] = "The save queue is full; some new writes were not queued.",
+        ["PaddleOCR-VL 1.6 Q4（更省内存）"] = "PaddleOCR-VL 1.6 Q4 (uses less memory)",
+        ["重试保存"] = "Retry save",
+        ["第三方组件"] = "Third-party components",
+        ["隔离的 Python 3.12 环境，读取 PDF、Office 与文本文件。"] = "An isolated Python 3.12 environment reads PDF, Office and text files.",
+        ["正在校验文档组件…"] = "Verifying document components…",
+        ["正在下载文档运行包…"] = "Downloading the document runtime…",
+        ["正在查找本机已有组件，匹配版本后校验并复用…"] = "Looking for existing document components on this PC; matching versions are verified and reused…",
+        ["本应用现有 %lld 项文档模型，支持组件未安装。本次复用 %@，没有联网下载。"] = "This app now has %lld document models and the support components are not installed. %@ was reused; nothing was downloaded.",
+        ["未找到匹配部分，可选择其他目录或按需下载。"] = "No matching parts were found. Choose another folder or download as needed.",
+        ["已取消扫描；已校验并复用的文件保留，原文件没有改变。"] = "Scan canceled; files already verified and reused are kept and the originals are unchanged.",
+        ["本机扫描失败：%@；可选择具体目录重试。"] = "Local scan failed: %@. Choose a specific folder and try again.",
+        ["选择已下载权重或运行包所在目录，应用会检查兼容性并复用，原文件保留。"] = "Choose the folder that holds the downloaded weights or runtime package; the app checks compatibility and reuses them, keeping the originals.",
+        ["已启用语义增强。"] = "Semantic enhancement is on.",
+        ["语义索引已重建，下次搜索会自动生成。"] = "The semantic index was rebuilt and will be generated again on the next search.",
         ["返回首页"] = "Back to home",
         ["重试读取"] = "Retry reading",
         ["自动识别 · 中英互译"] = "Auto-detect · Chinese ↔ English",
