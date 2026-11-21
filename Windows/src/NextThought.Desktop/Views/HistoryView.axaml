@@ -154,8 +154,8 @@
       <Border Grid.Row="0" Height="52" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5"
               Padding="{DynamicResource D4Padding_24_0}">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-          <Button Classes="quiet caption" Content="{loc:Tr 所有记录}" Command="{Binding BackToHistoryOverviewCommand}"
-                  IsVisible="{Binding HasSelectedHistory}" Padding="{DynamicResource D4Padding_2}" />
+          <Button Classes="quiet" Content="{loc:Tr 所有记录}" Command="{Binding BackToHistoryOverviewCommand}"
+                  IsVisible="{Binding HasSelectedHistory}" FontSize="12" Padding="{DynamicResource D4Padding_4_2}" />
           <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
                      Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center"
                      IsVisible="{Binding HasSelectedHistory}" />
@@ -167,10 +167,10 @@
       </Border>
 
       <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="{DynamicResource D4Spacing_16}" MaxWidth="720" HorizontalAlignment="Left"
+        <StackPanel Spacing="{DynamicResource D4Spacing_16}" MaxWidth="720" HorizontalAlignment="Stretch"
                     Margin="{DynamicResource D4Margin_32_24_32_24}">
           <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-            <TextBlock Text="{loc:Tr 所有记录}" Classes="display" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr 所有记录}" Classes="display" TextWrapping="Wrap" MinWidth="120" HorizontalAlignment="Left" />
             <TextBlock Text="{Binding HistoryOverviewSubtitle}" Classes="caption" TextWrapping="Wrap" />
             <TextBlock Text="{Binding HistoryOverviewStats}" Classes="caption" FontSize="12"
                        Foreground="{DynamicResource Secondary}" FontWeight="Medium" />
