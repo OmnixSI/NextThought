@@ -157,4 +157,15 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasNotesArchiveStatus}", view);
         Assert.Contains("{Binding NotesArchiveStatusText}", view);
     }
+
+    [Fact]
+    public void TheAnswersTabShowsTheArchiveMetadata()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HistoryAnswers}", view);
+        Assert.Contains("{Binding MetaLine}", view);
+        Assert.Contains("{Binding !IsComplete}", view);
+        Assert.Contains("{Binding HasScreenshot}", view);
+        Assert.Contains("{Binding AutomaticLabel}", view);
+    }
 }

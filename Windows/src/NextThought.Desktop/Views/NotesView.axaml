@@ -388,18 +388,23 @@
         <views:MeetingUserNotes Margin="{DynamicResource D4Margin_22}" />
       </TabItem>      <TabItem Header="{loc:Tr 会中回答}" IsVisible="{Binding HasSessionAnswers}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}" Margin="{DynamicResource D4Margin_22}">
+          <ItemsControl ItemsSource="{Binding HistoryAnswers}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:AnswerRecord">
+              <DataTemplate x:DataType="local:HistoryAnswerRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                    <Border Classes="chip" IsVisible="{Binding Automatic}">
-                      <TextBlock Text="{loc:Tr 自动}" Classes="overline" FontSize="10" />
+                    <Border Classes="chip">
+                      <TextBlock Text="{Binding AutomaticLabel}" Classes="overline" FontSize="10" />
+                    </Border>
+                    <Border Classes="chip" IsVisible="{Binding !IsComplete}">
+                      <TextBlock Text="{loc:Tr 未完成}" Classes="overline" FontSize="10" Foreground="{DynamicResource Caution}" />
                     </Border>
                   </StackPanel>
-                  <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Model}" Classes="caption" />
+                  <TextBlock Text="{Binding AnswerText}" Classes="body" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding MetaLine}" Classes="caption" />
+                  <TextBlock Text="{Binding ScreenshotPath}" Classes="caption" FontSize="10"
+                             IsVisible="{Binding HasScreenshot}" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
