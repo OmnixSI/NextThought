@@ -144,12 +144,9 @@
                     <Button Grid.Column="1" Classes="quiet" HorizontalContentAlignment="Left"
                             Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenHistorySeries_Tapped"
                             FontWeight="SemiBold" FontSize="12" Padding="{DynamicResource D4Padding_2}" />
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="{DynamicResource D4Spacing_0}">
-                      <TextBlock Text="{Binding ModeTitle}" Classes="caption" FontSize="10"
-                                 Foreground="{DynamicResource Secondary}" HorizontalAlignment="Right" />
-                      <TextBlock Text="{Binding CountsText}" Classes="overline" FontSize="10"
-                                 Foreground="{DynamicResource Tertiary}" HorizontalAlignment="Right" />
-                    </StackPanel>
+                    <!-- seriesGroupHeader: name + meeting count (the mode/counts card lives on the right overview). -->
+                    <TextBlock Grid.Column="2" Text="{Binding Rows.Count}" Classes="overline" FontSize="10"
+                               Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
                   </Grid>
                   <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource HistoryRowTemplate}" />
                 </StackPanel>
@@ -198,13 +195,15 @@
                      IsVisible="{Binding IsHistoryScoped}" />
           <TextBlock Text="{Binding HistoryScopeTitle}" Classes="caption" VerticalAlignment="Center"
                      IsVisible="{Binding IsHistoryScoped}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
-          <Button Classes="quiet" Content="{loc:Tr 所有记录}" Command="{Binding BackToHistoryOverviewCommand}"
-                  IsVisible="{Binding HasSelectedHistory}" FontSize="12" Padding="{DynamicResource D4Padding_4_2}" />
-          <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
-                     Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center"
-                     IsVisible="{Binding HasSelectedHistory}" />
-          <TextBlock Text="{Binding CurrentSessionTitle}" Classes="caption" VerticalAlignment="Center"
-                     IsVisible="{Binding HasSelectedHistory}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding !IsHistoryScoped}">
+            <Button Classes="quiet" Content="{loc:Tr 所有记录}" Command="{Binding BackToHistoryOverviewCommand}"
+                    IsVisible="{Binding HasSelectedHistory}" FontSize="12" Padding="{DynamicResource D4Padding_4_2}" />
+            <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                       Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center"
+                       IsVisible="{Binding HasSelectedHistory}" />
+            <TextBlock Text="{Binding CurrentSessionTitle}" Classes="caption" VerticalAlignment="Center"
+                       IsVisible="{Binding HasSelectedHistory}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
+          </StackPanel>
 
         </StackPanel>
       </Border>

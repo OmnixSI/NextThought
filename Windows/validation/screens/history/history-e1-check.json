@@ -21,6 +21,16 @@
       "step": "归档概览（选中会议）",
       "passed": true,
       "detail": "E1 自检会议一"
+    },
+    {
+      "step": "系列作用域：标题/列表/面包屑",
+      "passed": true,
+      "detail": "E1 自检系列 · 1 场"
+    },
+    {
+      "step": "返回所有记录",
+      "passed": true,
+      "detail": "会话 2"
     }
   ]
 }

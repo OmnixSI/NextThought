@@ -52,23 +52,26 @@ public partial class MainWindow
             CaptureVisual(this, Path.Combine(shots, "history-light.png"));
 
             await state.SelectHistoryAsync(first);
+            state.Section = AppSection.History;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-            await Task.Delay(400);
+            await Task.Delay(500);
             Step("归档概览（选中会议）", state.HasSelectedHistory, state.CurrentSessionTitle);
             CaptureVisual(this, Path.Combine(shots, "history-overview-light.png"));
 
             // workspace/series scope (HistoryView.showFolder + onOpenRoot).
             state.OpenHistorySeriesCommand.Execute(series.Id);
+            state.Section = AppSection.History;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-            await Task.Delay(400);
+            await Task.Delay(500);
             Step("系列作用域：标题/列表/面包屑", state.IsHistoryScoped
                 && state.HistoryScopeTitle == series.Name
                 && state.FilteredHistory.Count(row => !row.Meta.Id.Equals(first.Id)) == 0,
                 state.HistoryScopeTitle + " · " + state.FilteredHistory.Count + " 场");
             CaptureVisual(this, Path.Combine(shots, "history-series-light.png"));
             state.ShowAllHistoryCommand.Execute(null);
+            state.Section = AppSection.History;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-            await Task.Delay(300);
+            await Task.Delay(400);
             Step("返回所有记录", !state.IsHistoryScoped && state.FilteredHistory.Count >= 2, "会话 " + state.FilteredHistory.Count);
 
             Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
