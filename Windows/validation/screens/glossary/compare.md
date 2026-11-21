@@ -1,3 +1,6 @@
+> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
 # 术语表 / 加入术语表（E22 · §6.7）Mac 3.4.0 源码 ↔ Windows GlossaryWindow 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/GlossaryView.swift`（GlossaryView + AddToGlossarySheet + MisheardMark + TranscriptFindField）
@@ -11,7 +14,7 @@
 |---|---|---|---|---|
 | 1 | 窗口 | min 780×540 / ideal 820×580，paper 底，padding 24，spacing 12 | 820×580、Min 780×540、Paper、Margin 24、RowSpacing 12 | 一致 |
 | 2 | 标题区 | 「术语和人名」section + caption 提示（含「原始转写不会被改写。」）；右上「完成」primary、默认动作 | 同（`DoneButton IsDefault`，文案与 Mac 逐字） | 一致 |
-| 3 | 作用域 | 全局 / 当前系列 分段控件（有系列时） | 同（`seg` 分段样式，绑定 `UseGlobal/SeriesGlossaryScopeCommand`） | 一致 |
+| 3 | 作用域 | 全局 / 当前系列 分段控件（有系列时） | `controls:InkSegmented`（设计系统组件，选中块按 Motion.snappy 在两项间滑动；本轮把手写的 `Button.segItem` 换成组件） | 一致 |
 | 4 | 查找框 | 放大镜 + 「查找」，高 32、sunken、radiusSmall、最大宽 200 | 同（`Border.field` 32 pt + 图标 + 透明 TextBox） | 一致 |
 | 5 | 状态文字 | 工具行右侧 caption | 同（`GlossaryStatusText`） | 一致 |
 | 6 | 「…」菜单 | 批量粘贴… / 从文件导入… / 导出为文件… / 复制为文字 / 整理重复项 | 同（Flyout 五项同序） | 一致 |
@@ -20,7 +23,7 @@
 | 9 | 空态 | 「还没有条目。点“新增”，或用“批量粘贴”一次加入多条。」/「这个系列还没有自己的条目。」/「没有匹配的条目。」 | 同（三句 Mac 原文） | 一致 |
 | 10 | 空编辑器 | 「选一条来编辑，或新增一条。」body 次要色、居中、minHeight 200 卡片 | 同 | 一致 |
 | 11 | 规范写法 | overline + sunken 32 pt 单行框，placeholder「正确的写法，例如 Kubernetes」 | 同 | 一致 |
-| 12 | 类型 | 术语 / 人名 分段控件 | 同 | 一致 |
+| 12 | 类型 | 术语 / 人名 分段控件 | `controls:InkSegmented`（同上，组件化） | 一致 |
 | 13 | 听错的写法 | 可删除胶囊 tag（文字 + xmark 24 tap）+ 输入框；回车/逗号加入，长度≥2 且不等于规范写法 | 同（`VariantTags` + `VariantInput`，Enter/逗号/顿号分隔） | 一致 |
 | 14 | 备注 | overline + 单行框，placeholder「可选，例如“我们的数据库项目”」 | 同 | 一致 |
 | 15 | 重复提示 | 「已有同名条目，关闭这个页面时会合并。」（looseKey 比较） | 同（`HasGlossaryDuplicate`，`Glossary.LooseKey`） | 一致 |

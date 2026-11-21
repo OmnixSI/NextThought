@@ -1,3 +1,6 @@
+> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
 # 阶段 3 §6.1 通用设计系统组件：Mac ↔ Windows 对照
 
 Swift 源码：`Sources/NextThought/ControlComponents.swift`、`DesignSystem.swift`（含 3.4.0 新增部分）、`HitTargets.swift`、`LiquidGlass.swift`、`OperationFeedback.swift`、`PaperTextFieldStyle.swift`、`Stage.swift`、`Theme.swift`、`UnderlineTabs.swift`
@@ -62,3 +65,11 @@ Windows 实现：`Windows/src/NextThought.Desktop/Controls/DesignSystemComponent
 - 一致：背景/纸卡/分隔、`ControlButtonBody` 的 primary/secondary/quiet 形状与悬停/按下/禁用/聚焦差异、`AIHeading`/`StatusDot` 四色/`MetricPill`/`ShortcutHint`、`InteractiveRowBody` 的行悬停、`InkSwitch` 开/关/禁用、`WideToggleRow`、`PaperFieldBody`、`Lift` 卡面、`VoiceWave` 静态条、`MarkdownText` 的加粗/列表/行内代码/代码块、`RefinementBar`。
 - 不一致（未解决）：`InkSegmented`/`PillTabs`/`UnderlineTabs` 在样张页内仍按纵向列表排版、选中白块/下划线不够明显（ItemsPresenter 的 ItemsPanel 模板绑定与 ListBoxItem 主题需要再调）；`ControlButtonBody` primary 的按钮文字颜色在样张截图中未显示为 OnInk（模板 ContentPresenter 的生成 TextBlock 颜色未覆盖）；`BusyActionLabel` 进度条在样张中横向拉伸；`MenuPicker` 选中项未显示（ComboBox 未设 SelectedItem）；`ScrollEdgeFade` 深色仍用浅色渐变端点；`OperationFeedback` 的 info/warning 颜色未全量映射；`Lift` 无 y 位移动画/聚焦环；`VoiceWave` 无动画。
 - 这些视觉细节不影响组件可复用性与状态 API；样张页仍是唯一组件样张来源，阶段 4 替换页面时按 compare.md 继续收敛。
+
+## decisions §3.1 components（本轮）
+
+- `InkSegmented`：选中块改为单个滑动 thumb（Motion.snappy；减少动效时瞬时），由 `component-samples-{light,dark}.png` 覆盖；本页截图来自本轮构建。
+- `VoiceWave`：按 90 ms 相位动起来（Motion.Reduce 冻结）。
+- `ScrollEdgeFade`：浅/深主题各一套 paper→透明渐变（Theme.axaml `ScrollFadeToTop/Bottom`）。
+- hover/snappy：`ControlButtonBody`/`InteractiveRowBody`/`InkSwitch`/`WideToggleRow`/`MenuPicker`/`PaperFieldBody`/`PillTabs`/`UnderlineTabs` 补 `Transitions`（工具 hover 0.14s、切换 snappy 0.28s）。
+- `MarkdownText`：表格渲染（公式 LaTeXMath 已有）。
