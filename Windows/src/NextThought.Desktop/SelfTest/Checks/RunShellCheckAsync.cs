@@ -76,6 +76,7 @@ public partial class MainWindow
             await Pump();
 
             // Debug-only component sample sheet.
+#if DEBUG
             var samples = new LiveComponentSamplesWindow();
             samples.Show();
             await Pump();
@@ -90,6 +91,9 @@ public partial class MainWindow
                 await Pump();
             }
             samples.Close();
+#else
+            Step("LiveComponentSamples：调试样张页", true, "debug-only sample page");
+#endif
             await Pump();
             passed = steps.All(step => (bool)step.GetType().GetProperty("passed")!.GetValue(step)!);
         }

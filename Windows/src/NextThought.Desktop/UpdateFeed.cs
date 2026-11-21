@@ -8,14 +8,20 @@ public static class UpdateFeed
     public const string Default = NextThought.Platform.UpdateFeedPolicy.Default;
 
     /// <summary>
-    /// The feed is fixed to HTTPS in normal runs; overrides only work with
-    /// NEXTTHOUGHT_QA=1 and never over plain HTTP.
+    /// The feed is fixed to HTTPS in normal runs. R8: only debug builds may read the QA override
+    /// environment variables, so the formal package's binary has no QA switch at all.
     /// </summary>
-    public static string Source => NextThought.Platform.UpdateFeedPolicy.ResolveSource(Environment.GetEnvironmentVariable);
+    public static string Source => SourceFor("");
 
     /// <summary>E27: Mac <c>updateRepository</c> chooses the GitHub repository of the feed.</summary>
     public static string SourceFor(string repository) =>
-        NextThought.Platform.UpdateFeedPolicy.ResolveSourceFor(repository, Environment.GetEnvironmentVariable);
+#if DEBUG
+        NextThought.Platform.UpdateFeedPolicy.ResolveSourceFor(repository,
+            Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_FEED"),
+            Environment.GetEnvironmentVariable("NEXTTHOUGHT_QA") == "1");
+#else
+        NextThought.Platform.UpdateFeedPolicy.ResolveSourceFor(repository, null, false);
+#endif
 
     public static Task<string> ReadAsync(string source, string? token, CancellationToken cancellationToken = default) =>
         NextThought.Platform.UpdateFeedPolicy.ReadAsync(source, token, cancellationToken);

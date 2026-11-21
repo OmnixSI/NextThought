@@ -144,6 +144,7 @@ public partial class MainWindow
                 }
             }
             state.ApplyUiLanguage(false);
+#if DEBUG
             foreach (var dark in new[] { false, true })
             {
                 if (Application.Current is { } app)
@@ -156,7 +157,9 @@ public partial class MainWindow
                 await WriteInventoryAsync(sample, textDirectory, dark ? "controls-dark" : "controls-light");
                 sample.Close();
             }
+#endif
             // D5 §5.1: the typography specimen, one line per size in Chinese and English mixed.
+#if DEBUG
             foreach (var dark in new[] { false, true })
             {
                 if (Application.Current is { } app)
@@ -169,6 +172,7 @@ public partial class MainWindow
                 await WriteInventoryAsync(specimen, textDirectory, specimenName);
                 specimen.Close();
             }
+#endif
             // First-run guide: all four steps in both themes, so the Mac step-1..4 reference
             // screenshots each have a matching Windows capture (the old batch only kept the first
             // and last step and happened to inherit the dark theme from the loop above).
