@@ -23,9 +23,12 @@ public partial class AppState
 
     public bool HasSlide => CurrentSlide is not null;
 
+    /// <summary>Mac: 「第 N / M 页」 (SlideSection).</summary>
     public string SlidePositionText => CurrentSlide is { } slide
-        ? UiText.Format("第 %lld 页", slide.Number) + " / " + slides.Count
+        ? UiText.Format("第 %lld / %lld 页", slide.Number, slides.Count)
         : "";
+
+    public bool HasSlidePoints => SlidePointRows.Count > 0;
 
     public string SlideDocumentName => CurrentSlide?.DocumentName ?? "";
 
@@ -111,8 +114,8 @@ public partial class AppState
         }
         foreach (var name in new[]
                  {
-                     nameof(HasSlide), nameof(SlidePositionText), nameof(SlideDocumentName), nameof(SlideHasPrevious),
-                     nameof(SlideHasNext), nameof(SlideNotesAreScript), nameof(SlideTransitionText),
+                     nameof(HasSlide), nameof(SlidePositionText), nameof(HasSlidePoints), nameof(SlideDocumentName),
+                     nameof(SlideHasPrevious), nameof(SlideHasNext), nameof(SlideNotesAreScript), nameof(SlideTransitionText),
                      nameof(SlideQuestionRows), nameof(HasSlideQuestions), nameof(SlidePointRows)
                  })
             OnPropertyChanged(name);
@@ -129,11 +132,50 @@ public partial class AppState
 
     // ---- screen section (Mac ScreenSection) ----------------------------------------
 
+    /// <summary>Mac LiveSessionView TranscriptColumn: the panel sits above the transcript while screen
+    /// awareness is on and the scene follows slides (MeetingType.followsSlides == academic).
+    /// </summary>
+    public bool LiveShowsInsightsPanel => Settings.InsightScreenWatch && SelectedMode == MeetingMode.Academic;
+
+    /// <summary>Raised by the live page when the mode or the screen-watch toggle changes.</summary>
+    public void RaiseLiveInsightsEmbed() => OnPropertyChanged(nameof(LiveShowsInsightsPanel));
+
     public bool ScreenWatchOff => !Settings.InsightScreenWatch;
 
     public bool ScreenWatchRunning => Settings.InsightScreenWatch;
 
     public bool ScreenIsReading => ScreenWatchCapturing;
+
+    /// <summary>Mac: 「屏幕：题目 / 代码 / 幻灯片 …」 from the frame's classified kind.</summary>
+    public string ScreenTitleText => UiText.Format("屏幕：%@", UiText.T(ScreenKindTitle(ScreenWatchKind)));
+
+    private static string ScreenKindTitle(ScreenKind kind) => kind switch
+    {
+        ScreenKind.Question => "题目",
+        ScreenKind.Code => "代码",
+        ScreenKind.Slides => "幻灯片",
+        ScreenKind.Document => "文档",
+        ScreenKind.Chat => "聊天",
+        ScreenKind.VideoCall => "视频通话",
+        _ => "其他"
+    };
+
+    /// <summary>Mac ScreenSection's TimelineView: 「N 秒前」 since the frame was read.</summary>
+    public string ScreenAgeText
+    {
+        get
+        {
+            if (screenTextSeenAt is not { } at) return "";
+            var seconds = Math.Max(0, (int)(DateTimeOffset.UtcNow - at).TotalSeconds);
+            return UiText.Format("%lld 秒前", seconds);
+        }
+    }
+
+    private DateTimeOffset? screenTextSeenAt;
+    private string screenTextSeen = "";
+
+    /// <summary>Called by the panel's 5 s clock so the relative time keeps moving (Mac TimelineView).</summary>
+    public void RefreshScreenAge() => OnPropertyChanged(nameof(ScreenAgeText));
 
     public string ScreenStatusLine
     {
@@ -221,7 +263,11 @@ public partial class AppState
 
     public int AnswerProgressTotal => AnswerProgressPointTexts.Count;
 
-    public string AnswerProgressCounterText => AnswerProgressCoveredCount + " / " + AnswerProgressTotal;
+    /// <summary>Mac AnswerProgressStrip: 「1/6」 (the counter inside 「已讲 1/6」).</summary>
+    public string AnswerProgressCounterText => AnswerProgressCoveredCount + "/" + AnswerProgressTotal;
+
+    /// <summary>Mac MetricPill: 「已讲 x/y」.</summary>
+    public string AnswerProgressMetricText => UiText.Format("已讲 %lld/%lld", AnswerProgressCoveredCount, AnswerProgressTotal);
 
     public string NextAnswerPointText
     {
@@ -236,14 +282,22 @@ public partial class AppState
     /// <summary>Recomputes everything the insights panel shows (slide, screen, answer progress).</summary>
     public void RefreshInsights()
     {
+        // Mac ScreenSection's relative clock counts from the frame the panel last saw.
+        if (ScreenText != screenTextSeen)
+        {
+            screenTextSeen = ScreenText;
+            screenTextSeenAt = ScreenText.Length > 0 ? DateTimeOffset.UtcNow : null;
+        }
         RefreshSlideInsights();
         foreach (var name in new[]
                  {
                      nameof(ScreenWatchOff), nameof(ScreenWatchRunning), nameof(ScreenIsReading),
                      nameof(ScreenStatusLine), nameof(HasScreenError), nameof(ScreenErrorText),
-                     nameof(HasScreenText), nameof(ScreenText), nameof(ScreenTextMaxLines),
-                     nameof(HasAnswerProgress), nameof(AnswerProgressCounterText), nameof(NextAnswerPointText),
-                     nameof(AnswerProgressCoveredCount), nameof(AnswerProgressTotal), nameof(AnswerProgressPointTexts)
+                     nameof(HasScreenText), nameof(ScreenText), nameof(ScreenTextMaxLines), nameof(ScreenTextExpanded),
+                     nameof(ScreenTitleText), nameof(ScreenAgeText), nameof(LiveShowsInsightsPanel),
+                     nameof(HasAnswerProgress), nameof(AnswerProgressCounterText), nameof(AnswerProgressMetricText),
+                     nameof(NextAnswerPointText), nameof(AnswerProgressCoveredCount), nameof(AnswerProgressTotal),
+                     nameof(AnswerProgressPointTexts)
                  })
             OnPropertyChanged(name);
     }
@@ -253,6 +307,7 @@ public partial class AppState
     {
         OnPropertyChanged(nameof(HasAnswerProgress));
         OnPropertyChanged(nameof(AnswerProgressCounterText));
+        OnPropertyChanged(nameof(AnswerProgressMetricText));
         OnPropertyChanged(nameof(NextAnswerPointText));
         OnPropertyChanged(nameof(AnswerProgressCoveredCount));
         OnPropertyChanged(nameof(AnswerProgressTotal));

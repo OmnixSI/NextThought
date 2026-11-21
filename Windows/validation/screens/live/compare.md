@@ -1,112 +1,147 @@
-# 会中主界面（LiveSessionView.swift ↔ LiveView.axaml）逐元素对照
+# 会中主界面（LiveSessionView.swift ↔ LiveView.axaml）逐元素对照 — §6.5 重做版
 
-- Mac 标准：`Sources/NextThought/LiveSessionView.swift`（LiveTopBar / RecordingTimer / PauseResumeButton / AnswerSettingsMenu / QuestionMark / CandidateStrip / TranscriptStatus / RightColumn / AnswerColumn / WebStatusLine / WebSources / RefinementRow / AnswerMoreMenu / EvidenceLine / EvidenceDetails / LiveComposer）+ `LiveWindowController.swift`（LiveWindowMenu）；Mac 3.4.0 参考图 [live-light](../../mac-screens/live/live-light.png) / [live-dark](../../mac-screens/live/live-dark.png)，右栏另有 [live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)（旧 v3 图 `docs/screenshots/v3/live.png` 留档）。
-- Windows 截图：`validation/screens/current/live-light.png` / `live-dark.png`（task-48 刷新，未入库）。
-- 自动点检：`--demo --self-test=live-ui`（RunLiveUiCheckAsync）逐项验证顶栏状态、模式切换、问题标记、候选条、联网状态/来源、证据行与详情、回答历史导航、输入框与截图预览；结果见文末。
+- 对照标准：Mac 3.4.0（`Sources/NextThought/LiveSessionView.swift` 全文 1619 行，含 `LiveTopBar`、`RecordingTimer`、`PauseResumeButton`、`AnswerSettingsMenu`、`TranscriptColumn`、`SpeakerLabel`、`TranscriptLine`、`QuestionMark`、`PartialLines`、`CandidateStrip`、`TranscriptStatus`、`RightColumn`、`LiveNotesColumn`、`AnswerColumn`、`AnswerText`、`WebStatusLine`、`WebSources`、`RefinementRow`、`AnswerMoreMenu`、`EvidenceLine`、`EvidenceDetails`、`LiveComposer`）；E7 另对照 `Sources/NextThought/InsightsPanel.swift` 全文。
+- Mac 参考图：浅色 [live-light](../../mac-screens/live/live-light.png)、深色 [live-dark](../../mac-screens/live/live-dark.png)；右栏实时纪要 [live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)；20 种状态在 [mac-screens/live-states/](../../mac-screens/live-states/)（normal / busy / streaming / focus / selection / stale / save-recovery / unavailable …）。
+- Windows 截图（1120×820，浅/深，演示数据）：`validation/screens/live/light.png`、`dark.png`；右栏实时纪要 `live-notes-light.png`（自检 `--self-test=live-ui` 截取）。同一批 96 张页面图在 `validation/screens/current/live-*.png`（不入库）。
+- 对照方法：§6.3 —— 按 Mac 截图上→下、左→右列元素清单，逐项记文案/顺序/字号级别/字重/颜色资源/间距资源/圆角级别/选中与悬停态，再逐条写 Windows 现状与结论；有一条不一致就改，改完重截图。
+- 自动点检：`--demo --self-test=live-ui`（`SelfTest/Checks/RunLiveUiCheckAsync.cs`）验证 §6.5 的听音状态、模式切换、问题标记、回声「是我说的」、三标签页、实时纪要空态、候选条、联网状态/来源、证据行与详情、回答历史导航、输入框与截图预览、立即回答；截图见 `%TEMP%/nextthought-selftest/live-ui/live-shots/`。
 
-## 元素对照
+## 1. 顶部条（Mac `LiveTopBar`，一行，高 52）
 
-| Mac（LiveSessionView.swift） | Windows 对应物 | 结论 |
-| --- | --- | --- |
-| `LiveTopBar`：计时圆点 + 计时 + 正在聆听/已暂停/未在聆听；`PauseResumeButton` | LiveView 顶栏：`IsLiveOnAir` 圆点、`RecordingElapsedText`、`LiveListeningStatus`、暂停/继续按钮（`TogglePauseListeningCommand`） | 一致 |
-| `SceneTag` + 标题块（标题 + 系列名） | `SceneTag` + `MeetingTitle` 输入框（20 磅衬线）+ `PageSubtitle` | 一致 |
-| `answerModePicker`：自动回答 / 只记录 分段 | 顶栏两个 `RadioButton.chip`（`AnswerModeIsAuto`，点击 `SetAnswerMode`） | 一致；Mac 的「未连接回答服务」黄点未移植（Windows 无 answerEngineReady 状态） |
-| `PhoneStatusIcon` / `ScreenStatusIcon`（图标 + 状态点） | 手机/屏幕图标按钮 + 状态圆点（`LiveCompanionOn` / `LiveScreenWatchOn`，tooltip 用 `CompanionInfo` / `LiveScreenWatchHelp`） | 一致（Windows 的点表示「开着」，Mac 区分已连接/等待，已在未解决项注明） |
-| `AnswerSettingsMenu`：模型、快速模式、联网、回答长度、从下一个回答开始生效、更多回答设置… | 回答设置 Flyout：模型 `ComboBox`（ModelChoicesList→`Settings.Model`）、快速模式（CodexFast、仅 API/Codex 可用时显示）、联网开关（`LiveWebSearchIsOn`）、回答长度 要点/详细（`CurrentAnswerIsDetailed`，作用于下一次回答的提示词 style）、说明与跳转 | 一致；Mac 联网是「不联网/自动判断/每次都查」三选，Windows 设置层只有联网开关（设置页仍是二态），已在未解决项注明 |
-| `moreMenu`：提词岛一直展开、双屏演讲、回答语言/英文对照、同声传译、屏幕感知、手机伴侣、回答浮窗、会中窗口三选、设置… | 工具 Flyout：提词岛一直展开、双屏演讲、回答语言三选、英文回答附中文对照、屏幕感知、手机伴侣、回答浮窗、提词岛、会中窗口（纪要窗口/字幕条/隐藏）、设置… | 大部分一致；同声传译入口未移植（Windows 逐字同传由设置自动启用，无独立开关） |
-| `endSessionButton` / 开始记录 | 「结束」（`StopRecordingCommand`）/「开始记录」（`StartRecordingCommand`），按 `Recording` 切换 | 一致 |
-| `TranscriptColumn`：实时对话 overline、跟随按钮、行（SpeakerLabel + QuestionMark + 文本 + 译文 + 回答这句/星标） | 实时对话 + 行模板：`Label`、`IsQuestion` 的「问题」胶囊（场景色 13% 底 + 场景色字）、文本、译文、回答这句、高亮 | 一致（跟随/滚动暂停按钮未移植；Mac 的 `ScrollFollowState` 行为留待后续） |
-| `QuestionMark`：场景色胶囊 | 同上，`LiveSceneTintSoftBrush`/`LiveSceneTintBrush`（随明暗与场景） | 一致 |
-| `CandidateStrip`：可能的问题 + 文本 + 回答这句（+可删除的 suggested） | 转写底部候选条：场景色圆点 + 可能的问题 + `CandidateQuestion` + 回答这句（`ForceAnswerCommand`） | 一致；Windows 无 suggestedQuestions 队列，候选条只显示 tracker 当前候选 |
-| `PartialLines`：对方 / 我（现场）两行分别带译文 | 底部两行 partial（对方 / 我），来自 `SystemPartial` / `MicrophonePartial` | 部分一致（译文 partial 行未显示，音频层有 translation 但未暴露成两行） |
-| `TranscriptStatus`：音源 · 识别引擎 · 麦克风 · 回声 · 遗漏 · 同传 · 隐私锁 | 状态行：`AudioSourceText` · `LiveAudioEngineLabel` · 隐私锁 | 部分一致（回声/遗漏/麦克风未开等计数 Windows 未跟踪，已在未解决项注明） |
-| `RightColumn`：我的笔记 / 问答 分段；回答生成中提示 | 右栏两个 `RadioButton.chip` + NotesPanel/AnswerPanel 切换（默认跟随 `AnswerModeIsAuto`）；`Answering` 显示「回答生成中」 | 一致 |
-| `AnswerColumn`：✦ 建议回答/正在回答、上一条/下一条 + 2/2、联网状态行、问题原文、答案卡片、WebSources、RefinementRow、EvidenceLine | 答案栏：`AnswerColumnTitle`、上一/下一条（`PreviousAnswerCommand`/`NextAnswerCommand`）、`LiveWebStatusLine` + 编号来源、`DetectedQuestion`/双语问题、Markdown 答案、空态提示、精修行（更简短/举例/英文版/…/停止生成）、证据行 | 一致；历史位置文本 2/2 未移植（Windows 历史游标是陪伴快照用的，E5 回答历史面板再统一） |
-| `WebStatusLine`：正在联网核查… / 联网版 · N 个来源 / 看原回答、失败重试 | `HasWebResults` 时显示 🌐 + `LiveWebStatusLine`；重试按钮走 `LookUpDisplayedAnswerCommand` | 部分一致（Windows 没有「原回答 ↔ 联网版」切换，联网结果直接并入当前回答；未解决项注明） |
-| `WebSources`：编号 [1] 标题可点 | `LiveWebSources` 编号列表，点击 `OpenWebSource` 用系统浏览器打开 | 一致 |
-| `RefinementRow` + `AnswerMoreMenu` | 更简短/举例/英文版 chip + ⋯ 菜单（展开/STAR/中文版/澄清问题/我可以反问/重新生成/联网查一下/复制回答/独立窗口）+ 回答中「停止生成」 | 一致 |
-| `EvidenceLine` + `EvidenceDetails`：依据：资料 N · 屏幕 · 联网 N · M 项限制；详情含检索方式、资料引文/正文、屏幕来源、联网链接、限制 | `EvidenceSummary` + 证据 Flyout：`EvidenceRetrievalText`、`EvidenceMaterialRows`（引文标题 + 正文）、`EvidenceScreenSource`、`EvidenceWebSourceRows`、`EvidenceNoteRows`（含 ⚠） | 一致；`EvidenceBundle` 在真实回答链路里落库（之前只存模型字段），演示回答也带完整证据 |
-| `LiveComposer`：截图预览条（取消/分析截图）、输入框（⌘L）、截图菜单（区域/窗口）、发送、立即回答（bolt + 快捷键） | 底部 composer：截图预览条（取消/分析截图）、输入框（`LiveComposerPlaceholder`）、相机菜单（框选区域/选择窗口）、发送、立即回答（`ForceAnswerCommand` + `ForceAnswerShortcut`） | 一致；⌘L 聚焦输入的快捷键未移植（Windows 快捷键表无此项），立即回答显示 Ctrl+Alt+Enter |
-| `LiveWindowMenu`：纪要窗口/字幕条/隐藏 | 工具菜单三按钮（纪要窗口跳转、字幕条/隐藏走 `CycleLiveModeCommand`） | 部分一致（Windows 的 LiveMode 是循环切换，三按钮都可用但「隐藏」按钮实际是循环到下一态） |
+| # | Mac 元素（顺序、文案、字号/字重/颜色、间距、圆角、状态） | Windows（`LiveView.axaml`） | 结论 |
+| --- | --- | --- | --- |
+| 1.1 | 顶栏整体：一行、高 52、`padding(.horizontal, Space.s4=16)`、底部 0.5 hairline | `Border x:Name="LiveTopBar"` Height=52、BorderThickness 0,0,0,0.5 Hairline、Margin 16,0,16,0 | 一致 |
+| 1.2 | 红点 7pt：`Ink.seal`，聆听中脉冲；暂停时 `Ink.tertiary` | 两个 `Ellipse` 7×7：`Seal`（`IsLiveOnAir`）/`Tertiary`（`!IsLiveOnAir`） | 一致（脉冲动效按 Motion.Reduce 由 §5 统一，未单独做） |
+| 1.3 | 计时 `.callout` medium monospacedDigit；暂停时 `Ink.secondary`，否则 `Ink.ink` | `RecordingElapsedText`，Mono 14 Medium；颜色随暂停未单独区分（差异见 5.1） | 基本一致 |
+| 1.4 | 状态文案 caption 12 `Ink.secondary`：正在聆听 / 已暂停 / 未在聆听 | `LiveListeningStatus`，caption 12 Secondary | 一致 |
+| 1.5 | 场景标签 `SceneTag`：6pt 场景色圆点 + 场景名（caption/label 12，`Ink.secondary`），`fixedSize` | `controls:SceneTag x:Name="LiveSceneTag" Mode=SelectedMode Name=SceneTitle`（圆点 6、文字 12 Secondary） | 一致 |
+| 1.6 | 标题块：标题 `.body` serif medium `Ink.ink` 单行 middle 截断，maxWidth 220；下方系列名 caption 12 secondary（与标题不同时显示） | `TextBlock MeetingTitle` 16 衬线 Medium（MaxWidth 340，不截断）、`LiveSeriesName` caption 11 secondary | 一致（任务书要求「标题不截断」，故超宽空间比 Mac 的 220 宽） |
+| 1.7 | 分段选择 `InkSegmented`：自动回答 / 只记录；下沉容器 + 选中白块；未连接回答服务时右上 6pt `Ink.caution` 点 | `LiveModeSegmented`（`Border.seg-container` + 两个 `RadioButton.seg`），选中白块+`PaperCardShadow`；黄点未移植 | 不一致：Mac 的 answerEngineReady 黄点未做（Windows 用更多菜单「回答设置」入口提示；记为未解决） |
+| 1.8 | 回答浮窗图标按钮（`rectangle.topthird.inset.filled`，GlassIconButton 28） | `LiveTeleprompterButton`（quiet 28×28，`IconRectangleTopthirdInsetFilled`） | 一致 |
+| 1.9 | 更多菜单图标按钮（`ellipsis`，28；后台运行中显示 5pt 状态点） | `LiveMoreMenuButton`（quiet 28×28，`IconEllipsis`；状态点在回答设置项内以文字表示，未做角点） | 基本一致 |
+| 1.10 | 暂停/继续：`SecondaryButtonStyle` 带边框、文字 暂停/继续（Mac 另有 pause.fill/play.fill 图标） | `LivePauseButton`：默认描边按钮、`LivePauseButtonText`；无图标（图标字体无 pause/play 字形） | 不一致：缺图标（见未解决 1） |
+| 1.11 | 结束：`SecondaryButtonStyle` 描边「结束」；`disabled(isChangingSession)` | `LiveEndButton`：描边「结束」、`StopRecordingCommand`；未绑 isChangingSession | 基本一致 |
+| 1.12 | 未开始时是「开始」按钮（Mac 由 `endSessionButton`/`StartComposing` 分支） | `LiveStartButton` primary「开始记录」`StartRecordingCommand` | 一致 |
+| 1.13 | 模型名不出现在顶栏（在 回答设置 菜单内） | 顶栏已无模型名（`LiveAnswerModelLabel` 不再出现）；模型选择在更多菜单「回答设置」内 | 一致 |
 
-## 动作逐项点检（--demo --self-test=live-ui）
+## 2. 左栏：实时对话（Mac `TranscriptColumn`）
 
-> 结果写入 `%TEMP%\nextthought-selftest\live-ui`（JSON：passed / failures / checks），控制台打印 `live-ui-check: passed`。
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 2.1 | 平铺、无卡片无阴影；与右栏之间由 HSplitView 分隔线 | `LiveTranscriptColumn` 直接放在 `Grid` 左列；`LiveColumnDivider` 1px Hairline 竖线 | 一致 |
+| 2.2 | 标题「实时对话」`overline()` 11 semibold secondary；`padding(.horizontal, Space.s6=24).padding(.top, Space.s4=16)` | 同：overline + Margin 24,16,24,0 | 一致 |
+| 2.3 | 跟随按钮 `GlassIconButtonStyle(size: 24)`：跟随中 `arrow.down.to.line`，暂停时 `pause`；tooltip 自动跟随最新内容/回到现场 | `IconTrayAndArrowDown` quiet 24×24，`ReturnLiveToFollowCommand`，tooltip「回到现场并恢复跟随」；暂停时列表上方出现「已暂停跟随（点按回到现场）· N」按钮 | 基本一致（Mac 是同一按钮二态图标；Windows 拆成图标+横幅） |
+| 2.4 | 转写列表：`spacing: Space.s4=16`，`padding 24/16`，最后一句在下 | `ListBox#TranscriptList` Margin 24,16,24,8，行间 16 | 一致 |
+| 2.5 | 说话人列宽 40：对方 caption 12 medium `Ink.secondary`、我 `Ink.ink`；不显示时间戳、不显示「系统声音/麦克风」 | `SpeakerName`（对方/我/现场）12 Medium，`TextBlock.speaker.me` 用 `InkBrush`；无时间戳 | 一致 |
+| 2.6 | 问题标记 `QuestionMark`：场景色 13% 胶囊 + 场景色 caption2 10「问题」，位于说话人下方 | `Border` CornerRadius 胶囊 + `LiveSceneTintSoftBrush`，文字 10 Medium `LiveSceneTintBrush`，位于说话人下方 | 一致 |
+| 2.7 | 正文 `.body` 15 `Ink.ink` lineSpacing 6；译文「译文：…」caption 12 `Ink.ai` lineSpacing 4 | `SelectableTextBlock` 15 LineHeight 24；译文 12 `Ai` | 一致 |
+| 2.8 | 行内动作悬停出现：bolt 图标（回答这句，24）、star 图标（标记重点，28，已标记显示 star.fill） | 悬停显示两个 24×24 quiet 按钮：`IconBolt` 回答这句、`IconCircle`/`IconStarFill` 高亮 | 一致 |
+| 2.9 | 回声行：说话人 + caption 12 tertiary 删除线单行 +「是我说的」tapText caption 12 secondary；tooltip 说明回声 | `IsEcho` 行：`SelectableTextBlock` 12 `Tertiary` + `TextDecorations="Strikethrough"` +「是我说的」按钮（`MarkNotEcho_Click` → `AppState.MarkNotEcho`，回声计数 -1）；tooltip 一致 | 一致 |
+| 2.10 | 正在说的话 `PartialLines`：对方/我（或现场），`.body` 15 `Ink.secondary` 在列表最后；同传开时下方译文 | 底部 footer 两行 `SystemPartial`/`MicrophonePartial`：15 Secondary + 译文 12 `Ai` | 一致 |
+| 2.11 | 候选条 `CandidateStrip`：顶部 0.5 hairline；6pt 场景色点 + 可能的问题 caption 11 secondary + 问题全文 caption 12 ink 单行 + 「回答这句」Ghost 按钮 | 同结构：`HasLiveCandidate` 时显示，点 6、可能的问题 11、`LiveCandidateText` 12 Ink、回答这句 pill 26 | 一致 |
+| 2.12 | 状态行 `TranscriptStatus`：高 36、`padding horizontal 24`、caption 12 secondary；音源（Zoom · 后端工程师二面）、识别引擎、· 麦克风、· N 句回声已忽略、遗漏段（caution）、麦克风未开（caution）、最右 lock 图标 tooltip 隐私说明 | `AudioSourceText` + `LiveAudioEngineLabel` + `LiveMicrophoneSuffix`（`LiveUsesMicrophone`）+ `EchoDroppedText` + `DroppedSegmentsText`（Caution）+ `LiveMicOffText`（Caution）+ 右 `IconLock` tooltip 隐私说明；高 36 | 一致 |
+| 2.13 | 旧 Windows 说明行「系统声音与麦克风分别处理；只在本机保存文字。」 | 已删除 | 一致（Mac 无此句） |
 
-1. 载入 Live 演示阶段 → 会中页：计时在走、状态「正在聆听」、场景「面试」、标题与系列名显示。
-2. 自动回答 / 只记录 分段切换：`Settings.AutomaticAnswers` 跟随，右栏默认页签跟随（自动→问答，只记录→我的笔记）。
-3. 回答设置菜单：模型选择写回 `Settings.Model`；回答长度 要点/详细 改变 `CurrentAnswerStyle`（下一次回答的提示词 style）；联网开关写回设置；快速模式仅 Codex 下显示。
-4. 工具菜单：提词岛一直展开、双屏演讲、屏幕感知、回答语言、英文对照逐项切换。
-5. 问题标记：演示转写里带问句的行出现「问题」胶囊（场景色）；我方发言永不标记。
-6. 候选条：`DetectedQuestion` 非空时出现「可能的问题 + 回答这句」。
-7. 答案栏：建议回答标题、上一条/下一条、答案正文；更多菜单逐项可用（精修走 `RefineAsync`）。
-8. 联网：写入一条演示 WebResult 后出现联网状态行与编号来源 [1]，点击走系统浏览器。
-9. 证据：演示回答显示「依据：资料 2 · 屏幕 · 联网 1 · 1 项限制」；详情列出资料引文、屏幕来源、联网来源、限制。
-10. 输入框：空态不可发送；输入文字可发送；截图预览出现后占位文案变为「对截图的补充要求（可留空）」，取消后恢复。
+## 3. 右栏：实时纪要 / 问答 / 我的笔记（Mac `RightColumn`）
 
-## 未完成/已知差异
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 3.1 | 分段标签顺序固定：实时纪要、问答、我的笔记（InkSegmented，选中白块）；`padding horizontal 24 top 16` | `LiveNotesTab` / `AnswerTab` / `NotesTab`（`Border.seg-container`，顺序一致），Margin 24,16,24,0 | 一致 |
+| 3.2 | 非问答页签且正在回答时，右上「回答生成中」sparkles caption `Ink.ai` 脉冲 | 同：`ProgressBar`（3pt 不确定）+「回答生成中」caption `Ai`，`Answering` 时显示 | 基本一致（脉冲动画未做） |
+| 3.3 | 默认页签：自动回答→问答；否则实时纪要开着→实时纪要；否则我的笔记（onAppear） | `ShowRightTab`：`AnswerModeIsAuto` → 问答；`LiveNotesEnabled` → 实时纪要；否则我的笔记；模式切换时重选 | 一致 |
+| 3.4 | 实时纪要列：状态行（实时纪要没有开 / 正在更新… / 有了内容就开始整理 / 更新时间·约每 45 秒一次）+ 右「现在更新/开启实时纪要」Ghost；空态两段 Mac 文案 | `LiveNotesPanel`：`LiveNotesStatusText`（off/无回答服务/有了内容就开始整理）+ 右 `LiveNotesButtonText`（现在更新/开启实时纪要，`EnableLiveNotes_Click`）+ `LiveNotesHintText` 空态文案逐字 | 一致（生成引擎为 J1，见未解决 3） |
+| 3.5 | 建议回答头部：sparkle 图标 `tint` 11 +「建议回答」overline；回答中改「正在回答」；右侧上一条 22、「2/2」caption mono、下一条 22 | 同：`IconSparkle` + `AnswerColumnTitle`（正在回答/建议回答）、`PreviousAnswerCommand`、`HistoryPositionText`、`NextAnswerCommand`（`AnswerHistoryHasMultiple` 时显示） | 一致 |
+| 3.6 | 联网状态行 `WebStatusLine`：globe + 正在联网核查…/联网版 · N 个来源 + 看原回答/看联网版/重试 | `HasWebResults` 时显示 globe + `LiveWebStatusLine` + 重试；原回答↔联网版两阶段切换 Windows 无（E4 未做，见未解决 4） | 基本一致 |
+| 3.7 | 问题原文：caption 12 secondary 最多 2 行，`id(question)` | `DisplayedQuestionText` caption 12、MaxLines 2 + 双语问题行 | 一致 |
+| 3.8 | 回答卡片：`Ink.surface` 白底、`radiusLarge 22`、hairline 0.5、contactShadow + ambientShadow，占满剩余高度 | `AnswerCard`：Surface、RadiusLarge、Hairline 0.5、`PaperCardShadow`（contact 0 1 2 + ambient 0 8 14，Mac 为 20/10 见未解决 5），Grid 第 3 行 `*` 占满 | 一致 |
+| 3.9 | 回答正文 `MarkdownText` size 18、lineSpacing 8；加粗/列表/行内代码渲染；空态「对方提问时…」 | `views:MarkdownText BaseFontSize=18`（MarkdownReader 渲染 bold/list/inline code）；空态 `AnswerEmptyHint` | 一致 |
+| 3.10 | 联网来源 `WebSources`：`[n] 标题` caption 12 secondary 可点 | `LiveWebSources` ItemsControl，`[n] 标题` 11 可点（系统浏览器打开） | 一致 |
+| 3.11 | 卡片底：0.5 hairline；更简短/举例/英文版 `LiveChipStyle` 胶囊（hairline 0.5、minHeight 28、padding 12、hover wash）+「⋯」菜单；右侧回答中「停止生成」 | `AnswerCard` 底：hairline + 三个 `Button.pill`（更简短/举例/英文版）+ ⋯ 菜单（展开/STAR/中文版/澄清问题/我可以反问/重新生成/联网查一下/复制回答/独立窗口）+ 停止生成 | 一致 |
+| 3.12 | 依据行 `EvidenceLine`：「依据：资料 N · 屏幕 · 联网 N · M 项限制」，有局限时 caution + 三角；点开 `EvidenceDetails` 380 宽 popover | `EvidenceSummary` + `EvidenceHasLimits` 三角 + Flyout 详情（检索方式/资料引文正文/屏幕来源/联网来源/限制），宽 380 | 一致 |
+| 3.13 | 「历史回答」「截图」不在会中页以下拉框出现（Mac 放在头部上一条/下一条与底部输入条）；旧 Windows 的两个 Expander 已删除 | 已删除；历史在头部导航，截图在底部输入条（相机菜单 + 截图卡） | 一致 |
+| 3.14 | 我的笔记标签：`MeetingUserNotes`（会中个人笔记 + 高亮） | `NotesPanel`：会中笔记 TextBox + 保存 + 高亮列表（沿用 E16 编辑器的既有实现） | 基本一致（`MeetingUserNotes` 的 Mac 逐元素对照归 E16） |
 
-- 跟随/暂停跟随（Mac ScrollFollowState 的「新增 N 句 · 回到现场」）未移植；转写仍自动滚到底。
-- `TranscriptStatus` 的回声数、遗漏音频段、麦克风未开/未授权提示：Windows 音频层未跟踪这些计数。
-- 联网只有二态开关（设置层无「不联网/自动判断/每次都查」三选），也没有「原回答 ↔ 联网版」切换。
-- 同声传译没有会中开关（Windows 逐字同传由设置自动启用）；LiveWindowMenu 的「隐藏」按钮目前是循环切换而非直达。
-- 历史位置文本（2/2）与回答历史面板留到 E5；同声传译 partial 译文行留待后补。
-- 手机状态点表示「手机伴侣开着」，Mac 表示「已连接」；Windows 无 answerEngineReady 黄点。
-- 快捷键：立即回答的提示文本显示 `Ctrl+Alt+Enter`。
+## 4. 底部输入条（Mac `LiveComposer`）
 
-## 截图与运行证据
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 4.1 | 截图预览条：缩略图 48 +「截图已就绪，可以补充要求后发送」+ 取消/分析截图 | `assistant:ScreenshotCard`（共享截图卡模块） | 一致 |
+| 4.2 | 输入卡片：`Ink.surface`、`radiusMedium 14`、contact+ambient 阴影、minHeight 40、左 padding 16 / 右 8；输入框 `.body` 15 + 占位文案（自动回答「输入问题，回车发送」/只记录「需要帮忙？…」/截图「对截图的补充要求（可留空）」） | `LiveInputRow`：同底色/圆角/阴影/Padding，`LiveComposer` TextBox + `LiveComposerPlaceholder`；回车/Shift+回车、Ctrl+L 聚焦 | 一致 |
+| 4.3 | 快捷键提示 `ShortcutHint("⌘L")` 小键帽 | 输入卡内键帽 `Ctrl+L` 11 secondary | 一致（平台快捷键差异，Windows 用 Ctrl+L） |
+| 4.4 | 截图菜单：`camera.viewfinder` 图标按钮 → 框选区域 / 选择窗口 | 相机图标 `IconCameraViewfinder` + Flyout 框选区域/选择窗口 | 一致 |
+| 4.5 | 发送：`arrow.up.circle.fill` 图标按钮；空内容且无截图时禁用 | `IconArrowUpCircleFill`，`CanSubmitLiveComposer` 控制 IsEnabled | 一致 |
+| 4.6 | 立即回答（仅自动回答模式显示）：primary 黑底白字、bolt.fill + 「立即回答」+ 快捷键提示，高 40 | `ForceAnswerCommand` primary：bolt + 立即回答 + `ForceAnswerShortcut`，`AnswerModeIsAuto` 时显示，高 `HitRow=36`（Mac 40，见未解决 6） | 一致（高度差 4） |
+| 4.7 | `⌘L` 聚焦输入框（隐藏按键按钮） | LiveView 根 KeyDown：Ctrl+L 聚焦并全选 `LiveComposer` | 一致 |
 
-- `windows-light.png` / `windows-dark.png` / `windows-en-light.png` / `windows-en-dark.png`：`--demo --screenshots` 于 2026-11-21 06:31 生成（本目录；同批拷贝到 `validation/screens/current/`）。
-- `--demo --self-test=live-ui`：**live-ui-check: passed**，report 里 40 项检查全 ok（顶栏计时/聆听状态、场景与系列名、模式切换、回答设置、问题标记、候选条、联网状态行与编号来源、证据行与详情、回答历史导航、输入框可提交性、截图预览、工具菜单开关）。
-- `--demo --self-test=startup`：**startup-check: passed**（2026-11-21 06:35:44，report passed=true）。
-- 行内「回答这句 / 高亮」按钮改为悬停才显示（与 Mac TranscriptLine 的 hover 行为一致）；候选条「回答这句」走 `AnswerLiveCandidate`（先把候选提为当前问题再立即回答）。
+## 5. 20 种状态（mac-screens/live-states/）
 
-## E6 回答语言 / 双语回答 / QuestionTurn
+Windows 截图批次（`validation/screens/current/live-*.png`）只直接覆盖 normal 浅/深与英文。其余状态由自检与结构断言覆盖：
 
-### 元素对照
+| 状态 | Mac 图 | Windows 验证方式 | 结论 |
+| --- | --- | --- | --- |
+| normal 浅/深 | `normal-light/dark.png` | `live-light/dark.png` 并排对照（上表逐元素） | 一致 |
+| busy / streaming | `busy-*`、`streaming-*` | 回答中：头部「正在回答」、停止生成按钮、`Answering` 进度；自检切 `Answering` 状态断言 | 一致 |
+| focus / selected-focus | `focus-*`、`selected-focus-*` | 焦点环由 `Button:focus-visible` 设计系统样式提供；PauseResume 的键盘焦点环由自检 `live-ui` 断言（focused 状态未单独截图，见未解决 7） | 基本一致 |
+| selection / reading-history / streaming-reading-history | `selection-*`、`reading-history-*` | `LiveFollowPaused` 横幅「已暂停跟随（点按回到现场）· N」、`ReturnLiveToFollowCommand`；滚动跟随由 `AppState.E4.ScrollFollowState` 实现 | 一致（文本选择固定未接，见未解决 8） |
+| stale / stale-manual-edit | `stale-*` | 归档/纪要过期属于会中回答证据状态，`EvidenceLine` 显示「未完成的回答片段，请核实后使用」逻辑保留 | 一致 |
+| save-recovery / save-warning / success | `save-*`、`success-*` | 归档保存状态行（Mac `archiveSaveStatus`）Windows 无对应持久化状态，顶栏不显示（见未解决 9） | 不一致 |
+| unavailable | `unavailable-*` | 回答服务未连接：更多菜单「回答设置」黄点/提示；`AnswerEngineReady` 控制背景点 | 基本一致 |
+| empty | `empty-*` | 空转写：转写区提示「转写会显示在这里。也可以导入录音 WAV 验证。」；回答卡片空态 | 一致 |
+| large-text | `large-text-*` | 全局文字缩放（J7）未移植，大字号截图为后续任务 | 不一致（J7 范围） |
+| overlay / overlay-popover | `overlay-*` | 证据详情 Flyout 以浮层呈现（自检 `HasDisplayedEvidence` 与弹层数据断言） | 一致 |
+| bilingual-answer | `component-samples` 相关 | `bilingual-answer.png`（E6 证据）与 `BilingualAnswerText` | 一致 |
+| en-light/en-dark | `*-en-*` | 英文批次 `live-en-light/dark.png`，`--screenshots` 英文扫描（G9/G10） | 一致 |
 
-| Mac | Windows | 结论 |
-| --- | --- | --- |
-| `AnswerLanguage.spoken(in:)`：英文问题夹中文术语仍是英文，中文问题带 "XL-MIMO" 仍是中文；`fields(choice:gloss:question:)` 生成 answer/gloss 语言 | `Core/AnswerLanguage.cs` 逐行移植；`AppState.Live.BuildAnswerPrompt` 已通过 `Settings.AnswerLanguage`/`Settings.AnswerGloss` 调用 `AnswerLanguage.Fields`，把 answer_language/gloss_language 放进 JSON | 一致（E4 已有菜单入口，本轮补测试与显示） |
-| 顶栏/工具菜单的「回答语言」（跟随问题/中文/English）+「英文回答附中文对照」 | LiveView 工具菜单 radio 按钮 + 复选框，`AnswerLanguage_Click`/`AnswerGloss_Click` 写设置并保存 | 一致 |
-| 双语回答格式：`> 问：`（被问的是什么，gloss 语言）+ 每句回答一行、紧随 `> 译：` | `AppState.LiveUi.IsBilingualAnswer` 检测 `BilingualAnswer`；答案区在有对照时改用 `Views/BilingualAnswerText`：顶部小字显示「问」的 gloss，之后每句正文下面用小一号次要色显示该句译文；无对照时仍用 MarkdownText | 一致（Mac 页面用 Markdown 原文引行显示；Windows 用逐句对照分组版式，和任务要求的逐句并排/分组一致） |
-| 提词岛双语：`CueRow.withGloss` 在每句下方小字显示译文；有对照时少显示几行 | CueIslandWindow 台词下方新增 `IslandHeadlineGloss` / `IslandDetailGloss` 小字行（`HasIsland*Gloss` 控制显隐）；`CueScript` 已把 gloss 挂到对应 CueLine | 一致；「有对照时少显示几行」的窗口裁剪未做 |
-| `QuestionTurn`：对方一轮发言（多句/陈述式疑问）合并为整轮回答；`worthAsking`/`isDue`/`asked`/`spoke` 结束轮次；`answersWholeTurns` 只在汇报/答辩、线上、演讲模式或我说够 300 词时开启；答案请求时 `questionTurn.asked(with: partialTranscript)` | 新增 `AppState.QuestionTurn.cs`：`questionTurn` 字段 + `AnswersWholeTurns`、`NoteQuestionTurn`（remote→Heard，我→Spoke+词数）、`TryAnswerQuestionTurn`（候选定时器每 tick 检查 IsDue，静音 ≥2s 或我开始回应，Requests<4、词数≤250）、`QuestionTurnAnswerText`（自动回答改用整轮文本）、`MarkQuestionTurnAsked`（每次 Ask 标记已覆盖词数）、开始/结束会议 Reset；`AppState.Live` 的 ReceiveTranscript/OnCandidateTimer/AnswerAsync/StartRecording/StopRecording 对应接线 | 一致（Mac 的 answerTurn 先记录 question 事件/Diagnostics 的完整链路未逐字复制，保留现有 Windows 候选与诊断） |
+## 6. E7：屏幕与讲稿面板（InsightsPanel.swift，嵌入左栏）
 
-### 点检记录（--demo --self-test=live-ui）
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 6.1 | `InsightsPanel`：`.card()`，VStack spacing 10；头部 `屏幕与讲稿` label 13 semibold + `立即识别` chip（读屏中禁用）+ mini ProgressView + 齿轮（跳设置） | `InsightsPanel.axaml`：card、`grid` 头部：icon + 屏幕与讲稿 13 semibold、立即识别 pill、读屏 ProgressBar 36×3、`IconGearshape` → 设置 | 一致 |
+| 6.2 | `ScreenWatchOffHint`：长说明 + 「打开屏幕感知」prominent chip | 同文案逐字 + `打开屏幕感知` pill（`EnableScreenWatch_Click`） | 一致 |
+| 6.3 | 屏幕关闭提示、错误 note（橙色） | `HasScreenError` → `ScreenErrorText`（Caution） | 一致 |
+| 6.4 | `SlideSection`：accent 6% 圆角 10 底；页位置 `第 N / M 页` mono/semibold + 文档名 11 secondary + 页间箭头 + 重新生成/改用 AI 要点 | 同：`Sunken` 底 + `D4CornerRadius_10`、`SlidePositionText`（`第 %lld / %lld 页`）、`SlideDocumentName`、上一页/下一页、两个生成按钮 | 一致（底色用 Sunken 4%，Mac 6%，见未解决 10） |
+| 6.5 | 讲稿要点：每条 done 绿勾 / next 箭头（黑，14 semibold）/ pending 圆圈（secondary），done 文字 secondary | `SlidePointRows`：`IconCheckmark` Ready 绿、`IconArrowRight` Ink、`IconCircle` Secondary；`point.next` 14 semibold、`point.done` secondary | 一致 |
+| 6.6 | 过渡：「下一页：…」/「过渡：…」caption 12 secondary | `SlideTransitionText` | 一致 |
+| 6.7 | 「听众可能会问（点一下提前准备回答）」+ 每问 questionmark.bubble + 点击即问 | 同文案 11 Medium + `IconQuestionmarkBubble` 按钮（`AskSlideQuestion_Click` → `AskSlideQuestionCommand`） | 一致 |
+| 6.8 | 生成中：「正在根据这一页和你的资料写讲稿提示…」 | `!HasSlidePoints` 时显示同文案 | 一致 |
+| 6.9 | `ScreenSection`：display 图标 +「屏幕：<kind title>」12 semibold +「已识别 · 是否用于回答见“本次依据”」+ 相对时间「N 秒前」mono；识别文字 3↔30 行 + 展开识别的文字/收起 | 同：`ScreenTitleText`（题目/代码/幻灯片/文档/聊天/视频通话/其他）、`已识别 · …`、`ScreenAgeText`（5 秒定时器刷新）、`ScreenText` MaxLines 3/30、展开/收起 | 一致 |
+| 6.10 | `AnswerProgressStrip`：`MetricPill` 已讲 x/y + 「下一句：…」accent 12 medium | 同：hairline 药丸「已讲」+ `AnswerProgressCounterText`，右侧「下一句：」+ `NextAnswerPointText` | 一致 |
+| 6.11 | 嵌入位置：`LiveSessionView` 左栏，`screenWatch && followsSlides` 时高 240 | `LiveInsightsPanel` 左栏第 1 行 Height=240，`LiveShowsInsightsPanel` = `InsightScreenWatch && SelectedMode==Academic`（Mac `followsSlides` 只有答辩/汇报=Academic） | 一致 |
+| 6.12 | 面板随 `SlideStatus`/`CurrentScreen`/`AnswerText` 刷新 | `InsightsPanel.axaml.cs` 订阅 `SlideStatus`、`ScreenWatchStatus`、`ScreenContextText`、`ScreenWatchKind`、`AnswerText`、`Answering`、`Recording`、`CurrentSession` → `RefreshInsights()`；5 秒定时器刷新相对时间 | 一致 |
 
-1. `回答语言=English` + 对照 → `AnswerLanguage.Fields` 返回（English，简体中文）；`=中文` 关闭对照；`跟随问题` 由问题语言决定。
-2. 写入一条双语回答（英文句子 + `> 译：` 行）→ `IsBilingualAnswer=true`；`BilingualAnswer.Spoken` 去掉对照行；「问」gloss 可解析；提词岛小字译文取到第一条/第二条 CueLine 的 gloss。
-3. 双语页面截图：`bilingual-answer.png`（自检把主窗口当前答案区截到 `live-shots/`，可拷入本目录）。
-4. QuestionTurn：Core 单测覆盖 heard/spoke/gap/patience/worthAsking/asked/reset/limit/词数；AppState 接线由 AnswerLanguageParityTests 结构锁。
+## 7. 自检与动作点检（`--demo --self-test=live-ui`）
 
-### 未解决/已知差异
+1. 载入 Live 演示阶段：`Recording=true`、计时在走、状态「正在聆听」、场景「面试」、标题「字节跳动 · 后端二面」+ 系列名「字节后端二面」。
+2. 顶栏：自动回答/只记录分段切换写回 `Settings.AutomaticAnswers`，右栏默认页签跟随（自动→问答，只记录→我的笔记/实时纪要）。
+3. 左栏：说话人列只显示 对方 / 我（无时间戳）；演示转写的问题句出现「问题」胶囊；回声句为删除线 +「是我说的」，点击后 `IsEcho=false`、回声计数 -1、`currentLines` 同步去掉 `suspectedEcho`。
+4. 候选条：`LiveCandidateText` 非空时显示 可能的问题 + 回答这句，点击先提为当前问题再立即回答。
+5. 右栏三标签：实时纪要（Mac 状态文案 + 开启实时纪要/现在更新 + 空态文案，自检截 `live-notes-light.png`）、问答（建议回答头部 + 2/2 导航 + 问题原文 + 白色大圆角卡片 + 更简短/举例/英文版/⋯ + 依据行）、我的笔记（会中笔记编辑器）。
+6. 更多菜单（回答设置）：模型、快速模式、联网三态（不联网/自动判断/每次都查）、回答长度、说明与跳设置；提词（提词岛一直展开、双屏演讲）；回答（回答语言三选、英文对照）；工具（实时纪要、屏幕感知、手机伴侣、同声传译、回答浮窗、屏幕与讲稿、说话人、补译、会中窗口、设置…）。
+7. 输入条：空内容不可发送；输入文字可发送；截图预览出现后占位文案变为「对截图的补充要求（可留空）」，取消后恢复；立即回答显示 `Ctrl+Alt+Enter`。
+8. 证据：演示回答显示「依据：资料 2 · 屏幕 · 联网 1 · 1 项限制」；详情列出资料引文、屏幕来源、联网来源、限制。
+9. E7：`LiveShowsInsightsPanel` 与 Mac 规则一致（screenWatch && Academic）；面板头部、立即识别、齿轮、幻灯片区、屏幕区、回答进度全部在页内（非独立窗口）。
 
-- QuestionTurn 的整轮回答只在「汇报 / 答辩 + 线上 + 演讲模式或本场我说满 300 词」时启用（与 Mac answersWholeTurns 相同）；其他场景仍按候选句回答。
-- Mac 在 answerTurn 里额外记录 question 事件与 Diagnostics 明细，Windows 保留现有候选事件，「整轮」标记未写入归档 question 事件。
-- 提词岛有译文时少显示行数的裁剪未做；岛上「被问到的 gloss（BilingualAnswer.question）」当问题行已有双语回答时未单独展示。
+## 8. 未解决差异（逐条，不能写成「逐条一致」）
 
-## E4 补全（本轮，runtime-gaps）
+1. 暂停/继续按钮只有文字，缺 Mac 的 pause.fill / play.fill 图标：随包 Fluent 图标集里没有这两个字形（D7 图标对照表未含），需要补图标资源后加。
+2. 顶栏「自动回答/只记录」的 answerEngineReady 黄点未做（Windows 用更多菜单文字提示代替）。
+3. 实时纪要的生成引擎是 J1（Core `LiveNotes` 移植中）；本轮做到 Mac 的状态行/空态/按钮与页签顺序，真实「正在更新…/更新于…」内容未接入。
+4. 「原回答 ↔ 联网版」两阶段切换未做（Windows 单次回答架构，E4 已记在案）。
+5. 回答卡片阴影用共享 `PaperCardShadow`（contact 0 1 2 + ambient 0 8 14），Mac 是 contact 0 1 1 + ambient 0 10 20；§5.7 的 float/contact/ambient 资源落地后替换。
+6. 立即回答按钮高度 36（`HitRow`）而 Mac 40（`Space.controlLarge`）；主题的命中 token 测试要求页面主按钮用 36，取 36 记录。
+7. focus / selected-focus 状态没有单独截图：焦点环由设计系统 `Button:focus-visible` 统一提供，自检只断言存在；需要人工点按留证。
+8. 滚动跟随的「文本选择固定」未接（只按滚动位置判定）。
+9. 归档保存状态行（Mac `archiveSaveStatus`：保存中/保存受阻/未入队计数/确认缺失/重试）Windows 没有对应持久化状态，顶栏不显示。
+10. 幻灯片区底色用 `Sunken`（ink 4%），Mac `Brand.accent.opacity(0.06)` 为 6%。
+11. 回答设置菜单里模型仍用设计系统样式的 `ComboBox`（Mac 是 inline picker）；等 §6.1 `MenuPicker` 组件落地后替换。
+12. 我的笔记标签沿用 E16 的编辑器，`MeetingUserNotes` 的 Mac 逐元素对照不在本轮。
+13. 深色模式下回答正文偏暗（几乎与卡片同色）：`Views/MarkdownText.cs` 的 `ResourceLookup.ByKey` 用 `Application.Current.TryFindResource` 解析 `InkBrush`，取到浅色主题值，没随 `ActualThemeVariant` 切换（实测 `dark.png` 正文像素 (35,35,34)、卡片底 (26,26,24)、左栏普通文字 (247,247,247)）。这是 §6.1 `MarkdownText` 组件缺陷，已报 Lead/§6.1 owner 修；本页用 `views:MarkdownText BaseFontSize=18`，组件修好后即正确。
+14. 本轮浅/深截图在独立 worktree（HEAD `7b7f8202` + 本任务文件）构建，因为共享工作区当时被提词岛任务的 WIP 文件卡住；截图里的标题栏/底部状态条是当时 HEAD 的 shell（§5.2/§5.4 由其他任务继续重做），不属于会中页元素。会中页本身来自本任务代码。
+15. 演示数据与 Mac 截图的数据差异（非布局差异）：Mac 截图底部有一句未定稿「如果删除缓存失败了怎么办」（Windows demo 的 partial 为空、显示在候选条），Mac 状态行音源是「Zoom · 后端工程师二面」而 demo 没有会议软件源（显示「所选系统输出设备混音 · 麦克风 · 在设置中调整」），回声计数 demo 为 0（Mac 1）。partial 行/候选条渲染已实现（自检断言 `SystemPartial`/`MicrophonePartial` 绑定存在）。
 
-| 缺口 | 实现 | 状态 |
-| --- | --- | --- |
-| 三态联网：不联网 / 自动判断 / 每次都查（Mac `webSearchMode`） | `Core/WebSearchNeed.cs` 的 `WebSearchMode` 上新增 `Parse/Value/ShouldSearch`；`AppSettings.WebSearchMode`（JSON `webSearchMode`）+ `SettingsViewModel` 映射；LiveView 回答设置菜单里的二态 CheckBox 换成三个 RadioButton（`SetLiveWebSearchModeCommand`，参数 off/auto/always，选中态 `LiveWebSearchIsOff/IsAuto/IsAlways`）；自动联网判断改为 `ShouldSearchWeb(question)`（模式优先，仍要求 provider 可用） | 已实现；单元测试覆盖 off/auto/always 与解析 |
-| 「原回答 ↔ 联网版」切换 | 未实现：Windows 是单次回答（联网结果在生成前注入 prompt），没有 Mac 的「先给快速回答、后台再生成联网版并替换」的两阶段结果；需要较大改造 `AppState.Live.AnswerAsync` | 未做 |
-| 滚动跟随 /「新增 N 句 · 回到现场」 | `AppState.E4.cs` 持有 `Core.ScrollFollowState`；`LiveView` 订阅转写列表 ScrollViewer 的 `ScrollChanged`（距底 >24px→暂停跟随），转写新增时若暂停则累计并显示 `LiveFollowBannerText`（「已暂停跟随（点按回到现场）」+ 未读数），按钮 `ReturnLiveToFollowCommand` 恢复跟随并滚到底；跟随中新增仍自动滚到底 | 已实现（代码级） |
-| 状态行回声数 / 遗漏音频段 / 麦克风未开 | `EchoDroppedCount`（回声行判定时 +1，会议开始清零）→「· N 句回声已忽略」；`DroppedAudioSegments` 保留属性与「· 遗漏 N 段」显示（Windows 音频层暂未产生该计数，保持 0）；`LiveMicOffText` 在未开麦克风且录音中显示「· 麦克风未开启，不会记下你说的话」；`Recording` 变化时刷新 | 已实现（遗漏段计数无来源） |
-| 手机状态点语义 / answerEngineReady 黄点 | 保留手机图标上的「伴侣运行中」点；回答设置按钮新增背景点：`LiveBackgroundDotVisible`＝伴侣/读屏/同传任一开启或回答服务未就绪，点色 Caution（Mac：answerEngineReady 为 ink，否则 caution），tooltip `LiveBackgroundDotHelp`（未配置时显示「还没有连接回答服务，听到问题也不会自动回答」） | 已实现（近似：answerEngineReady = UseCodex 或已存 API Key） |
-| Ctrl+L 聚焦输入框（Mac ⌘L） | `LiveView` 根 KeyDown：Ctrl+L 聚焦 `LiveComposer` 并全选 | 已实现 |
+## 9. 截图与运行证据
 
-测试：`WebSearchModesTests` 5/5（off/auto/always 决策、Parse/Value、Title）；`LivePageParityTests` 9/9 通过（含更新后的三态菜单断言；更新该旧断言是因为顶部联网控件已从二态 CheckBox 改为三态 RadioButton）。
-
-未解决：原回答↔联网版两阶段切换未做；遗漏音频段无 Windows 计数来源；滚动跟随的「文本选择固定」未接（只按滚动位置判定）；真实联网/滚动/快捷键需实机点按验证。
-
-## Mac 3.4.0 参考图与逐图核对（task-48）
-
-Mac 3.4.0 参考：[live-light](../../mac-screens/live/live-light.png) / [live-dark](../../mac-screens/live/live-dark.png)；
-右栏实时纪要参考：[live-notes-light](../../mac-screens/live/live-notes-light.png) / [live-notes-dark](../../mac-screens/live/live-notes-dark.png)。
-Windows 最新批次：`validation/screens/current/live-light.png` / `live-dark.png`。
-
-- 逐图核对（浅/深）：录音红点+计时+正在聆听、场景徽章+标题+系列名、自动回答/只记录分段、暂停/结束、左栏实时对话（对方/我、问题徽章、可回答问题行）、右侧建议回答（问句、2/2 历史、更简短/举例/英文版/…）、依据行、底部输入框（⌘L、截图、发送、立即回答）一致。
-- 差异（未改，记录）：Mac 3.4 右栏三标签「实时纪要 / 问答 / 我的笔记」，Windows 只有「我的笔记 / 问答」两标签，缺实时纪要标签与 lanes（E11 的两条未定稿 lane 已做，标签页未落地）；Mac 顶栏是 自动回答/只记录 + 图标 + 暂停 + 结束，Windows 多出 洞察/说话人/补译/开启同声传译 等入口（Windows 功能更外露）；Mac 1600×1171 的高度让答案全文同屏，Windows 820 高下答案区出现内部滚动条（同窗口逻辑尺寸的滚动差异，不算内容差异）。
-- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+- `light.png` / `dark.png`：`dotnet run --project src/NextThought.Desktop -c Release --no-build -- --demo --screenshots=<临时目录>`，1120×820、100% 缩放、演示数据；生成后拷贝到本目录（同 `en-light.png` / `en-dark.png` 英文批次）；`validation/screens/current/` 里另有同一批页面图（不入库）。
+- `live-notes-light.png` / `live-notes-dark.png`：同一 demo 会话下把右栏切到实时纪要，由 `--self-test=live-ui` 在 `live-shots/` 截取后拷入。
+- `--demo --self-test=live-ui`：**live-ui-check: passed**（2026-11-21 13:02，iso `NEXTTHOUGHT_DATA_DIR` 临时目录）；除原有 E4 项外新增 §6.5 断言：说话人列只有 对方/我、无时间戳；回声「是我说的」恢复且计数 -1；右栏三标签顺序与可选；实时纪要 Mac 状态/空态/按钮；`LiveShowsInsightsPanel` 规则；屏幕与讲稿面板嵌入左栏并截图 `insights-embedded-light.png`（E7 证据，拷入 `validation/screens/insights/`）；最后恢复 demo 状态。
+- 测试：`Windows/tests/NextThought.Tests` 的 `LiveSessionStage4Tests`（§6.5 结构 7+ 项）、`LivePageParityTests`（E4 9 项）、`InsightsPanelParityTests`（E7 8 项）与 `ThemeResourceTests`/`SceneComponentTests`/`AnswerLanguageParityTests`/`SelfTestStructureTests` 的相应断言；见提交说明。

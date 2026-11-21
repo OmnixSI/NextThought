@@ -3,10 +3,10 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>
-/// E4: the live page follows LiveSessionView.swift — top bar (timer/status, scene, mode switch,
-/// phone/screen status, answer settings, tools), transcript (question marker, candidate strip,
-/// status line), answers column (header, web status/sources, refinement row, evidence
-/// line/details), the notes tab and the bottom composer.
+/// E4: the live page follows LiveSessionView.swift — the single-row top bar (timer/status, scene,
+/// title, mode segmented, tools, pause, end), the flat transcript column (question marker, echo
+/// row, candidate strip, status line), the three-tab right column (实时纪要 / 问答 / 我的笔记) with
+/// the raised answer card, and the bottom composer.
 /// </summary>
 public sealed class LivePageParityTests
 {
@@ -46,19 +46,14 @@ public sealed class LivePageParityTests
     }
 
     [Fact]
-    public void TopBarHasTheModeSwitchPhoneScreenAndAnswerSettings()
+    public void TopBarHasTheModeSwitchToolsAndAnswerSettings()
     {
         var live = Live();
-        // 自动回答 / 只记录
+        // 自动回答 / 只记录 — the Mac InkSegmented mode switch.
         Assert.Contains("{loc:Tr 自动回答}", live);
         Assert.Contains("{loc:Tr 只记录}", live);
         Assert.Contains("AnswerModeIsAuto", live);
-        // phone and screen status icons with their dots (Mac PhoneStatusIcon/ScreenStatusIcon)
-        Assert.Contains("IconIphone", live);
-        Assert.Contains("LiveCompanionOn", live);
-        Assert.Contains("IconDisplay", live);
-        Assert.Contains("LiveScreenWatchOn", live);
-        // AnswerSettingsMenu: model / fast / web / answer length / applies next answer
+        // AnswerSettingsMenu lives in the more menu: model / fast / web / answer length.
         Assert.Contains("LiveModelChoices", live);
         Assert.Contains("LiveModel_SelectionChanged", live);
         Assert.Contains("LiveFastMode", live);
@@ -78,6 +73,10 @@ public sealed class LivePageParityTests
         Assert.Contains("{loc:Tr 回答浮窗}", live);
         Assert.Contains("{loc:Tr 会中窗口}", live);
         Assert.Contains("{loc:Tr 设置…}", live);
+        // The two status icons of the old bar are gone from the Mac top bar; the tools menu
+        // is where the live surfaces are opened from now.
+        Assert.DoesNotContain("IconIphone", live);
+        Assert.DoesNotContain("IconDisplay\" FontFamily", live);
     }
 
     [Fact]
@@ -119,18 +118,20 @@ public sealed class LivePageParityTests
     }
 
     [Fact]
-    public void RightColumnSwitchesBetweenNotesAndAnswersLikeMac()
+    public void RightColumnSwitchesBetweenTheThreeMacTabs()
     {
         var live = Live();
+        Assert.Contains("{loc:Tr 实时纪要}", live);
         Assert.Contains("{loc:Tr 我的笔记}", live);
         Assert.Contains("{loc:Tr 问答}", live);
         Assert.Contains("NotesTab_Click", live);
         Assert.Contains("AnswerTab_Click", live);
-        Assert.Contains("{Binding AnswerModeIsAuto, Mode=OneWay}", live);
+        Assert.Contains("LiveNotesTab_Click", live);
         var code = Read("Views", "LiveView.axaml.cs");
         Assert.Contains("ShowRightTab", code);
         Assert.Contains("AnswerPanel.IsVisible", code);
         Assert.Contains("NotesPanel.IsVisible", code);
+        Assert.Contains("LiveNotesPanel.IsVisible", code);
     }
 
     [Fact]
@@ -211,7 +212,6 @@ public sealed class LivePageParityTests
         Assert.Contains("LiveWebSources", check);
         Assert.Contains("SetScreenshotPreview", check);
         Assert.Contains("live-ui-check: passed", check);
-        Assert.True(File.Exists(Desktop("..", "..", "..", "..", "Windows", "validation", "screens", "live", "compare.md"))
-                    || File.Exists(Path.Combine(Root(), "Windows", "validation", "screens", "live", "compare.md")));
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "validation", "screens", "live", "compare.md")));
     }
 }

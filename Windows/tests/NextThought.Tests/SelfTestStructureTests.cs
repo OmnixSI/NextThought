@@ -929,11 +929,11 @@ public sealed class SelfTestStructureTests
     public void NotesPageHasFourTabs()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
-        // E15: MeetingPage has exactly four tabs; the evidence pane and the outline view live inside 纪要.
-        foreach (var header in new[] { "{loc:Tr 纪要}", "{loc:Tr 转写}", "{loc:Tr 回答}", "{loc:Tr 个人笔记}" })
+        // task-62/E15: MeetingPage follows the Mac 3.4 tabs 复盘 / 转写 / 我的笔记 / 会中回答.
+        foreach (var header in new[] { "{loc:Tr 复盘}", "{loc:Tr 转写}", "{loc:Tr 我的笔记}", "{loc:Tr 会中回答}" })
             Assert.Contains(header, xaml);
         Assert.DoesNotContain("{loc:Tr 工作纪要}", xaml);
-        Assert.DoesNotContain("{loc:Tr 提纲}", xaml);
+        Assert.DoesNotContain("<TabItem Header=\"{loc:Tr 回答}\"", xaml);
         // 证据栏常驻纪要页右侧，不再是单独标签。
         Assert.Contains("NotesEvidence", xaml);
         Assert.Contains("JumpEvidence_Click", xaml);

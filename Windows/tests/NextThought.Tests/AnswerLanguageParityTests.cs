@@ -63,7 +63,7 @@ public sealed class AnswerLanguageParityTests
         Assert.Contains("SelectableTextBlock", code);
 
         var live = Read("Views", "LiveView.axaml");
-        Assert.Contains("<answer:BilingualAnswerText Text=\"{Binding DisplayedAnswerText}\"", live);
+        Assert.Contains("<views:BilingualAnswerText Text=\"{Binding DisplayedAnswerText}\"", live);
         Assert.Contains("IsVisible=\"{Binding IsBilingualAnswer}\"", live);
         Assert.Contains("IsVisible=\"{Binding !IsBilingualAnswer}\"", live);
 

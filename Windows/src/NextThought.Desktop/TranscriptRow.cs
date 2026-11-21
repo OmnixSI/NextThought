@@ -30,7 +30,7 @@ public partial class TranscriptRow : ObservableObject
     public Guid Id { get; }
     public string Speaker { get; }
     public DateTimeOffset Date { get; }
-    public bool IsEcho { get; }
+    [ObservableProperty] private bool isEcho;
     public int? Voice { get; }
     [ObservableProperty] private string label;
     [ObservableProperty] private string text;
@@ -40,8 +40,35 @@ public partial class TranscriptRow : ObservableObject
     public bool HasTranslation => Translation.Length > 0;
     public bool IsSystem => Speaker == "remote";
 
+    /// <summary>
+    /// E4/§6.5 Mac SpeakerLabel: the live transcript's speaker column is just 对方 / 我 / 现场.
+    /// The timestamp and the old 「系统声音 · 麦克风」 wording are not part of the Mac live page
+    /// (they stay on <see cref="Label"/> for the transcript views that still show them).
+    /// </summary>
+    public string SpeakerName => Speaker switch
+    {
+        "remote" => UiText.T("对方"),
+        "room" => UiText.T("现场"),
+        _ => UiText.T("我")
+    };
+
+    /// <summary>对方 uses the secondary colour, 我 the ink colour (Mac SpeakerLabel).</summary>
+    public bool SpeakerIsMe => Speaker != "remote" && Speaker != "room";
+
     /// <summary>E4/QuestionMark: the detector sees a question in this line (remote speakers only).</summary>
     public bool IsQuestion => Speaker != "me" && !IsEcho && QuestionDetector.LooksLikeQuestion(Text);
+
+    /// <summary>
+    /// E4/§6.5 是我说的: Mac markNotEcho puts the line back into the conversation — the echo mark
+    /// goes away and the line counts as mine again.
+    /// </summary>
+    public void RestoreEcho()
+    {
+        if (!IsEcho) return;
+        IsEcho = false;
+        Label = BuildLabel();
+        OnPropertyChanged(nameof(IsQuestion));
+    }
 
     /// <summary>G8: the speaker label follows the interface language without rebuilding the collection.</summary>
     public void RefreshLanguage()
