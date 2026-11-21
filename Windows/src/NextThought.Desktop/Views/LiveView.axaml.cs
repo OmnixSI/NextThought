@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -9,13 +10,16 @@ using NextThought.Core;
 namespace NextThought.Desktop.Views;
 
 /// <summary>
-/// E4: the live meeting page (LiveSessionView.swift) — top bar with the listening timer/status,
-/// mode switch, phone/screen status, answer settings and tools; the live transcript with the
-/// question marker, candidate strip and status line; the notes/answers column with the answer
-/// header, web status and sources, refinement row, evidence line/details; and the bottom composer.
+/// §6.5 / E4: the live meeting page (LiveSessionView.swift) — the one-row top bar with the listening
+/// timer/status, the scene tag, the title, the 自动回答/只记录 segmented switch, the answer window and
+/// tools icons and the bordered pause/end; the flat transcript column with its question marker, echo
+/// row and status line; the three-tab right column (实时纪要 / 问答 / 我的笔记) with the raised answer
+/// sheet; and the bottom LiveComposer.
 /// </summary>
 public partial class LiveView : UserControl
 {
+    private enum RightTab { LiveNotes, Answers, MyNotes }
+
     private AppState? state;
     private ScrollViewer? transcriptScroll;
     private bool scrollingToLatest;
@@ -46,10 +50,7 @@ public partial class LiveView : UserControl
         else state.LiveScrolledAway();
     }
 
-    private void OnLiveFollowScrollRequested()
-    {
-        ScrollTranscriptToLatest();
-    }
+    private void OnLiveFollowScrollRequested() => ScrollTranscriptToLatest();
 
     private void ScrollTranscriptToLatest()
     {
@@ -69,6 +70,7 @@ public partial class LiveView : UserControl
             state.PropertyChanged -= OnStatePropertyChanged;
             state.CurrentAnswerHistory.CollectionChanged -= OnAnswerHistoryChanged;
             state.LiveFollowScrollRequested -= OnLiveFollowScrollRequested;
+            state.Settings.PropertyChanged -= OnSettingsPropertyChanged;
             if (transcriptScroll is not null) transcriptScroll.ScrollChanged -= OnTranscriptScrollChanged;
         }
         state = DataContext as AppState;
@@ -79,13 +81,18 @@ public partial class LiveView : UserControl
             state.PropertyChanged += OnStatePropertyChanged;
             state.CurrentAnswerHistory.CollectionChanged += OnAnswerHistoryChanged;
             state.LiveFollowScrollRequested += OnLiveFollowScrollRequested;
+            state.Settings.PropertyChanged += OnSettingsPropertyChanged;
             transcriptScroll = TranscriptList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
             if (transcriptScroll is not null) transcriptScroll.ScrollChanged += OnTranscriptScrollChanged;
-            ShowRightTab(state.Settings.AutomaticAnswers);
+            // Mac RightColumn.onAppear: what the meeting was started for is what shows first.
+            ShowRightTab(state.AnswerModeIsAuto
+                ? RightTab.Answers
+                : state.LiveNotesEnabled ? RightTab.LiveNotes : RightTab.MyNotes);
             state.RefreshSessionAnswerHistory();
             state.RaiseLiveAnswerUi();
             state.RaiseLiveSceneUi();
             state.RaiseWebSearchModeUi();
+            state.RaiseLiveNotesTabUi();
         }
     }
 
@@ -101,9 +108,18 @@ public partial class LiveView : UserControl
                 break;
             case nameof(AppState.SelectedMode):
                 state?.RaiseLiveSceneUi();
+                state?.RaiseLiveInsightsEmbed();
                 break;
             case nameof(AppState.AnswerModeIsAuto):
-                if (state is not null) ShowRightTab(state.Settings.AutomaticAnswers);
+                if (state is not null)
+                {
+                    ShowRightTab(state.AnswerModeIsAuto
+                        ? RightTab.Answers
+                        : state.LiveNotesEnabled ? RightTab.LiveNotes : RightTab.MyNotes);
+                }
+                break;
+            case nameof(AppState.LiveNotesEnabled):
+                state?.RaiseLiveNotesTabUi();
                 break;
             case nameof(AppState.CurrentSession):
                 state?.RefreshSessionAnswerHistory();
@@ -120,78 +136,59 @@ public partial class LiveView : UserControl
         state?.RaiseLiveAnswerUi();
     }
 
+    private void OnSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SettingsViewModel.InsightScreenWatch)
+            or nameof(SettingsViewModel.AutomaticAnswers))
+            state?.RaiseLiveInsightsEmbed();
+    }
+
     private void LatestAnswer_Click(object? sender, RoutedEventArgs e) => state?.ShowLatestAnswer();
 
-    private void LayoutMenu_Click(object? sender, RoutedEventArgs e)
+    // ---- right column: 实时纪要 / 问答 / 我的笔记 (Mac RightColumn) ---------------------
+
+    private void ShowRightTab(RightTab tab)
     {
-        // The flyout opens from the button itself.
+        LiveNotesPanel.IsVisible = tab == RightTab.LiveNotes;
+        AnswerPanel.IsVisible = tab == RightTab.Answers;
+        NotesPanel.IsVisible = tab == RightTab.MyNotes;
+        LiveNotesTab.IsChecked = tab == RightTab.LiveNotes;
+        AnswerTab.IsChecked = tab == RightTab.Answers;
+        NotesTab.IsChecked = tab == RightTab.MyNotes;
     }
 
-    private void ModuleWindow_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: string name } || state is null) return;
-        if (!Enum.TryParse<AssistantModule>(name, ignoreCase: true, out var module)) return;
-        state.OpenDetachedModule(module);
-    }
+    private void LiveNotesTab_Click(object? sender, RoutedEventArgs e) => ShowRightTab(RightTab.LiveNotes);
 
-    private void LayoutPreset_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: string name } || state is null) return;
-        if (!Enum.TryParse<AssistantLayout.Preset>(name, ignoreCase: true, out var preset)) return;
-        state.ApplyAssistantPreset(preset);
-    }
+    private void AnswerTab_Click(object? sender, RoutedEventArgs e) => ShowRightTab(RightTab.Answers);
 
-    private void OnTranscriptJumpRequested(int seconds)
-    {
-        if (state?.CurrentSession is not { } session) return;
-        var target = session.StartedAt.AddSeconds(seconds);
-        var row = state.Transcript.OrderBy(item => Math.Abs((item.Date - target).TotalSeconds)).FirstOrDefault();
-        if (row is null) return;
-        TranscriptList.SelectedItem = row;
-        TranscriptList.ScrollIntoView(row);
-    }
+    private void NotesTab_Click(object? sender, RoutedEventArgs e) => ShowRightTab(RightTab.MyNotes);
 
-    private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    /// <summary>
+    /// Self-check hook (like the cue island's ApplyStateForCheck): show one of the three right-column
+    /// tabs so the screenshot batch can capture 实时纪要 / 问答 / 我的笔记.
+    /// </summary>
+    public bool SelectRightTabForCheck(string tab)
     {
-        if (TranscriptList.ItemCount == 0) return;
-        var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
-        if (state is not null && !state.LiveIsFollowingTranscript)
+        switch (tab)
         {
-            // E4/Mac ScrollFollowState: reading history keeps the viewport; the banner counts new lines.
-            state.LiveTranscriptGrew(added);
-            return;
+            case "live-notes": ShowRightTab(RightTab.LiveNotes); return true;
+            case "answers": ShowRightTab(RightTab.Answers); return true;
+            case "my-notes": ShowRightTab(RightTab.MyNotes); return true;
+            default: return false;
         }
-        ScrollTranscriptToLatest();
     }
 
-    // ---- right column tabs (Mac RightColumn: 我的笔记 / 问答) -------------------------
-
-    private void ShowRightTab(bool showsAnswer)
-    {
-        AnswerPanel.IsVisible = showsAnswer;
-        NotesPanel.IsVisible = !showsAnswer;
-        AnswerTab.IsChecked = showsAnswer;
-        NotesTab.IsChecked = !showsAnswer;
-    }
-
-    private void AnswerTab_Click(object? sender, RoutedEventArgs e) => ShowRightTab(true);
-
-    private void NotesTab_Click(object? sender, RoutedEventArgs e) => ShowRightTab(false);
-
-    // ---- top bar: answer mode, settings menu, tools ---------------------------------
+    // ---- top bar: answer mode, answer settings, tools ---------------------------------
 
     private void AnswerModeAuto_Click(object? sender, RoutedEventArgs e) => state?.SetAnswerMode(true);
 
     private void AnswerModeRecord_Click(object? sender, RoutedEventArgs e) => state?.SetAnswerMode(false);
 
-    private void AnswerSettings_Opened(object? sender, EventArgs e)
+    /// <summary>The more menu's 回答设置 section: show the current model (Mac AnswerSettingsMenu).</summary>
+    private void MoreMenu_Opened(object? sender, EventArgs e)
     {
         if (state is null) return;
-        if (sender is Flyout { Content: Panel panel })
-        {
-            var box = panel.GetVisualDescendants().OfType<ComboBox>().FirstOrDefault();
-            if (box is not null) box.SelectedItem = state.LiveModelChoices.FirstOrDefault(choice => choice.Id == state.Settings.Model);
-        }
+        LiveModelBox.SelectedItem = state.LiveModelChoices.FirstOrDefault(choice => choice.Id == state.Settings.Model);
     }
 
     private void LiveModel_SelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -244,16 +241,36 @@ public partial class LiveView : UserControl
         _ = state.Settings.SaveAsync();
     }
 
-    private void ScreenWatch_Click(object? sender, RoutedEventArgs e)
+    private void Companion_Click(object? sender, RoutedEventArgs e)
     {
         if (state is null) return;
-        state.Settings.InsightScreenWatch = !state.Settings.InsightScreenWatch;
-        _ = state.Settings.SaveAsync();
-        state.SetStatus(state.Settings.InsightScreenWatch ? "屏幕感知已开启。" : "屏幕感知已关闭。");
+        if (state.ToggleCompanionCommand.CanExecute(null)) state.ToggleCompanionCommand.Execute(null);
         state.RaiseLiveAnswerUi();
     }
 
+    private void LiveTranslation_Click(object? sender, RoutedEventArgs e)
+    {
+        if (state is null) return;
+        if (state.ToggleLiveTranslationCommand.CanExecute(null)) state.ToggleLiveTranslationCommand.Execute(null);
+        state.RaiseLiveAnswerUi();
+    }
+
+    // ---- 实时纪要 tab (Mac LiveNotesColumn) -------------------------------------------
+
+    private void EnableLiveNotes_Click(object? sender, RoutedEventArgs e)
+    {
+        if (state is null) return;
+        if (!state.LiveNotesEnabled) state.EnableLiveNotes();
+        else state.UpdateLiveNotesNow();
+        ShowRightTab(RightTab.LiveNotes);
+    }
+
     // ---- transcript / answer actions ------------------------------------------------
+
+    private void MarkNotEcho_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: TranscriptRow row } && state is not null) state.MarkNotEcho(row.Id);
+    }
 
     private void AnswerLine_Click(object? sender, RoutedEventArgs e)
     {
@@ -311,43 +328,12 @@ public partial class LiveView : UserControl
         catch (Exception ex) { state?.SetStatus("操作失败：" + ex.Message, true); }
     }
 
-    private void CancelScreenshot_Click(object? sender, RoutedEventArgs e) => state?.ClearScreenshotPreview();
-
-    private async void AnalyzeScreenshot_Click(object? sender, RoutedEventArgs e)
-    {
-        if (state is null) return;
-        try { await state.AnalyzeScreenshotAsync(); }
-        catch (Exception error) { state.SetStatus(error.Message, true); }
-    }
-
-    // ---- existing page actions ------------------------------------------------------
-
-    private void Question_KeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter || e.KeyModifiers.HasFlag(KeyModifiers.Shift)) return;
-        if (DataContext is not AppState state) return;
-        e.Handled = true;
-        state.SubmitLiveComposer();
-    }
+    // ---- windows opened from the tools menu -----------------------------------------
 
     private void Teleprompter_Click(object? sender, RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleTeleprompter();
     }
-
-    private async void Capture_Click(object? sender, RoutedEventArgs e)
-    {
-        try { if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureRegionAsync(); }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
-    }
-
-    private void Island_Click(object? sender, RoutedEventArgs e)
-    {
-        if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleCueIsland();
-    }
-
-    private void DetachAnswer_Click(object? sender, RoutedEventArgs e) =>
-        (DataContext as AppState)?.OpenDetachedModule(AssistantModule.Answer);
 
     private void Insights_Click(object? sender, RoutedEventArgs e)
     {
@@ -360,5 +346,35 @@ public partial class LiveView : UserControl
         if (DataContext is not AppState state) return;
         state.OpenSpeakerEditorCommand.Execute(null);
         new SpeakerEditorWindow { DataContext = state }.Show();
+    }
+
+    private void DetachAnswer_Click(object? sender, RoutedEventArgs e) =>
+        (DataContext as AppState)?.OpenDetachedModule(AssistantModule.Answer);
+
+    private void OnTranscriptJumpRequested(int seconds)
+    {
+        if (state?.CurrentSession is not { } session || transcriptScroll is null) return;
+        var target = session.StartedAt.AddSeconds(seconds);
+        var index = state.Transcript
+            .Select((row, i) => (row, i, distance: Math.Abs((row.Date - target).TotalSeconds)))
+            .OrderBy(item => item.distance)
+            .Select(item => item.i)
+            .FirstOrDefault();
+        // The rows are not measured up front; approximate their height and clamp to the extent.
+        var max = Math.Max(0, transcriptScroll.Extent.Height - transcriptScroll.Viewport.Height);
+        transcriptScroll.Offset = new Vector(0, Math.Min(max, index * 56));
+    }
+
+    private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (TranscriptList.ItemCount == 0) return;
+        var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
+        if (state is not null && !state.LiveIsFollowingTranscript)
+        {
+            // E4/Mac ScrollFollowState: reading history keeps the viewport; the banner counts new lines.
+            state.LiveTranscriptGrew(added);
+            return;
+        }
+        ScrollTranscriptToLatest();
     }
 }

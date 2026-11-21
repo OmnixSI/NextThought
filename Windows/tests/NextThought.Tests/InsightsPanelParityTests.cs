@@ -38,8 +38,8 @@ public sealed class InsightsPanelParityTests
         Assert.Contains("{Binding HasSlide}", panel);
         Assert.Contains("{Binding ScreenWatchRunning}", panel);
         Assert.Contains("{Binding HasAnswerProgress}", panel);
-        Assert.Contains("{loc:Tr 屏幕与截图}", panel);
-        Assert.Contains("{loc:Tr 回答进度}", panel);
+        Assert.Contains("{Binding ScreenTitleText}", panel);
+        Assert.Contains("{Binding AnswerProgressMetricText}", panel);
     }
 
     [Fact]
@@ -114,6 +114,46 @@ public sealed class InsightsPanelParityTests
         Assert.True(File.Exists(Desktop("Views", "InsightsPanelWindow.axaml")));
         var window = Read("Views", "InsightsPanelWindow.axaml");
         Assert.Contains("<views:InsightsPanel />", window);
+    }
+
+    [Fact]
+    public void ThePanelIsEmbeddedInTheLiveTranscriptColumn()
+    {
+        // Mac LiveSessionView TranscriptColumn: InsightsPanel().frame(height: 240) while
+        // screenWatch && typeDefaults.followsSlides (the academic/report scenes).
+        var live = Read("Views", "LiveView.axaml");
+        Assert.Contains("<views:InsightsPanel", live);
+        Assert.Contains("IsVisible=\"{Binding LiveShowsInsightsPanel}\"", live);
+        Assert.Contains("Height=\"240\"", live);
+        var state = Read("AppState.Insights.cs");
+        Assert.Contains("public bool LiveShowsInsightsPanel", state);
+        Assert.Contains("MeetingMode.Academic", state);
+    }
+
+    [Fact]
+    public void TheMacNotesAndSectionTextsArePorted()
+    {
+        var panel = Read("Views", "InsightsPanel.axaml");
+        // ScreenWatchOffHint: the long explanation and the 打开屏幕感知 button.
+        Assert.Contains("{loc:Tr 打开“屏幕感知”后，每隔几秒在本机识别屏幕文字：跟随你讲到 PPT 的哪一页并给出这一页的讲稿提示；屏幕上出现题目或代码时，判断是否和对话相关并纳入回答。屏幕在本机识别；相关文字与必要的当前画面会提供给回答引擎。}", panel);
+        Assert.Contains("{loc:Tr 打开屏幕感知}", panel);
+        // ScreenSection: the kind title, the "N 秒前" clock and 展开识别的文字.
+        Assert.Contains("{Binding ScreenAgeText}", panel);
+        Assert.Contains("{loc:Tr 已识别 · 是否用于回答见“本次依据”}", panel);
+        Assert.Contains("{loc:Tr 展开识别的文字}", panel);
+        Assert.Contains("{loc:Tr 收起}", panel);
+        // SlideSection: the points, 听众可能会问 and the generating note.
+        Assert.Contains("{loc:Tr 听众可能会问（点一下提前准备回答）}", panel);
+        Assert.Contains("{loc:Tr 正在根据这一页和你的资料写讲稿提示…}", panel);
+        Assert.DoesNotContain("讲稿要点", panel);
+        // AnswerProgressStrip: MetricPill 已讲 x/y and 下一句.
+        Assert.Contains("{Binding AnswerProgressMetricText}", panel);
+        Assert.Contains("{loc:Tr 已讲}", panel);
+        Assert.Contains("{loc:Tr 下一句：}", panel);
+        Assert.DoesNotContain("回答进度", panel);
+        var state = Read("AppState.Insights.cs");
+        Assert.Contains("public string AnswerProgressMetricText", state);
+        Assert.Contains("UiText.Format(\"第 %lld / %lld 页\"", state);
     }
 
     [Fact]

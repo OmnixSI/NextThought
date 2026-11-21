@@ -100,6 +100,64 @@ public partial class MainWindow
             Check(state.LiveComposerPlaceholder.Length > 0, "composer placeholder follows the mode");
             state.QuestionInput = "";
 
+            // ---- §6.5 stage 4: speaker labels, three tabs, live notes, echo restore ----------
+            var speakerNames = state.Transcript.Select(row => row.SpeakerName).Distinct().ToList();
+            Check(speakerNames.Contains(UiText.T("对方")) && speakerNames.Contains(UiText.T("我")),
+                "the transcript speaker column reads 对方 / 我");
+            Check(state.Transcript.All(row => !row.SpeakerName.Contains(':')),
+                "the speaker column carries no timestamp");
+            Check(state.LiveNotesStatusText.Length > 0, "实时纪要 tab has the Mac status line");
+            Check(state.LiveNotesHintText.Length > 0, "实时纪要 tab has the Mac empty state");
+            var livePage = PageHost.Content as LiveView;
+            Check(livePage is not null, "the live page is mounted");
+            Check(livePage?.FindControl<RadioButton>("LiveNotesTab") is not null,
+                "the right column has the 实时纪要 tab");
+            Check(livePage?.SelectRightTabForCheck("live-notes") == true, "实时纪要 tab can be selected");
+            await Task.Delay(250);
+            await PumpAsync();
+            var stage4Shots = Path.Combine(Path.GetDirectoryName(outputPath)!, "live-shots");
+            Directory.CreateDirectory(stage4Shots);
+            CaptureVisual(this, Path.Combine(stage4Shots, "live-notes-light.png"));
+            // The same tab in the dark theme, then back to light.
+            if (Application.Current is { } app)
+                app.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(300);
+            await PumpAsync();
+            CaptureVisual(this, Path.Combine(stage4Shots, "live-notes-dark.png"));
+            if (Application.Current is { } lightAgain)
+                lightAgain.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(200);
+            await PumpAsync();
+            Check(state.LiveShowsInsightsPanel ==
+                  (state.Settings.InsightScreenWatch && state.SelectedMode == MeetingMode.Academic),
+                "the insights panel follows Mac's screenWatch && followsSlides rule");
+            // E7 evidence: the 屏幕与讲稿 panel embedded in the transcript column (Mac 240 pt) for
+            // the academic scene while screen awareness is on.
+            var savedMode = state.SelectedMode;
+            var savedWatch = state.Settings.InsightScreenWatch;
+            state.Settings.InsightScreenWatch = true;
+            state.SelectedMode = MeetingMode.Academic;
+            state.RaiseLiveInsightsEmbed();
+            await Task.Delay(300);
+            await PumpAsync();
+            Check(livePage?.FindControl<InsightsPanel>("LiveInsightsPanel")?.IsVisible == true,
+                "the 屏幕与讲稿 panel is embedded in the live transcript column");
+            CaptureVisual(this, Path.Combine(stage4Shots, "insights-embedded-light.png"));
+            state.Settings.InsightScreenWatch = savedWatch;
+            state.SelectedMode = savedMode;
+            state.RaiseLiveInsightsEmbed();
+            await Task.Delay(200);
+            await PumpAsync();
+            livePage?.SelectRightTabForCheck(state.AnswerModeIsAuto ? "answers" : "my-notes");
+            // Echo restore last: it mutates the demo transcript the screenshots show.
+            var echoRow = state.Transcript.FirstOrDefault(row => row.IsEcho);
+            Check(echoRow is not null, "the demo transcript carries a suspected-echo line");
+            if (echoRow is not null)
+            {
+                state.MarkNotEcho(echoRow.Id);
+                Check(!echoRow.IsEcho, "是我说的 puts the echo line back into the conversation");
+            }
+
             // ---- tools menu toggles (restored afterwards) -----------------------------------
             var cue = state.LiveCueAlwaysOpen;
             state.ToggleLiveCueAlwaysOpen();

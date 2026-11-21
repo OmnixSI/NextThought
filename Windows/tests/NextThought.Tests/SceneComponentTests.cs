@@ -83,7 +83,8 @@ public sealed class SceneComponentTests
     {
         var live = View("LiveView.axaml");
         Assert.Contains("xmlns:controls=\"using:NextThought.Desktop.Views.Controls\"", live);
-        Assert.Contains("<controls:SceneTag Mode=\"{Binding SelectedMode}\"", live);
+        Assert.Contains("x:Name=\"LiveSceneTag\"", live);
+        Assert.Contains("Mode=\"{Binding SelectedMode}\"", live);
         Assert.Contains("Name=\"{Binding SceneTitle}\"", live);
     }
 

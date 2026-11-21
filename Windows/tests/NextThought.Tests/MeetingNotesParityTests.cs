@@ -41,7 +41,7 @@ public sealed class MeetingNotesParityTests
     public void TheNotesTabHostsTheControl()
     {
         var notes = Read("Views", "NotesView.axaml");
-        Assert.Contains("<TabItem Header=\"{loc:Tr 个人笔记}\">", notes);
+        Assert.Contains("<TabItem Header=\"{loc:Tr 我的笔记}\">", notes);
         Assert.Contains("<views:MeetingUserNotes", notes);
         // The old inline notes editor is replaced by the single draft owner.
         Assert.DoesNotContain("PersonalNotesText", notes);

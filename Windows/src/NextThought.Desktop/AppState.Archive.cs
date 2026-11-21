@@ -30,7 +30,12 @@ public partial class AppState
         ScheduleHistoryContentSearch();
     }
 
-    partial void OnCurrentSessionChanged(SessionMeta? value) { OnPropertyChanged(nameof(StatsText)); OnPropertyChanged(nameof(HasSelectedHistory)); }
+    partial void OnCurrentSessionChanged(SessionMeta? value)
+    {
+        OnPropertyChanged(nameof(StatsText));
+        OnPropertyChanged(nameof(HasSelectedHistory));
+        RefreshNotesHeader();
+    }
 
     /// <summary>F20: refreshing the list never waits for the session lock on the UI thread.</summary>
     public void RefreshHistory(Guid? select = null) => _ = RefreshHistoryAsync(select);

@@ -6,30 +6,45 @@
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.NotesView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+    <!-- task-62/E15 Mac NotesPageView 顶部：面包屑（所有会议 › 会议 › 复盘）+ 复制纪要 primary -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="{DynamicResource D4Spacing_6}" MaxWidth="720" HorizontalAlignment="Left">
-        <TextBlock Text="{loc:Tr 会后纪要}" Classes="display" />
-        <TextBlock Text="{loc:Tr 按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。}"
-                   Classes="caption" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+        <TextBlock Text="{loc:Tr 所有会议}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+        <TextBlock Text="›" Classes="caption" Foreground="{DynamicResource Tertiary}" />
+        <TextBlock Text="{Binding NotesMeetingTitle}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                   MaxWidth="260" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="›" Classes="caption" Foreground="{DynamicResource Tertiary}" />
+        <TextBlock Text="{loc:Tr 复盘}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+        <Button Classes="primary" Content="{loc:Tr 复制纪要}" Command="{Binding CopyNotesCommand}" />
+        <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
+        <Button Content="{loc:Tr 重新整理}" Click="RegenerateNotes_Click" />
+        <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown}" />
+        <Button Content="{loc:Tr 详细信息}" Click="Info_Click" ToolTip.Tip="{loc:Tr 会议信息}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Mac 标题（衬线大字）+ 事实行；「整理这场会议」留作默认按钮 -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_4}" MaxWidth="760" HorizontalAlignment="Left">
+        <TextBlock Text="{Binding NotesMeetingTitle}" FontFamily="{StaticResource SerifFamily}" FontSize="30"
+                   FontWeight="Medium" Foreground="{DynamicResource InkBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{Binding NotesFactsLine}" Classes="caption" />
         <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding Working}">
           <TextBlock Text="{Binding Status}" Classes="caption" />
           <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />
         </StackPanel>
       </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-        <Button Content="{loc:Tr 详细信息}" Click="Info_Click" ToolTip.Tip="{loc:Tr 会议信息}" />
-        <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown}" />
-        <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
-        <Button Content="{loc:Tr 重新整理}" Click="RegenerateNotes_Click" />
-        <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="{DynamicResource HitRow}" Padding="{DynamicResource D4Padding_18_0}">
-          <TextBlock Text="{loc:Tr 整理这场会议}" Foreground="{DynamicResource OnInk}" />
-        </Button>
-      </StackPanel>
+      <Button Grid.Column="1" VerticalAlignment="Top" Command="{Binding SummarizeCommand}" MinHeight="{DynamicResource HitRow}"
+              Padding="{DynamicResource D4Padding_18_0}">
+        <TextBlock Text="{loc:Tr 整理这场会议}" />
+      </Button>
     </Grid>
 
     <!-- 模板与校对：模板决定章节，校对只改名字与术语 -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_14_0_0}">
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_14_0_0}">
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
         <ComboBox ItemsSource="{Binding TemplateChoices}" SelectedItem="{Binding SelectedTemplate}" MinWidth="150"
                   ToolTip.Tip="{loc:Tr 纪要模板：章节由模板决定，模型只填内容}" />
@@ -43,22 +58,22 @@
     </Grid>
 
     <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
+    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsStandard, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Standard}">
-          <TextBlock Text="{loc:Tr 文字纪要}" Foreground="{Binding $parent[RadioButton].Foreground}" />
+          <TextBlock Text="{loc:Tr 复盘}" Foreground="{Binding $parent[RadioButton].Foreground}" />
+        </RadioButton>
+        <RadioButton Classes="chip" GroupName="notesformat"
+                     IsChecked="{Binding NotesFormatIsOutline, Mode=OneWay}"
+                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Outline}">
+          <TextBlock Text="{loc:Tr 提纲}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsFishbone, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Fishbone}">
           <TextBlock Text="{loc:Tr 鱼骨图}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="notesformat"
-                     IsChecked="{Binding NotesFormatIsOutline, Mode=OneWay}"
-                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Outline}">
-          <TextBlock Text="{loc:Tr 要点大纲}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsViewpoints, Mode=OneWay}"
@@ -72,17 +87,21 @@
       </StackPanel>
     </Grid>
 
-    <Border Grid.Row="3" Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
+    <Border Grid.Row="4" Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
             IsVisible="{Binding CoachSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-        <TextBlock Text="{loc:Tr 教练小结}" Classes="overline" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+          <TextBlock Text="{StaticResource IconSparkles}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <TextBlock Text="{loc:Tr 一句话印象}" Classes="overline" />
+        </StackPanel>
         <TextBlock Text="{Binding CoachSummaryText}" Classes="body" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 
     <!-- E15: MeetingPage four tabs (纪要 / 转写 / 回答 / 个人笔记)，证据栏在纪要标签右侧 -->
-    <TabControl Grid.Row="4" Margin="{DynamicResource D4Margin_0_12_0_16}" SelectedIndex="{Binding NotesTabIndex}">
-      <TabItem Header="{loc:Tr 纪要}">
+    <TabControl Grid.Row="5" Margin="{DynamicResource D4Margin_0_12_0_16}" SelectedIndex="{Binding NotesTabIndex}">
+      <TabItem Header="{loc:Tr 复盘}">
         <Grid ColumnDefinitions="*,300" ColumnSpacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_8_0_0}">
           <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_0}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -322,7 +341,9 @@
         </Grid>
       </TabItem>
 
-      <TabItem Header="{loc:Tr 回答}" IsVisible="{Binding HasSessionAnswers}">
+      <TabItem Header="{loc:Tr 我的笔记}">
+        <views:MeetingUserNotes Margin="{DynamicResource D4Margin_22}" />
+      </TabItem>      <TabItem Header="{loc:Tr 会中回答}" IsVisible="{Binding HasSessionAnswers}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -341,10 +362,6 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </ScrollViewer>
-      </TabItem>
-
-      <TabItem Header="{loc:Tr 个人笔记}">
-        <views:MeetingUserNotes Margin="{DynamicResource D4Margin_22}" />
       </TabItem>
     </TabControl>
   </Grid>
