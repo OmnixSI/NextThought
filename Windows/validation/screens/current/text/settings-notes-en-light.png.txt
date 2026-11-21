@@ -1,14 +1,10 @@
 content	10
 content	Add section
-content	Advanced
 content	All records
-content	Answers and materials
 content	Automatic answers
 content	Brief
 content	Client call
-content	Cue and coach
 content	Detailed
-content	Done
 content	General
 content	Group discussion
 content	Group project
@@ -20,14 +16,13 @@ content	Lab meeting / research discussion
 content	Lecture / Class
 content	Line by line
 content	New template
-content	Notes
 content	Presentation / Defense
 content	Record only
 content	Save structure
 content	Save template
-content	Scenes
 content	Series
 content	Work meeting
+content	high
 placeholder	## Client meeting
 ### Decisions
 Only write what was decided.
@@ -56,7 +51,6 @@ text	Client call
 text	Cue and coach
 text	Custom
 text	Custom note templates
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Detailed
 text	Done
 text	Each template starts with ## name; each section starts with ### title and the next line states the requirement. Saved templates appear in the Notes template picker; built-ins are unchanged.
@@ -72,17 +66,21 @@ text	Interview review
 text	Key points
 text	Lab meeting
 text	Lab meeting / research discussion
+text	Language
 text	Lecture / Class
 text	Line by line
 text	New template
 text	No custom templates.
 text	Notes
+text	Notes model (empty uses the answer model)
 text	Notes template
+text	Notes: advanced
+text	NotesLanguageChoice { Value = auto, Title = 自动 / 中英混说 }
 text	Only recognized speech counts; background music doesn't.
-text	Preferences live in settings.json in the local data folder; the API key is encrypted for the current Windows user and never written to backups.
 text	Presentation / Defense
 text	Prompt
 text	Prompt after silence, then end (recommended)
+text	Reasoning effort
 text	Record only
 text	Save structure
 text	Save template
@@ -90,18 +88,23 @@ text	Scenes
 text	Search settings
 text	Select custom template
 text	Series
-text	Settings
 text	Settings for each scene
 text	Silence that counts as over
 text	Template name
 text	When nobody is talking
 text	Work assignment
 text	Work meeting
+text	high
 text	minutes
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
 text	
 title	NextThought
 tooltip	Close
 tooltip	Maximize
 tooltip	Minimize
 tooltip	Settings
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

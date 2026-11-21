@@ -1,29 +1,29 @@
 content	auto
-content	全部设置
+content	全部设置…
 content	双屏演讲
 content	听到外语自动翻译
 content	字幕显示译文
 content	提词岛一直展开
 content	自动回答
-content	英语回答附中文对照
+content	英文回答附中文对照
 content	跟着讲话翻幻灯片
+text	Zoom · 后端工程师二面
 text	auto
 text	偏好
-text	全部设置
+text	全部设置…
 text	双屏演讲
 text	听到外语自动翻译
 text	回答语言
 text	字幕显示译文
-text	所选系统输出设备混音 + 麦克风 · 在设置中调整
 text	提词
 text	提词字号
 text	提词宽度
 text	提词岛
 text	提词岛一直展开
 text	标准
-text	演示模式：内置样本数据，不会写入你的资料。
-text	演示模式：未加载识别模型
+text	流式模型：已就绪　整句精修：已就绪
 text	状态
 text	自动回答
-text	英语回答附中文对照
+text	英文回答附中文对照
+text	语音已就绪。可以开始记录，或先导入 WAV 验证。
 text	跟着讲话翻幻灯片

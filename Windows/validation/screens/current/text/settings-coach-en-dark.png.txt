@@ -1,16 +1,12 @@
-content	Advanced
 content	All records
-content	Answers and materials
 content	Automatic answers
 content	Bottom of the screen
 content	Brief
 content	Built-in / main display (automatic)
-content	Calibrate: look at the camera for 2 seconds
 content	Client call
-content	Cue and coach
 content	Detailed
-content	Done
 content	General
+content	Gentle in-meeting nudges: pace, long stretches, share of talking
 content	Group discussion
 content	Group project
 content	Hide background, keeping text, borders and buttons
@@ -22,17 +18,14 @@ content	Key points
 content	Lab meeting / research discussion
 content	Lecture / Class
 content	Line by line
-content	Notes
 content	Notice when your eyes leave the camera (uses the camera)
 content	Presentation / Defense
 content	Record only
 content	Right side
-content	Scenes
 content	Screen-sharing visibility test
 content	Series
 content	Show translation
 content	Top center of screen
-content	Translate full sentences while recording (uses the answer service)
 content	Try to exclude this app's windows from screen sharing
 content	Work meeting
 placeholder	Search settings
@@ -46,19 +39,18 @@ text	Automatic answers
 text	Bottom of the screen
 text	Brief
 text	Built-in / main display (automatic)
-text	Calibrate: look at the camera for 2 seconds
 text	Client call
 text	Cue and coach
 text	Cue island
 text	Cue island display
 text	Cue island width
 text	Custom
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Detailed
 text	Display
 text	Done
 text	Font size
 text	General
+text	Gentle in-meeting nudges: pace, long stretches, share of talking
 text	Group discussion
 text	Group meeting
 text	Group project
@@ -75,13 +67,11 @@ text	Lab meeting / research discussion
 text	Lecture / Class
 text	Line by line
 text	Live coach
-text	Live translation
 text	Move to
 text	Notes
 text	Notes template
 text	Notice when your eyes leave the camera (uses the camera)
 text	Only affects the floating subtitle bar; takes effect immediately after saving.
-text	Preferences live in settings.json in the local data folder; the API key is encrypted for the current Windows user and never written to backups.
 text	Presentation / Defense
 text	Presenter mode
 text	Presenter mode is off
@@ -92,9 +82,7 @@ text	Right side
 text	Scenes
 text	Screen-sharing visibility test
 text	Search settings
-text	Sensitivity
 text	Series
-text	Settings
 text	Settings for each scene
 text	Shortcuts…
 text	Show translation
@@ -104,17 +92,20 @@ text	The main window hides when recording starts (Ctrl+Alt+N brings it back); wi
 text	The picture is reduced to a few landmarks on this computer only. Nothing is saved or uploaded.
 text	These global shortcuts are used by other programs: Ctrl+Alt+P Pause / resume listening, Ctrl+Alt+Shift+, Previous slide's notes; window buttons still work.
 text	Top center of screen
-text	Translate full sentences while recording (uses the answer service)
 text	Try to exclude this app's windows from screen sharing
 text	Width
-text	Windows has no system translation framework: complete sentences are sent to the chosen answer service, unlike the on-device translation on Mac.
 text	Work assignment
 text	Work meeting
+text	󰌓
+text	󰭡
+text	
+text	
 text	
+text	
+text	
 text	
 title	NextThought
 tooltip	Close
 tooltip	Maximize
 tooltip	Minimize
 tooltip	Settings
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

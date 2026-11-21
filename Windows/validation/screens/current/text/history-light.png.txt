@@ -1,41 +1,67 @@
-content	周一客户例会 · 华东区
-content	字节后端二面
+content	会议结束后自动整理
+content	复制纪要
+content	导出…
 content	所有记录
+content	按模板整理
 content	数据目录
+content	未归入系列
+content	校对转写
 content	系列
+content	编辑纪要
+content	详细信息
+content	重新整理
 content	隐藏
 content	首页
 content	
 placeholder	搜索全部转写、纪要、笔记
-text	1
-text	11-20 15:37 · 44:00 · interview · 字节后端二面 · 6 条转写 · 2 条回答 · 问题 6 个 · 纪要已整理
-text	11-20 15:37 · 6 条转写 · 2 条回答 · 有纪要
-text	11-21 10:00 · 4 条转写 · 有纪要
-text	2 场会议 · 2 个系列
-text	2 场会议 · 共 2 场
+text	11-07 20:46 · 31 条转写 · 有纪要
+text	11-07 20:54
+text	11-07 20:57 · 5 条转写 · 1 条回答
+text	11-07 20:58 · 36 条转写 · 3 条回答 · 有纪要
+text	11-18 14:08 · 87 条转写 · 13 条回答
+text	11-19 23:01 · 15 条转写 · 1 条回答
+text	11-20 13:20
+text	11月7日
+text	2026-11-20 19:22 · 44 min · 线上
+text	7
+text	7 场会议 · 系列共 7 场
+text	›
 text	上下文
-text	今天 上午10:00
+text	会中回答
+text	会议结束后自动整理
 text	后端二面：缓存一致性与项目经历
-text	周一产品例会
-text	周一客户例会 · 华东区
-text	回答列表
-text	字节后端二面
-text	工作会议 · 38 分钟
-text	归档截图
-text	归档概览
+text	周三
+text	周四
+text	复制纪要
+text	复盘
+text	导出…
+text	工作会议
+text	工作会议 · 1 分钟
+text	工作会议 · 3 分钟
+text	工作会议 · 4 分钟
+text	工作会议 · 67 分钟
+text	我的笔记
+text	所有会议
 text	所有记录
+text	按模板整理
 text	搜索全部转写、纪要、笔记
 text	数据目录
-text	昨天 下午3:37
+text	整理这场会议
+text	新会议
+text	昨天 下午1:20
 text	最近会议
-text	本机记录 · 当前匹配 2 场会议、2 个系列 · 系列按最近匹配会议排序
-text	演示模式：内置样本数据，不会写入你的资料。
+text	未归入系列
+text	校对转写
 text	系列
+text	组会
+text	组会 · 1 分钟
+text	编辑纪要
 text	自动保存 · 不保存录音
-text	还没有归档截图。
-text	这场会议没有生成回答。
+text	详细信息
+text	转写
+text	重新整理
 text	隐藏
-text	面试 · 44 分钟
+text	面试复盘
 text	首页
 text	
 text	
@@ -43,11 +69,14 @@ text	
 text	
 text	
 title	NextThought
+tooltip	会议信息
 tooltip	会议记录操作
 tooltip	关闭
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	只更正名字与术语的识别错误，改动写入 corrections.json
+tooltip	导出 Markdown…
 tooltip	显示侧栏
 tooltip	最大化
 tooltip	最小化
 tooltip	纪要已整理好
+tooltip	纪要模板：章节由模板决定，模型只填内容
 tooltip	设置

@@ -1,29 +1,29 @@
-content	All settings
+content	All settings…
 content	Auto-translate foreign speech
 content	Automatic answers
+content	Chinese under English answers
 content	Follow the talk across slides
-content	Gloss English answers in Chinese
 content	Keep the cue island open
 content	Presenter mode
 content	Show translation in subtitles
 content	auto
-text	All settings
+text	All settings…
 text	Answer language
 text	Auto-translate foreign speech
 text	Automatic answers
+text	Chinese under English answers
 text	Cue font size
 text	Cue island
 text	Cue width
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Follow the talk across slides
-text	Gloss English answers in Chinese
 text	Keep the cue island open
 text	Preferences
 text	Presenter mode
 text	Prompt
 text	Regular
-text	Selected system output mix + microphone · adjust in settings
 text	Show translation in subtitles
+text	Speech is ready. Start recording, or import a WAV to try it.
 text	Status
-text	Streaming model: Not installed or needs repair; sentence refinement: Not installed
+text	Streaming model: Ready; sentence refinement: Ready
+text	Zoom · Backend engineer, second round
 text	auto

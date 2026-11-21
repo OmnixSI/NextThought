@@ -18,7 +18,6 @@ text	1 blocks
 text	3 lessons
 text	3 questions
 text	4 files
-text	44 min
 text	AI reads the materials and writes 3 key points and 5 likely questions you can rehearse in your head.
 text	Add
 text	All records
@@ -39,10 +38,8 @@ text	Connect
 text	Continue the last one
 text	Cues by the camera, eyes up
 text	Custom…
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Discussion Prep · Optional AI
 text	Download
-text	Full transcript of last time
 text	General
 text	Group discussion
 text	Group project
@@ -51,7 +48,6 @@ text	In person
 text	Interview
 text	Interview: Answers automatically · concise answers · notes: review each question (saved to the question bank), what went poorly, next round · Suggested materials: Résumé, job description, company info
 text	Lab meeting
-text	Last time: 后端二面：缓存一致性与项目经历 · Yesterday 3:37 PM
 text	Lecture / Class
 text	Lessons · “被问项目时先报规模和结果数字”“一致性问题先画读写时序，再说”
 text	Live notes
@@ -59,12 +55,12 @@ text	Live transcript
 text	Live translation
 text	Materials · 简历-2026.pdf, 岗位JD-后端开发.md…
 text	Me · microphone
-text	Meeting 2 of “字节后端二面”
+text	Meeting 1 of “字节后端二面”
 text	Microphone · Me
 text	New materials for this meeting
+text	No meetings in this series yet
 text	Not set up · recording is available
 text	Not the same series
-text	Nov 20, 15:37
 text	On this Mac · Saved content
 text	Online
 text	Optional
@@ -76,7 +72,6 @@ text	Prepare Discussion Points
 text	Presentation / Defense
 text	Question review afterward
 text	Ready to record  ·  This meeting uses 4 ready materials; readable text is enough to start.
-text	Recent meetings · 1 in total
 text	Review · improved answers
 text	Selected system output mix + microphone · adjust in settings
 text	Series
@@ -84,10 +79,11 @@ text	Series briefing
 text	Sound test
 text	Speakers
 text	Start
-text	Streaming model: Not installed or needs repair; sentence refinement: Not installed
+text	Streaming model: Ready; sentence refinement: Ready
 text	Tells people apart by voice, lets you name them and writes notes per person. Fix a mistake anytime
 text	Test answer service
 text	Them · computer audio
+text	This series has no archived meetings yet.
 text	Turn off what you don’t need
 text	Use the selected materials to outline discussion points, evidence, and questions worth asking. Recording works without AI.
 text	What kind of meeting
@@ -102,7 +98,6 @@ text	为什么选 Kafka 而不是 RabbitMQ？
 text	先更新数据库再删除缓存；删除失败进入重试队列，并用 Canal 订阅 binlog 再删一次；热点 key 做延迟双删。
 text	八股-缓存与数据库.md
 text	反问环节准备 2 个关于团队技术栈的问题
-text	后端二面：缓存一致性与项目经历
 text	吞吐和分区扩展性更好，订单事件需要按 key 有序且可回放。
 text	如果删除缓存失败了怎么办？
 text	岗位JD-后端开发.md
@@ -135,4 +130,3 @@ tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed ·
 tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: key points, concepts, examples, my questions
 tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: questions discussed, what stayed unresolved, comments and requests, next steps
 tooltip	Settings
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

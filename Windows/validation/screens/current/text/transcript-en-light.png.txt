@@ -9,39 +9,33 @@ content	Organize with template
 content	Proofread transcript
 content	Rewrite notes
 content	Series
-content	Summarize automatically after ending
+content	Write notes when a meeting ends
 placeholder	Find in transcript (misheard spellings too)
-text	15:35:26 · System audio
-text	15:35:41 · Microphone
-text	15:36:03 · System audio
-text	15:36:09 · System audio
-text	15:36:10 · Microphone · possible echo
-text	15:36:41 · Microphone
-text	2026-11-20 15:37 · 44 min · Online
+text	19:20:59 · System audio
+text	19:21:14 · Microphone
+text	19:21:36 · System audio
+text	19:21:43 · Microphone · possible echo
+text	2026-11-20 19:22 · 44 min · Online
 text	All records
 text	Copy notes
 text	Corrected transcript
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Details
 text	Edit notes
 text	Export…
 text	Find in transcript (misheard spellings too)
-text	Fishbone
 text	Home
 text	Interview review
 text	Live answers
 text	Meetings
 text	My notes
 text	Organize with template
-text	Outline
 text	Proofread transcript
 text	Review
 text	Rewrite notes
 text	Series
-text	Summarize automatically after ending
 text	Summarize this meeting
 text	Transcript
-text	Viewpoints
+text	Write notes when a meeting ends
 text	›
 text	后端二面：缓存一致性与项目经历
 text	嗯，这个挺关键的。
@@ -54,7 +48,7 @@ text	那数据库和缓存同时更新的时候，你们是怎么保证一致性
 text	
 title	NextThought
 tooltip	Close
-tooltip	Export Markdown
+tooltip	Export Markdown…
 tooltip	Maximize
 tooltip	Meeting info
 tooltip	Minimize
@@ -62,4 +56,3 @@ tooltip	Note template: the template defines sections, the model fills them
 tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
 tooltip	Settings
 tooltip	View corrected transcript
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

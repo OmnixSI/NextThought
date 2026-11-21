@@ -1,42 +1,67 @@
 content	All records
+content	Copy notes
 content	Data folder
+content	Details
+content	Edit notes
+content	Export…
 content	Hidden
 content	Home
+content	Not in a series
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
 content	Series
-content	周一客户例会 · 华东区
-content	字节后端二面
+content	Write notes when a meeting ends
 content	
 placeholder	Search all transcripts and notes
-text	1
-text	2 meetings · 2 series
-text	2 shown · 2 total
+text	2026-11-20 19:22 · 44 min · 线上
+text	7
+text	7 shown · 7 total
 text	All records
-text	Answers
-text	Archive overview
-text	Archive screenshot
 text	Context
+text	Copy notes
 text	Data folder
-text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Details
+text	Edit notes
+text	Export…
 text	Hidden
 text	Home
-text	Interview · 44 min
-text	No archived screenshots yet.
-text	Nov 20, 15:37 · 44:00 · interview · 字节后端二面 · 6 lines · 2 answers · 6 questions · Notes ready
-text	Nov 20, 15:37 · 6 lines · 2 answers
-text	Nov 21, 10:00 · 4 lines
-text	On this Mac · 2 meetings and 2 series match · series ordered by latest match
+text	Lab meeting
+text	Lab meeting · 1 min
+text	Live answers
+text	Meetings
+text	My notes
+text	Not in a series
+text	Nov 18, 14:08 · 87 lines · 13 answers
+text	Nov 19, 23:01 · 15 lines · 1 answer
+text	Nov 20, 13:20
+text	Nov 7
+text	Nov 7, 20:46 · 31 lines
+text	Nov 7, 20:54
+text	Nov 7, 20:57 · 5 lines · 1 answer
+text	Nov 7, 20:58 · 36 lines · 3 answers
+text	Organize with template
+text	Proofread transcript
 text	Recent meetings
+text	Review
+text	Rewrite notes
 text	Saved automatically · no audio kept
 text	Search all transcripts and notes
 text	Series
-text	This meeting has no answers.
-text	Today 10:00 AM
-text	Work meeting · 38 min
-text	Yesterday 3:37 PM
+text	Summarize this meeting
+text	Thursday
+text	Transcript
+text	Wednesday
+text	Work meeting
+text	Work meeting · 1 min
+text	Work meeting · 3 min
+text	Work meeting · 4 min
+text	Work meeting · 67 min
+text	Write notes when a meeting ends
+text	Yesterday 1:20 PM
+text	›
 text	后端二面：缓存一致性与项目经历
-text	周一产品例会
-text	周一客户例会 · 华东区
-text	字节后端二面
+text	新会议
 text	
 text	
 text	
@@ -44,10 +69,13 @@ text	
 text	
 title	NextThought
 tooltip	Close
+tooltip	Export Markdown…
 tooltip	Maximize
+tooltip	Meeting info
 tooltip	Meeting record actions
 tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
 tooltip	Notes are ready
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
 tooltip	Settings
 tooltip	Show
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

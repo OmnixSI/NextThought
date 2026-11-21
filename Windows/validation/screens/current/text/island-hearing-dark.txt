@@ -1,4 +1,2 @@
 text	12:36
-text	如果删除缓存失败了怎么办
-text	
 title	NextThought 提词岛

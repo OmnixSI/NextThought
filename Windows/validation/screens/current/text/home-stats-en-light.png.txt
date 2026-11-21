@@ -6,11 +6,10 @@ content	Prepare materials first
 content	Series
 content	This month
 placeholder	Name this meeting, for example “Second-round interview”
-text	1 h 22 min
-text	1 meetings · 38 min · 0 files
-text	1 meetings · 44 min · 4 files
-text	2
-text	6
+text	0
+text	1 h 18 min
+text	18
+text	7
 text	ACL 2026 口头报告
 text	All records
 text	All series
@@ -22,19 +21,21 @@ text	Client call
 text	Continue a series
 text	Ctrl+Alt+N
 text	Cues by the camera, eyes up
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	General
-text	Good afternoon.
+text	Good evening.
 text	Group discussion
 text	Group project
 text	Home
 text	How much you've recorded
 text	Interview
-text	Interview · 44 min
 text	Lab meeting
+text	Lab meeting · 1 min
 text	Lecture / Class
 text	Name this meeting, for example “Second-round interview”
+text	Not started yet · 0 files
 text	Not started yet · 2 files
+text	Not started yet · 4 files
+text	Nov 7
 text	November 21, Saturday
 text	Prepare materials first
 text	Presentation / Defense
@@ -44,19 +45,20 @@ text	Recording time runs from the start to the end of each meeting; pauses count
 text	Series
 text	Start
 text	This month
-text	Today 10:00 AM
+text	Thursday
+text	Wednesday
 text	What is the meeting?
 text	Work meeting
-text	Work meeting · 38 min
-text	Yesterday 3:37 PM
+text	Work meeting · 4 min
+text	Work meeting · 67 min
+text	Yesterday 1:20 PM
 text	answers given
 text	meetings
 text	questions heard
 text	recorded time
-text	后端二面：缓存一致性与项目经历
-text	周一产品例会
 text	周一客户例会 · 华东区
 text	字节后端二面
+text	新会议
 text	
 text	
 text	
@@ -76,4 +78,3 @@ tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed ·
 tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: key points, concepts, examples, my questions
 tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: questions discussed, what stayed unresolved, comments and requests, next steps
 tooltip	Settings
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
