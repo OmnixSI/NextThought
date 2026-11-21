@@ -38,7 +38,7 @@ public sealed class CodexEventParserParityTests
     }
 
     [Fact]
-    public void IgnoresMalformedJson()
+    public void IgnoresMalformedJSON()
     {
         Assert.Null(CodexOutputParser.Parse("not json"));
     }

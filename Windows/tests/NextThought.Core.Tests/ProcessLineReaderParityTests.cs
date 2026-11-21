@@ -55,7 +55,7 @@ public sealed class ProcessLineReaderParityTests
     }
 
     [Fact]
-    public async Task PreservesSplitUtf8CrlfAndFinalUnterminatedLine()
+    public async Task PreservesSplitUTF8CRLFAndFinalUnterminatedLine()
     {
         var data = Encoding.UTF8.GetBytes("联网🙂\r\nlast");
         // The Swift test writes one byte at a time into a Pipe; this stream hands out one byte per

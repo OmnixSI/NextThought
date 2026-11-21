@@ -7,7 +7,7 @@ namespace NextThought.Core.Tests;
 public sealed class BackupMergeTests
 {
     [Fact]
-    public void StaleBackupCannotRestoreDefaultDeletedLessonsOrTheirSourceIds()
+    public void StaleBackupCannotRestoreDefaultDeletedLessonsOrTheirSourceIDs()
     {
         var workspaceId = Guid.NewGuid().ToString("D");
         var deleted = Guid.NewGuid().ToString("D");
@@ -49,7 +49,7 @@ public sealed class BackupMergeTests
     }
 
     [Fact]
-    public void MergeKeepsLessonDeletionTombstonesAuthoritativeAndIdempotent()
+    public void BackupMergeKeepsLessonDeletionTombstonesAuthoritativeAndIdempotent()
     {
         var workspaceId = Guid.NewGuid().ToString("D");
         var lessonId = Guid.NewGuid().ToString("D");
@@ -88,7 +88,7 @@ public sealed class BackupMergeTests
 
 
     [Fact]
-    public void MergeDoesNotResurrectDefaultDeletedSeriesContent()
+    public void BackupMergeDoesNotResurrectDefaultDeletedSeriesContent()
     {
         var workspaceId = Guid.NewGuid().ToString("D");
         var itemId = Guid.NewGuid().ToString("D");

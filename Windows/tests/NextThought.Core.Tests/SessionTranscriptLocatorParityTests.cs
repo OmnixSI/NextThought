@@ -45,7 +45,7 @@ public sealed class SessionTranscriptLocatorParityTests
     }
 
     [Fact]
-    public void StableLineIdsTakePrecedenceAndMissingIdsCannotGuess()
+    public void StableLineIDsTakePrecedenceAndMissingIDsCannotGuess()
     {
         var line = Line(5, "已标记的原话");
         Assert.Equal(0, SessionTranscriptLocator.Index(line.Id, 1102, Start, [line]));

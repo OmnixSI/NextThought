@@ -60,7 +60,7 @@ public sealed class CoachSummaryParityTests
     }
 
     [Fact]
-    public void RoundTripsThroughJson()
+    public void RoundTripsThroughJSON()
     {
         var summary = new CoachSummary(
             Pace: 236,

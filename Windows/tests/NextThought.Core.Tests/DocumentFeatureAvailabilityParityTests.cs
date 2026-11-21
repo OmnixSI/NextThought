@@ -11,7 +11,7 @@ namespace NextThought.Core.Tests;
 public sealed class DocumentFeatureAvailabilityParityTests
 {
     [Fact]
-    public void EveryDependencyIsRequiredBeforeCallingFeatureReady()
+    public void TestEveryDependencyIsRequiredBeforeCallingFeatureReady()
     {
         for (var mask = 0; mask < 64; mask++)
         {

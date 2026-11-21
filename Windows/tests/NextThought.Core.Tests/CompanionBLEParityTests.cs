@@ -40,7 +40,7 @@ public sealed class CompanionBLEParityTests
     }
 
     [Fact]
-    public void ExpiryBoundsAndMinimumMtu()
+    public void ExpiryBoundsAndMinimumMTU()
     {
         var data = Enumerable.Repeat((byte)1, 50).ToArray();
         var start = DateTimeOffset.UtcNow;
