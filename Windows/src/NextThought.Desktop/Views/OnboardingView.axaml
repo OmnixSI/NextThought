@@ -104,7 +104,9 @@
                       <TextBlock Text="{loc:Tr 实时转写}" Classes="overline" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr 示例}" Classes="caption" Foreground="{DynamicResource Secondary}" />
                     </Grid>
-                    <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleLines}" MaxHeight="280">
+                    <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleLines}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="local:OnboardingSampleLine">
                           <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
@@ -114,6 +116,7 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    </ScrollViewer>
                   </StackPanel>
                 </Border>
                 <!-- Notes grow beside it; the reference answer appears when the question is asked. -->
@@ -140,7 +143,8 @@
                           <DataTemplate x:DataType="local:OnboardingSampleTakeaway">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_8}"
                                   Margin="{DynamicResource D4Margin_0_0_0_4}">
-                              <TextBlock Text="{Binding Kind}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                              <TextBlock Text="{Binding Kind}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                                         Width="32" />
                               <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
                             </Grid>
                           </DataTemplate>

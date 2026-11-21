@@ -106,3 +106,13 @@ public partial class AppState
         OnPropertyChanged(nameof(OnboardingSampleProgress));
     }
 }
+
+
+public partial class AppState
+{
+    // E3: closing the guide stops the sample replay (Mac cancels the task with the view).
+    partial void OnOnboardingVisibleChanged(bool value)
+    {
+        if (!value) StopSample();
+    }
+}

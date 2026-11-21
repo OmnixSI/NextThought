@@ -1,30 +1,40 @@
-# E3 · 首次引导对照（Onboarding）
+# E3 · 首次引导对照（Onboarding，第四轮 task-34 收尾）
 
 - 日期：2026-11-21
-- Mac 参照：`Sources/NextThought/Onboarding.swift`（OnboardingView / SetupChecklist / SetupRow / GuideRow / CueIslandMock）、`OnboardingSampleMeeting.swift`、`MyVoiceViews.swift` 的 `OnboardingVoicePage`；Core `OnboardingFlow.swift` / `OnboardingVersion.swift`
-- Windows 实现：`Windows/src/NextThought.Desktop/Views/OnboardingView.axaml(.cs)`、`AppState.Onboarding.cs`、`MainWindow.axaml` 的引导覆盖层入口
-- 截图：`Windows/validation/screens/Onboarding/`（`onboarding-step0..3-{light,dark}.png`，由 `--screenshots` 生成）
+- Mac 参照：`Sources/NextThought/Onboarding.swift`（OnboardingView / SetupChecklist / SetupRow / GuideRow / CueIslandMock）、`OnboardingSampleMeeting.swift`、`MyVoiceViews.swift` 的 `OnboardingVoicePage`；`SettingsGeneralData.swift` 的 `SetupChecklist(exclude:)`；Core `OnboardingFlow.swift` / `OnboardingVersion.swift`
+- Windows 实现：`Views/OnboardingView.axaml(.cs)`、`AppState.Onboarding.cs`、`OnboardingSample.cs`、`AppState.OnboardingSample.cs`、`AppState.SetupChecklist.cs`、`Views/SettingsSetupChecklist.axaml(.cs)`、`Views/Motion.cs`（GuideMotion）、`MainWindow.axaml` 的引导覆盖层入口、`SettingsView.axaml`（通用页清单卡）
+- 截图：`Windows/validation/screens/onboarding/`（`onboarding-step0..3-{light,dark,en-light}.png` 与 first/last）；设置清单在 `settings-*.png` 的通用页
 
-## 结构性对照
+## task-34 本轮收尾项
 
-| Mac 元素 | Mac 行为 | Windows 状态 | 差异 |
-|---|---|---|---|
-| `OnboardingView` 外框 | 四步（场合/声音/回答/提词与开始），顶部四条进度胶囊 + `1 / 4` + 步骤名 + 预计时间 + 「稍后继续」 | 有：`OnboardingIsScene/Sound/Answers/Start` 控制四条胶囊；`OnboardingPosition`、`OnboardingStepTitle`（场合/声音/回答/提词与开始）、`OnboardingStepTime`（约 15/60/90 秒）、「稍后继续」（SkipOnboardingCommand） | 一致（文案走 Mac 字符串表） |
-| 底部栏 | 上一步；下一步/开始第一场；回答步可「跳过」；开始页「先看看」 | 有：上一步、下一步、「跳过」（仅回答步）、「先看看」+「开始第一场」（BeginFirstMeetingCommand） | 「开始第一场」走 `StartRecordingCommand`（无法执行时置灰）；Mac 的 `isChangingSession` 保护未建模 |
-| 场合页 `sceneSheet` | SceneGlyph + 大号 serif 场景名 + Promise + Moments 列表；场景 chip 切换；「看一段面试示例」 | 有：`SceneGlyph` + `OnboardingSceneTitle` + `OnboardingScenePromise` + `OnboardingSceneMoments`；Scenes chip（SetSceneCommand）；示例开关（ToggleOnboardingSample → 「看一场示例会议」） | 示例用 Windows 已有的 demo 模式（LoadDemo）而不是 Mac 的内嵌 OnboardingSampleMeeting 时间线；缺 Mac 的 `sampleFinished` 自动收起 |
-| 声音页 | 会议在哪里（线上/线下 VenuePicker）、系统音频权限、麦克风、语音识别（本机/云端）、声音测试 | 有：系统音频 CheckBox、麦克风 CheckBox、语音识别（`ModelStatusText` + 下载/准备按钮）、我的声音（`OnboardingVoiceStatus` + 声音测试打开 `OnboardingVoiceWindow`）、只在本机保存文字说明 | 缺 Mac 的「允许系统音频」权限按钮（Windows 无需系统录制权限，属计划允许的差异）；麦克风授权弹窗由系统在首次录音时处理 |
-| 回答页 | 回答服务表单（API Key/模型/测试连接），可选 | 有：`Settings.KeyStatus` 状态、「打开设置」、`CheckServiceCommand` 检查连接、可选说明 | Mac 表单内嵌在引导页；Windows 复用设置页（E27 完成能力） |
-| 提词与开始页 | CueIslandMock（刘海下的提词岛示意）+ 说明 + 设置清单 + 回到声音 | 有：提词岛示意卡（问题/回答两行）、两句说明（含 Windows 措辞「鼠标移到提词岛上…」）、就绪说明、回到声音、设置清单（`OnboardingChecks` 三行） | 示意卡为静态演示文案，未逐字使用 Mac CueIslandMock 的 `cuePoint` 布局 |
-| `SetupChecklist` / `SetupRow` | 设置页「通用」中的可勾选清单（权限/声音/签名等，排除若干项） | 部分：引导开始页展示三项 `OnboardingChecks`；设置页未挂 Checklist | 设置页 Checklist 未接入（E3 后续项） |
-| `OnboardingSampleMeeting` | 引导内嵌示例会议（先看一段对话再点开始），`sampleFinished` 后自动收起 | 用 `--demo` 的完整示例（D1 已实现 demo staged entries）；引导页「看一场示例会议」会结束引导并打开 demo | 交互等价，流程不同 |
-| `OnboardingVoicePage` | 引导内声音录入页 | 复用现有 `OnboardingVoiceWindow`（MyVoiceViews 对应窗口） | 一致（窗口复用） |
-| 屏幕录制权限一步 | Mac 有系统录制权限请求 | 已按任务要求**去掉**（Windows 不需要该权限） | 计划内差异 |
-| 版本/持久化 | `quickStartStep`（AppStorage）记录步数；`OnboardingVersion` 判断是否再显示；「稍后继续」进入 checklist 入口 | 有：`OnboardingStep`（AppState）、`OnboardingVersion.NeedsGuide`、`OnboardingCompletedVersion`；「稍后继续」= SkipOnboarding（完成引导） | Mac 的「稍后继续」保留首页入口；Windows 完成即关闭，首页无「继续引导」入口 |
+| Mac 元素 | 实现 | 说明 |
+|---|---|---|
+| `SetupChecklist` 位置 | 设置 → **通用** 页的「设置清单」卡（`Tag="General"`），行来自 `AppState.SetupChecklistRows`（语音识别 / 回答引擎 / 当前场景），对应 Mac `setupItems` 排除 `capture/mic/signing` 后的三项 | 第四轮从「高级」页移到 Mac 所在位置；行内状态点、标题、灰色说明、按需动作（下载 / 设置 / 编辑）与 `SetupRow` 一致 |
+| `OnboardingSampleMeeting` 面板 | 场景页「看一段面试示例」展开：左侧「实时转写」卡（`示例` 标签、说话人 + 逐行文本，滚动区 280）；右侧「面试官在追问 · 参考回答」块（13 秒后出现；问题 + 参考回答）与「面试记录」卡（`示例` 标签、空态提示、记录/待办类型列宽对齐）；底部进度条 + 播完「重播」 | 时间线来自 `OnboardingSample`（逐字 Mac 数据：7 行对话 / 6 条记录 / 1 条参考回答，34 秒），`ScriptTimeline` 计算可见条数；引导关闭时停止回放 |
+| 切步动效 | `GuideMotion.PhaseIn`（460 ms cubic-out 淡入，Mac `Motion.phase` 的 0.46 s spring 近似）在每次 `OnboardingStep` 变化与首次加载时播放；`OnboardingView` 监听 state 的 `OnboardingStep` 触发 | Mac 用 withAnimation(Motion.phase) 包裹 step 切换；Windows 无 spring API，用同长度缓动近似，步进内容不重叠 |
+| 其它引导缺口 | 示例会议不再是 demo shell 替代（`OnboardingSample.cs` 与 `AppState.OnboardingSample.cs` 提供脚本化回放）；`看一场示例会议` 仍保留 demo 入口作补充 | 与 Mac 差异：无自动跟随滚动（用可滚动容器 + 最新行加载）；无逐字动画过渡 |
 
-## 点按记录（demo 数据）
+## 逐元素对照（页面）
 
-见 `Windows/validation/screens/Onboarding/click-through.md`（待构建可用后补齐真实点按结果）。
+| Mac 元素 | Windows 状态 | 差异 |
+|---|---|---|
+| 顶部进度胶囊 / `1 / 4` / 步骤名 / 预计时间 / 「稍后继续」 | 有；`稍后继续` = 延后（首页出现 `OnboardingResumeRow`，见 E1 文件） | — |
+| 场合页 sceneSheet + promise + moments + 示例展开 | 有；示例面板见上表 | 例子面板高度按内容，Mac 固定 280 的滚动区 |
+| 声音页 系统音频/麦克风/语音识别/我的声音 + 声音测试 | 有；声音测试打开 `OnboardingVoiceWindow` | Windows 无系统录屏权限步（按任务去除） |
+| 回答页 Key 状态 / 打开设置 / 检查回答服务 | 有 | 表单在设置页（E27） |
+| 提词与开始页 CueIslandMock / 就绪说明 / 设置清单 / 回到声音 | 有 | 提词岛为静态示意 |
+| 底部 上一步/下一步/跳过(回答步)/先看看/开始第一场 | 有 | 开始第一场走 `StartRecordingCommand` |
 
-## 结论
+## 点按记录
 
-四步引导的页面结构、文案（Mac 字符串表逐句）、切换与退出行为已在独立 `OnboardingView` 中实现，并接回主窗口覆盖层；旧的 MainWindow 内联 40 行引导块已删除。未完成项：内嵌示例会议时间线、设置页 SetupChecklist、切步动画（Motion.phase 逐段出现）。状态最高「已实现、未验证」。
+见 `click-through.md`（更新示例面板与清单行）。
+
+## 验证
+
+- `--demo --self-test onboarding`：四步切换、示例开关、跳过关闭、清单行。
+- `--demo --screenshots`：引导 4 步浅/深/英文 + settings 通用页（含清单卡）。
+- 本轮已核对：清单卡在通用页、示例面板出现于第 1 步、进度条播放、播完出现重播、关闭引导停止计时。
+
+## 未完成项
+
+- 示例面板无自动滚动跟读与逐字过渡动画；Mac 的 `AIHeading` 图标细节（sparkle）未复刻；清单「本机签名」行按 Windows 实际去掉（无对应能力）。

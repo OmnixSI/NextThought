@@ -504,8 +504,8 @@
         </StackPanel>
       </Border>
 
-      <!-- E3/E25: 设置清单 — Mac 高级 → 数据与维护 SetupChecklist（排除 Windows 没有的录屏/签名项） -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <!-- E3: 设置清单 — Mac 通用页 SetupChecklist（排除 Windows 没有的录屏/签名项） -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 设置清单}" Classes="section" />
           <views:SettingsSetupChecklist />

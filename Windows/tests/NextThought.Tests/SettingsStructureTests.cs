@@ -82,7 +82,8 @@ public sealed class SettingsStructureTests
         Assert.Contains("{loc:Tr 显示方式}", Card("提词"));
         Assert.StartsWith("Coach|", Card("双屏演讲"));
         // Mac SetupChecklist lives in 高级 → 数据与维护.
-        Assert.StartsWith("Advanced|", Card("设置清单"));
+        // E3: Mac puts SetupChecklist on the 通用 page (SettingsGeneralData).
+        Assert.StartsWith("General|", Card("设置清单"));
         // Mac AnswerSettings: 回答服务 / 联网 / 资料 / 技能.
         Assert.StartsWith("Answer|", Card("技能"));
         Assert.StartsWith("Answer|", Card("资料"));
