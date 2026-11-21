@@ -112,3 +112,27 @@
 | settings-structure | 4 条全部（记录每次会议开关、说话人与翻译移通用、语义检索只在高级一次、搜索关键词表） | settings-parity | 已修 |
 | settings-pages | 12 处不一致按 §2 处理（位置/文案/缺项一律修） | settings-parity | 已修 |
 | share-test | 1 设置页入口；2 配对二维码位置尺寸 | settings-parity | 已修 |
+
+## 修条目落点（按页/区域，代表性提交）
+
+| 区域 | 主要提交 |
+|---|---|
+| 首页/外壳 | `37f3c510` `99f44f15` `390a7694` `0f3ec71f` `82a6925a` `b4e7af76` |
+| 组件（§3.1 components 1–6） | `3b4e0e73` `bc81dd00` `ea8a847a` `b5ad5878` `b75c52ce` `66c414d0` `37f3c510` `eab742fd` |
+| 提词岛/浮窗 | `be469328` `ae6de178` `5ebd7db9` `390a7694` |
+| 会中页 | `9dea68a4` `c7fcad8a` `3233a3f8` `873a0a4f` `075a95e8` `299b1f2d` `1c5cfd23`→`1c5cfdbb` |
+| 助手/翻译/coach | `c9bfeaed` `9dea68a4` `075a95e8` `127bf4d3` `2039768d` |
+| insights/presenter | `243fd140` `fd5d1afc` `1c5cfdbb` `6c283810` `04bd0769` `bbe31f71` |
+| speakers | `562fefe1` `44675d62` `ee808122` `eab742fd` |
+| 截图提问/读屏 | `5636937a` `10238c3e` `e49fe297` `4d5c4a71` |
+| 联网搜索 | `5bf4cb3e` `db8f879c` `89e42da6` `c7fcad8a` `5a4ccec7` `aca6b2ce` |
+| 会议页/纪要/我的笔记 | `8201bfd7` `5f34dd40` `be439c89` `2dfaf629` `fa450dc0` `dc3ae67d` `7cb320c6` `11709aaf` `17b25cc3` `d43f8226` `f7b5c7a1` `6f93376d` |
+| 导出 | `531e8d61` `30af8c32` `6f2a29fd` `46897cb8` |
+| 所有记录/系列/资料页 | `823ad3e2` `e326c607` `79057b45` `5e44d114` `0fb66877` `4ea6e1de` `4e28351e` `de3aa704` `1de7e0eb` `c009a748` `03ce18f3` `242d0792` `49fed557` `69a3a8f4` `bb6e36c7` |
+| 术语表/技能/设置/文档组件 | `5579fe8d` `ea8a847a` `a7ca0f73` `645c3a9e` `313bb8d4` `b4e7af76` `f030bafc` `b46cfbc7` `14dbd935` `a91fb8b3` `b3604e87` `2039768d` `127bf4d3` |
+| 共享测试 | `65275e39` `390a7694` |
+| 本机实测 K 组 | K1 `3d85d4bd` · K2 `8f345b61` · K3 `789dfec5` · K4 `1b06a915` · K5 `a6bd5200` · K6 `77b1017f` · K7 `待终报提交` · K8 `e6c27df3` · K10 `bca906b3` · K12 `584c3d87` · K17 `0dea577c`/`bfdc2086` · K18 `d81b64d9` · K9/R5 `release.ps1`/`e2b08008` |
+| 证据重拍 | `534d01ec` `8ce1576e` `d44cf3fa` |
+| 发布/文档 | `22b7f2eb` `20e50ff9` `21f61209` `d6437acc` `e2b08008` `6a66f06e` `1bf9f328` `8acec8f2` `b8951bea` `47cb0f90` `f11a0488` `2048ef8f` `ccd40cb9` `15d3a383` |
+
+结论：决定文件 §3 判「修」的全部条目已修，0 条未修；「接受」与「第二批」条目见 `ACCEPTED_DIFFERENCES.md`/`KNOWN_GAPS.md`。
