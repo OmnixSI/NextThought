@@ -3,8 +3,9 @@
 本文件是 **v3.4.0 的 Core 认领表**：把 Mac 侧 `Sources/NextThoughtCore` 的每个文件对应到 Windows 的
 C# 目标与测试，作为 P1（Core 移植）的批次登记表。状态列初始一律「未开始」；每移植一个文件，把状态改为「部分 / 已移植 / 测试通过」，并补测试数与差异说明。
 迁移判定按第 4 节：逐函数对应、Swift 测试全译且通过、被正式流程调用，三条缺一条只能写「部分」。
-**J9 定稿：v3.4.0 共 604 项 Core 测试，全部有 C# 翻译并通过（其中 602 项方法名逐字相同，
-仅剩 2 项 Mac SQLite journal 测试因 Windows 改用 JSON 队列而无同名对应物，见文末「J9」一节）。**
+**J9 定稿：v3.4.0 共 604 项 Core 测试，全部有 C# 翻译并通过，且 604 项方法名与 Swift 逐字相同。**
+（`DocumentJobTests.swift` 的 2 项 Mac SQLite journal 测试在测试工程里用 Mac 格式的 SQLite helper 逐字翻译；
+`Microsoft.Data.Sqlite` 只是测试工程依赖，正式 Windows 包用 JSON 队列，不含 SQLite。）
 
 - 基线：Mac 主分支 `f015e8c6`（v3.4.0，2026-11-21）。
 - 规模：**83 个文件 / 17,536 行 / 71 个测试文件 / 604 项测试**（行数含注释与提示词文本；v3.3.0 时为 80 个文件 / 17,202 行 / 69 个测试文件 / 592 项测试）。
@@ -148,7 +149,7 @@ WorkspaceArchiveOwnership、WorkspaceDeletionTransaction。
 - 校对结果写入 `user-content.json`，不再「原子重写 transcript.jsonl」。
 - 更新不是「只打开下载页」：已有更新安装、回滚和签名白名单逻辑；系统信任仍由签名证书决定。
 - 提词器模式已接通，不是「未接通」；独立提词窗与穿透恢复控制条已存在。
-- 当前 Windows Core 文件 **153** 个；`core_usage.py` 改为按「文件声明的类型是否被 Windows/src 或 tests 引用（含其它 Core 文件）」统计，复算 **未被程序用到 = 0**。旧的文件名启发式口径（40）已废弃。
+- 当前 Windows Core 文件 **154** 个；`core_usage.py` 改为按「文件声明的类型是否被 Windows/src 或 tests 引用（含其它 Core 文件）」统计，复算 **未被程序用到 = 0**。旧的文件名启发式口径（40）已废弃。
 - 新增三列是**按文件名匹配**的当前统计，不是 Mac 测试逐项翻译数；迁移完成前统一以「部分」为准。
 - J9 定稿后：604 项测试的逐文件数字见下面 B22 表，用 `Windows/scripts/core_test_parity.py` 复算（同名核对与历史遗留见「J9」一节）。
 
@@ -175,7 +176,7 @@ python Windows/scripts/core_usage.py
 - 唯一复算口径：`python Windows/scripts/core_test_parity.py --check`（60 秒内跑完，不需要 .NET）。
   脚本逐个统计 Swift 的 `@Test` 函数数，并把每个函数按「首字母大写的同名 C# 方法」匹配到
   `Windows/tests/NextThought.Core.Tests`；B22 表由 `--write` 生成。
-- **同名核对结果：602 / 604 项 C# 测试方法名与 Swift 逐字相同。**
+- **同名核对结果：604 / 604 项 C# 测试方法名与 Swift 逐字相同，`--strict-names` 归零。**
   - J9 第一批修正了 9 个大小写/前缀不一致的方法名：`RoundTripsThroughJSON`、`IgnoresMalformedJSON`、
     `ExpiryBoundsAndMinimumMTU`、`TestEveryDependencyIsRequiredBeforeCallingFeatureReady`、
     `PreservesSplitUTF8CRLFAndFinalUnterminatedLine`、`StableLineIDsTakePrecedenceAndMissingIDsCannotGuess`、
@@ -189,13 +190,12 @@ python Windows/scripts/core_usage.py
   - 这 24 项新测试暴露并修掉了 3 个 C# 与 Swift 不一致处：`ModeProfile.MatchesDefaultTemplatePreferences`
     漏了旧默认回答要求；`WorkspaceSourceIntegrity.RemoveMeetings` 的历史版本丢失被删来源的
     `sourceMissingSessionIDs`；`BackupMerge.ContentEquals` 忽略 series-change 收据导致已审阅回执被跳过。
-- **只剩 2 项同名缺口**：`DocumentJobTests.swift` 的
-  `journalRowReaderThrowsInsteadOfTreatingSQLiteErrorsAsEndOfRows`、
-  `failedJournalQueryAbortsStartupRecoveryBeforeTouchingStagedFiles`。Mac 这两项直接测 SQLite row reader 与
-  SQLite journal 查询失败；Windows 把 DocumentJobStore 换成了 JSON 队列（`DocumentJobQueue`），
-  同名测试无法在不引入 SQLite 依赖的前提下写。`--strict-names` 会且仅会列出这 2 项，等 Lead 定：
-  (a) 引入 `Microsoft.Data.Sqlite` 仅用于测试并逐字翻译；或 (b) 在 `OPEN_QUESTIONS.md` 记为实现机制差异，
-  Windows 的等价可靠性由 `DocumentJobQueueParityTests.DamagedQueueFileIsNeverOverwritten` 等覆盖。
+  - J9 第三批补齐了 `DocumentJobTests.swift` 的 2 项 SQLite 测试（`DocumentJobSQLiteParityTests.cs`）：
+    测试工程引入 `Microsoft.Data.Sqlite`（只进 `NextThought.Core.Tests` 的 PackageReference 与
+    packages.lock.json，**正式安装包不含 SQLite**），`MacDocumentJobSQLite.cs` 在测试侧复刻 Mac 的
+    `jobs` / `workspace_deletion_journal` 表（id TEXT PRIMARY KEY, body BLOB NOT NULL）、`SQLiteRowReader`
+    与启动恢复流程，逐字翻译两个测试并断言 Mac journal 语义（SQLITE_BUSY 的 journal 查询在动任何 staged
+    文件之前中止恢复；随后正常恢复文件与队列行）。没有为测试改 Windows 正式 `DocumentJobQueue`。
 - 3.4.0 的三个新测试文件（`LiveNotesTests`、`UtteranceTextTests`、`SpeakerClusteringTests.swift` 新增项）
   已全部逐方法同名翻译并通过：`dotnet test Windows/tests/NextThought.Core.Tests`。
 
@@ -293,12 +293,12 @@ python Windows/scripts/core_usage.py
 
 ## 通过情况
 
-- **604 项 Swift Core 测试全部有 C# 翻译并通过**（`Windows/tests/NextThought.Core.Tests`）。
-  其中 **602 项 C# 方法名与 Swift 逐字相同**；只剩 2 项 Mac SQLite journal 测试是因 Windows 改用 JSON 队列
-  而没有同名对应物（详见「J9」一节，等 Lead 定处理方式）。
+- **604 项 Swift Core 测试全部有 C# 翻译并通过，604 项方法名与 Swift 逐字相同**
+  （`Windows/tests/NextThought.Core.Tests`；`--strict-names` 归零，`--check` 604/604 通过）。
 - J1/J5 新增的 `LiveNotesTests`（5 项）、`UtteranceTextTests`（5 项）与 `SpeakerClusteringTests` 新增 2 项
   均按 Swift 方法名逐字翻译，先看到失败（`CS0246` 缺类型 / 缺 `named` 参数）再实现。
-- J9 第二批新增 `WorkspaceSameNameTests`（20 项）与 `LocalModelReuseParityTests` 新增 4 项，全部通过。
-- 最近一次全量 Core 测试：**1738 项，1735 通过，3 项失败**。失败的 3 项属 localization 任务进行中的
-  G8/G9 扫描测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`），不在本表 604 项范围内；
-  J1/J5/J9 相关的 57 项定向测试全部通过。
+- J9 第二批新增 `WorkspaceSameNameTests`（20 项）与 `LocalModelReuseParityTests` 新增 4 项；第三批新增
+  `DocumentJobSQLiteParityTests`（2 项，测试工程限定 SQLite 依赖）。J7 的 `TextZoomTests`（7 项）也通过。
+- 最近一次全量 Core 测试（J9 提交时）：**1751 项，1747 通过，4 项失败**。失败的 4 项属 localization
+  任务进行中的 G8/G9/G10 测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`、
+  `WordingTableTests`），不在本表 604 项范围内。

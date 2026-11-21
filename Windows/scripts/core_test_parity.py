@@ -45,20 +45,12 @@ NAME_OVERRIDES: dict[str, str] = {}
 # Swift test files that must have no C# counterpart (corpus data, not tests).
 NO_CSHARP_EXPECTED: set[str] = set()
 
-# B22 (the previous porting round) recorded these as translated, but the C# method cannot be
-# matched by the same-name convention: either it was renamed during the port, or the Windows
-# implementation differs (the Mac SQLite journal/store was replaced by the JSON queue). J9 audits
-# them; ``--strict-names`` keeps failing until the names are aligned, so the debt is visible.
-AUDIT_LEGACY: dict[str, list[str]] = {
-    # J9 follow-up: WorkspaceTests.swift and LocalModelReuseTests.swift are now translated with
-    # the same method names (WorkspaceSameNameTests.cs / LocalModelReuseParityTests.cs). Only the
-    # two SQLite-journal tests remain: Windows replaced the Mac SQLite store with a JSON queue, so
-    # there is no same-name counterpart to write without adding a SQLite dependency. Lead decides.
-    "DocumentJobTests.swift": [
-        "journalRowReaderThrowsInsteadOfTreatingSQLiteErrorsAsEndOfRows",
-        "failedJournalQueryAbortsStartupRecoveryBeforeTouchingStagedFiles",
-    ],
-}
+# B22 (the previous porting round) recorded a few tests under reworded names. J9 closed all of
+# them: the WorkspaceTests 20 and LocalModelReuseTests 4 were translated under their Swift names,
+# and the two SQLite-specific DocumentJobTests are translated verbatim in the test project against
+# a Mac-format test-side helper (Microsoft.Data.Sqlite is a test-project-only dependency). The
+# table is kept so a future gap can be recorded instead of silently failing the strict audit.
+AUDIT_LEGACY: dict[str, list[str]] = {}
 
 _CS_METHOD_RE = re.compile(
     r"\[(?:Fact|Theory)[^\]]*\]\s*(?:\[[^\]]*\]\s*)*"

@@ -11,6 +11,11 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <!-- J9: test-project-only dependency. The two Mac DocumentJobTests that exercise the Mac
+         SQLite job store (jobs / workspace_deletion_journal tables) are translated verbatim
+         against a test-side Mac-format helper. The shipped Windows app uses the JSON queue
+         (DocumentJobQueue) and does not reference SQLite. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/NextThought.Core/NextThought.Core.csproj" />
