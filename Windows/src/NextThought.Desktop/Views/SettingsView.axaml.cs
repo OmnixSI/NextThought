@@ -100,6 +100,19 @@ public partial class SettingsView : UserControl
 
     public void SelectPage(string page) => ShowPage(page);
 
+    /// <summary>
+    /// E13 / §6.7: Mac ContentView ShareTestSheet — capture the screen as other participants see it
+    /// (this app's own floating windows included) and show it in the share-test window.
+    /// </summary>
+    private async void ShareVisibilityTest_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        if (!await state.RunShareVisibilityTestAsync()) return;
+        var window = new ShareTestWindow { DataContext = state };
+        if (TopLevel.GetTopLevel(this) is Window owner) await window.ShowDialog(owner);
+        else window.Show();
+    }
+
     private void ShowPage(string page)
     {
         currentPage = page;

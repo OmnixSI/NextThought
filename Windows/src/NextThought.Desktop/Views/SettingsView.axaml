@@ -4,6 +4,7 @@
              xmlns:local="using:NextThought.Desktop"
              xmlns:views="using:NextThought.Desktop.Views"
              xmlns:platform="using:NextThought.Platform"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
   <UserControl.Styles>
@@ -163,6 +164,8 @@
             <ComboBox x:Name="CueScreenCombo" Width="220" SelectionChanged="CueScreen_SelectionChanged" />
           </StackPanel>
           <CheckBox Content="{loc:Tr 尽力从屏幕共享中排除本应用窗口}" IsChecked="{Binding Settings.CapturePrivacy}" />
+          <Button Classes="quiet" Content="{loc:Tr 共享可见性测试}" HorizontalAlignment="Left"
+                  Click="ShareVisibilityTest_Click" />
           <CheckBox Content="{loc:Tr 隐藏背景，只保留文字、边框与按钮}" IsChecked="{Binding Settings.TeleprompterHideBackground}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBlock Text="{loc:Tr 移到}" Classes="label" VerticalAlignment="Center" />
@@ -291,8 +294,8 @@
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAdvanced2" Text="{loc:Tr 技能}" Classes="section" />
-          <TextBlock Text="{loc:Tr 技能可用于所有系列，或在系列中按系列选择。}" Classes="caption" FontSize="11" />
-          <TextBlock Text="{loc:Tr 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。}"
+          <TextBlock Text="{loc:Tr 技能可用于所有系列，或在资料夹中按系列选择。}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在资料夹的“技能”页按系列勾选。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <TextBlock Text="{loc:Tr 还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。}"
                      Classes="caption" FontSize="11" IsVisible="{Binding !HasSkills}" />
@@ -305,6 +308,7 @@
           </ItemsControl>
           <StackPanel x:Name="SkillEditorPanel" Spacing="{DynamicResource D4Spacing_8}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <Button Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
             <Button Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
             <Button Content="{loc:Tr 新建技能}" Click="NewSkill_Click" />
             <Button Content="{loc:Tr 安装示例技能}" Click="InstallDemoSkill_Click" />
@@ -534,8 +538,8 @@
             <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
             <Button Content="{loc:Tr 复制配对链接}" Click="CopyCompanion_Click" />
           </StackPanel>
-          <Image Source="{Binding CompanionQr}" Width="220" Height="220" HorizontalAlignment="Left"
-                 IsVisible="{Binding CompanionRunning}" />
+          <controls:QRCodeView Text="{Binding CompanionLink}" Width="168" Height="168"
+                               HorizontalAlignment="Left" IsVisible="{Binding CompanionRunning}" />
           <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
           <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
