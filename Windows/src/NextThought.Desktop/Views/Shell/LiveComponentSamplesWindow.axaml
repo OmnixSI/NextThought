@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="using:NextThought.Desktop.Localization"
         x:Class="NextThought.Desktop.Views.LiveComponentSamplesWindow"
-        Title="会中组件状态样板" Width="1200" Height="1080"
+        Title="{loc:Tr 会中组件状态样板}" Width="1200" Height="1080"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource Paper}">
   <!-- Debug-only sample sheet (LiveSessionAcceptanceComponentSamples.swift). Synthetic content
        only: no microphone, ASR, model, network or archive is touched; opened by the shell self-test. -->

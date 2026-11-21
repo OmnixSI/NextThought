@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Avalonia.Media;
@@ -795,6 +795,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
             or nameof(AppState.SystemPartialTranslation) or nameof(AppState.LiveTranslationEnabled)
             or nameof(AppState.PresenterLayoutActive) or nameof(AppState.CandidateQuestion)
             or nameof(AppState.CoachHint) or nameof(AppState.HistoryPositionText) or nameof(AppState.AnswerHistoryCursor)
+            or nameof(AppState.GazeShouldLookUp)
             or nameof(AppState.AutoEndNotice) or nameof(AppState.SlidePointRows) or nameof(AppState.CueIslandSlidePage)
             or nameof(AppState.SelectedMode) or nameof(AppState.PlainAnswer) or nameof(AppState.DisplayedAnswerText)
             or nameof(AppState.DisplayedQuestionText)))
