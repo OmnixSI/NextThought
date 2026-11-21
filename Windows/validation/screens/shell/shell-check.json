@@ -18,6 +18,16 @@
       "detail": "StatusIsError=false"
     },
     {
+      "step": "ErrorBanner「重试保存」：保存队列受阻时显示重试",
+      "passed": true,
+      "detail": "保存受阻 · 有 3 项未保存 · 重试"
+    },
+    {
+      "step": "ErrorBanner 保存队列恢复后隐藏",
+      "passed": true,
+      "detail": "forced blocked cleared"
+    },
+    {
       "step": "FocusMode：录制中隐藏窗口外壳（标题胶囊/状态栏）",
       "passed": true,
       "detail": "Recording=true；ContextSidebarVisible=false"

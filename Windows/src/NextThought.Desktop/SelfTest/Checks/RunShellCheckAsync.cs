@@ -47,6 +47,17 @@ public partial class MainWindow
             state.CloseStatusCommand.Execute(null);
             await Pump();
             Step("ErrorBanner 关闭后恢复", !state.StatusIsError, "StatusIsError=false");
+            // decisions §3.1 shell 1: the save queue's blocked state shows 重试保存 in the same banner.
+            state.SetSaveBlockedForCheck(true);
+            await Pump();
+            Step("ErrorBanner「重试保存」：保存队列受阻时显示重试", state.ShowErrorBanner
+                    && state.ErrorBannerText.Contains("保存受阻", StringComparison.Ordinal)
+                    && state.GetType().GetProperty("ShowRetrySave") is not null,
+                state.ErrorBannerText);
+            CaptureVisual(this, Path.Combine(directory, "shell-save-blocked-light.png"));
+            state.SetSaveBlockedForCheck(false);
+            await Pump();
+            Step("ErrorBanner 保存队列恢复后隐藏", !state.ShowErrorBanner, "forced blocked cleared");
             if (Avalonia.Application.Current is { } darkApp)
             {
                 darkApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;

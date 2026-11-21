@@ -68,6 +68,19 @@ public sealed class WindowParityTests
     }
 
     [Fact]
+    public void E4TheErrorBannerRetriesBlockedArchiveSaves()
+    {
+        var shell = Read("Views", "MainWindow.axaml");
+        Assert.Contains("RetryPersistenceCommand", shell);
+        Assert.Contains("AcknowledgeSaveLossCommand", shell);
+        Assert.Contains("ShowRetrySave", shell);
+        Assert.Contains("ErrorBannerText", shell);
+        var state = Read("AppState.Shell.cs");
+        Assert.Contains("ShowErrorBanner", state);
+        Assert.Contains("SaveIsBlocked", state);
+    }
+
+    [Fact]
     public void E4TheShellHasNoBottomStatusBar()
     {
         var shell = Read("Views", "MainWindow.axaml");

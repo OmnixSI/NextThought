@@ -244,18 +244,24 @@
 
     <!-- E4 / ContentView.swift ErrorBanner: caution triangle, the message, 关闭提示. -->
     <Border Grid.RowSpan="2" ZIndex="30" MaxWidth="560" Margin="{DynamicResource ShellMargin_0_12_0_0}" VerticalAlignment="Top"
-            IsVisible="{Binding StatusIsError}" Background="{DynamicResource SurfaceRaised}"
+            IsVisible="{Binding ShowErrorBanner}" Background="{DynamicResource SurfaceRaised}"
             BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
             CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_12}"
             BoxShadow="{DynamicResource FloatShadow}">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <TextBlock Text="{StaticResource IconExclamationmarkTriangleFill}" FontFamily="{StaticResource IconFont}"
                    FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Top" Margin="{DynamicResource ShellMargin_0_2_0_0}" />
-        <SelectableTextBlock Grid.Column="1" Text="{Binding Status}" FontSize="13" TextWrapping="Wrap"
+        <SelectableTextBlock Grid.Column="1" Text="{Binding ErrorBannerText}" FontSize="13" TextWrapping="Wrap"
                              Foreground="{DynamicResource InkBrush}" />
-        <Button Grid.Column="2" Classes="icon" Command="{Binding CloseStatusCommand}" ToolTip.Tip="{loc:Tr 关闭提示}">
-          <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" FontSize="10" />
-        </Button>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+          <Button Classes="quiet" Content="{loc:Tr 重试保存}" Command="{Binding RetryPersistenceCommand}"
+                  IsVisible="{Binding ShowRetrySave}" />
+          <Button Classes="quiet" Content="{loc:Tr 确认缺失并继续保存}" Command="{Binding AcknowledgeSaveLossCommand}"
+                  IsVisible="{Binding ShowAcknowledgeLoss}" />
+          <Button Classes="icon" Command="{Binding CloseStatusCommand}" ToolTip.Tip="{loc:Tr 关闭提示}">
+            <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" FontSize="10" />
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
 

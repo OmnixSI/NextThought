@@ -2,7 +2,7 @@
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`ContentView.swift`（ErrorBanner / FocusModeView / LevelMeters）、`LiveWindowController.swift`（LiveWindowMenu）、`LiveSessionAcceptanceComponentSamples.swift`
 - Windows 代码：`Views/MainWindow.axaml`（错误横幅/专注态外壳）、`Views/Shell/LevelMeters.cs`、`Views/Shell/LiveComponentSamplesWindow.axaml(.cs)`、`Views/LiveView.axaml`（会中窗口菜单等价物）、`AppState.Shell.cs`
-- Windows 截图（本目录）：`shell-{normal,error,meters,focus}-{light,dark}` 部分组合、`live-window-menu-light.png`、`live-component-samples-{light,dark}.png`、`shell-check.json`（本轮构建）
+- Windows 截图（本目录）：`shell-{normal,error,meters,focus}-{light,dark}` 组合、`shell-save-blocked-light.png`、`live-window-menu-light.png`、`live-component-samples-{light,dark}.png`、`shell-check.json`（本轮构建）
 - 证据生成：`--self-test shell`（隔离数据目录，6/6 passed）
 
 | # | Mac 视图 | Mac 元素 | Windows 现状 | 结论 |
