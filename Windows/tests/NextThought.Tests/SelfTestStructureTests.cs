@@ -237,7 +237,12 @@ public sealed class SelfTestStructureTests
         Assert.Contains("InMemoryRandomAccessStream", reader);
         Assert.DoesNotContain("File.WriteAllBytes", reader);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("正在截屏读取屏幕", live);
+        // §6.5: the screen-watch status is no longer printed in the transcript status line; Mac keeps
+        // it in the 屏幕与讲稿 panel, which the live page mounts above the transcript.
+        Assert.Contains("<views:InsightsPanel", live);
+        Assert.Contains("LiveShowsInsightsPanel", live);
+        var insights = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
+        Assert.Contains("ScreenIsReading", insights);
     }
 
     [Fact]
@@ -513,7 +518,8 @@ public sealed class SelfTestStructureTests
         var prepare = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
         Assert.Contains("CurrentSlidePointsText", prepare);
         var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
-        Assert.Contains("讲稿要点", panel);
+        // §6.5/E7: the points are listed directly under the page header, as in InsightsPanel.swift.
+        Assert.Contains("听众可能会问", panel);
         Assert.Contains("SlidePointRows", panel);
     }
 
@@ -643,11 +649,11 @@ public sealed class SelfTestStructureTests
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
         Assert.Contains("Insights_Click", xaml);
         var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
-        // E7: the panel now has the Mac header + slide/screen/answer-progress sections.
+        // E7/§6.5: the panel now has the Mac header + slide/screen/answer-progress sections.
         Assert.Contains("屏幕与讲稿", panel);
-        Assert.Contains("讲稿要点", panel);
-        Assert.Contains("屏幕与截图", panel);
-        Assert.Contains("回答进度", panel);
+        Assert.Contains("听众可能会问", panel);
+        Assert.Contains("已识别 · 是否用于回答见", panel);
+        Assert.Contains("展开识别的文字", panel);
         Assert.Contains("SlidePointRows", panel);
         Assert.Contains("AnswerProgressCounterText", panel);
     }
@@ -785,8 +791,11 @@ public sealed class SelfTestStructureTests
     public void LivePageHasScreenshotCard()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("CurrentScreenshots", xaml);
-        Assert.Contains("截图", xaml);
+        // §6.5: the answer column's 截图 dropdown is gone; the composer owns the screenshot strip and
+        // the camera menu (Mac LiveComposer + ScreenshotCard).
+        Assert.Contains("assistant:ScreenshotCard", xaml);
+        Assert.Contains("截图提问", xaml);
+        Assert.Contains("框选区域", xaml);
         var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
         Assert.Contains("CurrentScreenshots.Add", archive);
     }
@@ -795,7 +804,11 @@ public sealed class SelfTestStructureTests
     public void LiveCandidateShowsConfidence()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("CandidateConfidence", xaml);
+        // §6.5: Mac CandidateStrip shows 可能的问题 + the question + 回答这句, without a confidence bar;
+        // the detector's confidence still exists in state.
+        Assert.Contains("LiveCandidateText", xaml);
+        Assert.Contains("可能的问题", xaml);
+        Assert.Contains("AnswerCandidate_Click", xaml);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("CandidateConfidence", live);
     }
@@ -804,9 +817,11 @@ public sealed class SelfTestStructureTests
     public void LivePageHasAnswerHistoryPanel()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        // E5: the history panel is a module that reads the live or archived answer history.
-        Assert.Contains("assistant:AnswerHistoryPanel", xaml);
-        Assert.Contains("历史回答", xaml);
+        // §6.5: Mac AnswerColumn's history navigation is 上一条 · 第几条/共几条 · 下一条 in the header,
+        // not a disclosure panel in the column.
+        Assert.Contains("PreviousAnswerCommand", xaml);
+        Assert.Contains("HistoryPositionText", xaml);
+        Assert.Contains("NextAnswerCommand", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("CurrentAnswerHistory.Add", state);
         var assistant = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Assistant.cs"));
@@ -817,9 +832,12 @@ public sealed class SelfTestStructureTests
     public void LiveTopBarHasCompanionAndAnswerSettings()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("ToggleCompanionCommand", xaml);
+        // §6.5: the companion toggle and the answer settings live in the Mac more menu (the model name
+        // is no longer printed in the bar).
+        Assert.Contains("Companion_Click", xaml);
         Assert.Contains("回答设置", xaml);
-        Assert.Contains("UseSemanticRetrieval", xaml);
+        Assert.Contains("LiveModelChoices", xaml);
+        Assert.Contains("SetLiveWebSearchModeCommand", xaml);
     }
 
     [Fact]
@@ -1306,12 +1324,17 @@ public sealed class SelfTestStructureTests
     public void FontsAndLicensesAreBundled()
     {
         var dir = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Assets", "Fonts");
-        foreach (var file in new[] { "InterVariable.ttf", "NotoSansSC-VF.ttf", "SourceSerif4-VF.ttf", "NotoSerifSC-VF.ttf",
+        // §5.1: one static face per used weight replaces the variable fonts (their default instance
+        // renders Thin/ExtraLight in Avalonia).
+        foreach (var file in new[] { "Inter-Regular.ttf", "Inter-Medium.ttf", "Inter-SemiBold.ttf",
+                     "NotoSansSC-Regular.otf", "NotoSansSC-Medium.otf", "NotoSansSC-SemiBold.otf",
+                     "SourceSerif4-Medium.ttf", "NotoSerifSC-Medium.otf",
                      "LICENSE-Inter.txt", "OFL-NotoSansSC.txt", "OFL-SourceSerif4.txt", "OFL-NotoSerifSC.txt" })
             Assert.True(File.Exists(Path.Combine(dir, file)), file);
         var theme = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
-        Assert.Contains("InterVariable.ttf#Inter Variable", theme);
-        Assert.Contains("SourceSerif4-VF.ttf#Source Serif 4", theme);
+        Assert.Contains("Inter-Medium.ttf#Inter", theme);
+        Assert.Contains("SourceSerif4-Medium.ttf#Source Serif 4", theme);
+        Assert.DoesNotContain("Variable", theme);
     }
 
     [Fact]
