@@ -9,9 +9,9 @@
         WindowStartupLocation="CenterScreen">
   <!-- E13 / §6.7: RegionScreenshotPicker.swift — headline + 显示器 picker on one row, the fitted
        screen image with a drag selection, then the caption and 取消 / 使用此区域. -->
-  <Grid RowDefinitions="Auto,*,Auto" Margin="16">
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,0,0,12">
-      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_16}">
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_0_0_0_12}">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
         <TextBlock Text="{StaticResource IconCameraViewfinder}" FontFamily="{StaticResource IconFont}"
                    FontSize="14" Foreground="{DynamicResource InkBrush}" VerticalAlignment="Center" />
         <TextBlock Text="{loc:Tr 拖动选择截图区域}" Classes="label" FontSize="15" VerticalAlignment="Center" />
@@ -20,7 +20,7 @@
                 SelectionChanged="Display_Changed" VerticalAlignment="Center" />
     </Grid>
 
-    <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="12" Padding="8">
+    <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_8}">
       <Grid x:Name="CanvasHost" ClipToBounds="True">
         <Image x:Name="ScreenImage" Stretch="Uniform" />
         <Canvas x:Name="Overlay" Background="Transparent">
@@ -30,11 +30,11 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,12,0,0">
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <TextBlock x:Name="HintText" Grid.Column="0" Classes="caption" Foreground="{DynamicResource Secondary}"
                  Text="{loc:Tr 截图会裁切到选中范围，然后存入资料库并由系统 OCR 读取文字。请把题目、代码或公式完整框入。}"
                  TextWrapping="Wrap" VerticalAlignment="Center" />
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
         <Button Classes="quiet" Content="{loc:Tr 取消}" Click="Cancel_Click" />
         <Button Classes="primary" Click="Accept_Click" IsEnabled="False" Name="AcceptButton">
           <TextBlock Text="{loc:Tr 使用此区域}" Foreground="{DynamicResource OnInk}" />

@@ -39,7 +39,7 @@
     </Border.Transitions>
     <StackPanel Spacing="{DynamicResource D4Spacing_16}">
       <!-- Scene glyph + title field (Mac StartComposer: 38 pt glyph, 19 pt medium field). -->
-      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_14}">
         <controls:SceneGlyph x:Name="SceneGlyphControl" Mode="{Binding SelectedMode}" Size="38"
                              VerticalAlignment="Center" RenderTransformOrigin="50%,50%" />
         <TextBox x:Name="TitleBox" Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent"
@@ -51,7 +51,7 @@
       <!-- Scene pills: one capsule slides between the chips (Mac matchedGeometryEffect). -->
       <Grid x:Name="ChipHost">
         <Canvas x:Name="SelectionLayer" IsHitTestVisible="False" ClipToBounds="False">
-          <Border x:Name="SelectionCapsule" Height="30" CornerRadius="15" IsVisible="False" />
+          <Border x:Name="SelectionCapsule" Height="30" CornerRadius="{DynamicResource D4CornerRadius_15}" IsVisible="False" />
         </Canvas>
         <ItemsControl x:Name="SceneChips" ItemsSource="{Binding Scenes}">
           <ItemsControl.ItemsPanel>
@@ -88,7 +88,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
           <Border Classes="chip" Padding="{DynamicResource D4Padding_6_2}" CornerRadius="{DynamicResource RadiusSmall}">
             <TextBlock Text="Ctrl+Alt+N" Classes="caption" FontSize="11" />

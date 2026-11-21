@@ -93,3 +93,5 @@ Windows 截图：`Windows/validation/screens/speakers/`（自检 `speakers` 生�
   - 真实麦克风录入（四句话音、声纹组件下载）未在自检执行，标注为“需真机麦克风”；`speakers-check.json` 最后一步如实记录；
   - Mac 是 popover，Windows 是独立窗口（平台差异，交互等价）；
   - 引导里的我的声音页（OnboardingVoicePage）属 E3 owner，不在 E12 范围。
+
+> 对照基准：Mac 3.4.0（`f015e8c6`）；Mac 无对应截图时按 Swift 源码逐元素（见上表）。

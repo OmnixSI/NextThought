@@ -24,25 +24,24 @@ public sealed class AssistantE5GapTests
     private static string Read(string relative) => File.ReadAllText(Path.Combine(Root(), relative));
 
     [Fact]
-    public void ThePresetMenuUsesTheMacTitles()
+    public void TheLayoutPresetsMatchTheMacAssistantLayout()
     {
-        var xaml = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        foreach (var sentence in new[]
-                 {
-                     "{loc:Tr 对话在左 · 回答在右（默认）}",
-                     "{loc:Tr 回答在左 · 对话在右}",
-                     "{loc:Tr 讲稿在左 · 回答在右（演讲 / 答辩）}",
-                     "{loc:Tr 单栏上下排列（小屏）}",
-                     "{loc:Tr 只看回答}"
-                 })
-            Assert.Contains(sentence, xaml);
-        // The old English short labels are gone.
-        Assert.DoesNotContain("Content=\"standard\"", xaml);
-        Assert.DoesNotContain("Content=\"answer-first\"", xaml);
-        Assert.DoesNotContain("Content=\"answer-only\"", xaml);
-        // The module menu uses the Mac module titles.
-        Assert.Contains("{loc:Tr 当前问题与候选}", xaml);
-        Assert.Contains("{loc:Tr 回答记录}", xaml);
+        // §6.5: shell parity follow-up. Mac defines the five AssistantLayout presets in
+        // AssistantLayout.swift and only applies them from the demo/layout state; the old
+        // Windows menu copy was removed with the LiveView rewrite, so the presets are asserted
+        // where the Mac defines them: the Core layout model and AppState.
+        var core = Read(Path.Combine("Windows", "src", "NextThought.Core", "AssistantLayout.cs"));
+        Assert.Contains("public enum Preset { Standard, AnswerFirst, Presenting, Stacked, AnswerOnly }", core);
+        Assert.Contains("public static AssistantLayout For(Preset preset)", core);
+        foreach (var preset in new[] { "Preset.AnswerFirst", "Preset.Presenting", "Preset.Stacked", "Preset.AnswerOnly" })
+            Assert.Contains(preset, core);
+        Assert.Contains("_ => Standard", core);
+        var state = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Assistant.cs"));
+        Assert.Contains("public void ApplyAssistantPreset(AssistantLayout.Preset preset)", state);
+        // The self-test walks the presets through the real state (Mac's demo applies them too).
+        var check = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "RunAssistantUiCheckAsync.cs"));
+        Assert.Contains("ApplyAssistantPreset(AssistantLayout.Preset.AnswerOnly)", check);
+        Assert.Contains("ApplyAssistantPreset(AssistantLayout.Preset.Standard)", check);
     }
 
     [Fact]

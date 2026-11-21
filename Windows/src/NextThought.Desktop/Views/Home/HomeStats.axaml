@@ -46,8 +46,8 @@
   <StackPanel Spacing="{DynamicResource D4Spacing_0}">
     <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
       <TextBlock Text="{loc:Tr 用了多少}" Classes="overline" VerticalAlignment="Center" />
-      <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="13" Padding="2" VerticalAlignment="Center">
-        <StackPanel Orientation="Horizontal" Spacing="2">
+      <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_13}" Padding="{DynamicResource D4Padding_2}" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
           <RadioButton Classes="stats-seg" GroupName="home-stats" Content="{loc:Tr 本月}"
                        IsChecked="{Binding HomeStatsIsMonth, Mode=OneWay}"
                        Command="{Binding ShowHomeStatsMonthCommand}" />
@@ -58,7 +58,7 @@
       </Border>
     </Grid>
     <Border Height="0.5" Background="{DynamicResource Hairline}" />
-    <Grid ColumnDefinitions="*,*,*,*" Margin="8,14,8,14">
+    <Grid ColumnDefinitions="*,*,*,*" Margin="{DynamicResource D4Margin_8_14_8_14}">
       <StackPanel Spacing="{DynamicResource D4Spacing_2}">
         <TextBlock Text="{Binding HomeStatsMeetings}" Classes="stat-figure" />
         <TextBlock Text="{loc:Tr 场会议}" Classes="caption" Foreground="{DynamicResource Secondary}" />

@@ -248,9 +248,10 @@ public sealed class DemoStageTests
         Assert.Contains("DemoFilms.For", content);
         Assert.Contains("DemoIslands.For", content);
 
-        var island = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "CueIslandWindow.axaml.cs"));
-        Assert.Contains("DemoIslands.For", island);
+        // The island window renders the shared capture states; their phase content comes from DemoIslands.
+        var islandStates = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "CueIslandWindowStates.cs"));
+        Assert.Contains("DemoIslands.For", islandStates);
         // The island phase content comes from the shared demo data, not from local literals.
-        Assert.DoesNotContain("温度补偿之后残差还剩多少", island);
+        Assert.DoesNotContain("温度补偿之后残差还剩多少", islandStates);
     }
 }

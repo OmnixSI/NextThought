@@ -34,7 +34,7 @@
         <c:InteractiveRowBody Padding="{DynamicResource D4Padding_0}">
           <StackPanel Spacing="{DynamicResource D4Spacing_2}">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
-              <Border Grid.Column="0" Width="7" Height="7" CornerRadius="4"
+              <Border Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
                       Background="{Binding ModeTintBrush}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="label"
                          FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"

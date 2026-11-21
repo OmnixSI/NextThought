@@ -1,5 +1,7 @@
 # 首页（HomeView.swift ↔ HomeView.axaml）逐元素对照
 
+> 对照基准：Mac 3.4.0（`f015e8c6`）；参考图见 [home-light](../../mac-screens/home/home-light.png)、[home-dark](../../mac-screens/home/home-dark.png)。
+
 - 对照基准：Mac v3.4.0（`f015e8c6`）。Mac 参考图：[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21，1120×820 pt @2x = 1600×1171 px）。
 - Windows 截图：`Windows/validation/screens/home/windows-{light,dark}.png`（首屏）与 `windows-stats-{light,dark}.png`（滚到底的统计区），1120×820，2026-11-21 用隔离数据目录加 `--demo --screenshots` 生成并入库；`current/home*.png` 是同一 harness 的最新产物（不入库）。
 - 相关源码：`Sources/NextThought/HomeView.swift`、`MeetingStatsViews.swift`；Windows `Views/HomeView.axaml`、`Views/Home/*`、`AppState.Home.cs`、`MeetingStats.cs`/`MeetingStatsText.cs`。

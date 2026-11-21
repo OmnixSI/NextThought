@@ -121,10 +121,12 @@ public sealed class AssistantParityTests
         Assert.Contains("assistant-layout.json", state);
         Assert.Contains("new DetachedModuleWindow", state);
         var live = Read("Views", "LiveView.axaml.cs");
-        Assert.Contains("ModuleWindow_Click", live);
-        Assert.Contains("LayoutPreset_Click", live);
+        // §6.5: after the LiveView rewrite the answer panel detaches through the 独立窗口 button.
+        Assert.Contains("DetachAnswer_Click", live);
         Assert.Contains("LatestAnswer_Click", live);
         Assert.Contains("OpenDetachedModule(AssistantModule.Answer)", live);
+        var xaml = Read("Views", "LiveView.axaml");
+        Assert.Contains("Click=\"DetachAnswer_Click\"", xaml);
     }
 
     [Fact]

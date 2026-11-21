@@ -106,3 +106,5 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
 - 回归修复：`WorkspaceSeries.SessionIds` 是 Windows 分组状态，**不能写进任何 Mac 共享文件**（`Workspaces/*.json`、旧 `Workspace/workspace.json`），否则破坏 A7 迁移语义（`WorkspaceMembershipTests.OldSessionIdListsMigrateIntoMetaOnce`）。现改为写入 `WindowsState/workspace-sessions.json`（与 workspace-documents.json 同级，不进 Mac 文件/备份），`Load()` 在读完 Mac 文件与 meta 迁移后合并回来；`WorkspaceSessionRoundTripTests` 改为断言 sidecar 往返且两个 Mac 文件都不含 `sessionIds`。
 - 同轮修复：`SyncSessionMeta` 迁移时使用 meta.json 的 `id`（规范小写）而不是磁盘目录名（大写），并让系列页记录匹配按 Guid 比较，避免大小写不一致导致「记录」标签为空。
 - 验证：Core 全量 **1777/1777 通过**（含 `WorkspaceMembershipTests`）；Desktop 0 errors；`--self-test=knowledge-review` **passed 12/12**；`material-review-{light,dark}.png` 与 check JSON 更新。系列页两个标签的截图仍待补（标签内容在 820 视口下继续截不到，已记录，不影响验收结论）。
+
+> 对照基准：Mac 3.4.0（`f015e8c6`）；Mac 无对应截图时按 Swift 源码逐元素（见上表）。
