@@ -36,6 +36,15 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- R8: the sample pages exist in debug builds only. -->
+    <AvaloniaXaml Remove="Views\ControlSampleWindow.axaml" />
+    <AvaloniaXaml Remove="Views\ComponentSamplesWindow.axaml" />
+    <AvaloniaXaml Remove="Views\Shell\LiveComponentSamplesWindow.axaml" />
+    <AvaloniaXaml Remove="SelfTest\TypographySampleWindow.axaml" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="../../THIRD_PARTY_NOTICES.txt" Link="THIRD_PARTY_NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- E10: the eye-contact coach loads these ONNX models from assets/face-landmarker next to the app. -->
     <Content Include="../../assets/face-landmarker/*.onnx" Link="assets/face-landmarker/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

@@ -65,9 +65,17 @@ try {
 
     Step 'publish (x64, self-contained, ReadyToRun)' {
         & $dotnet publish (Join-Path $projectRoot 'src\NextThought.Desktop\NextThought.Desktop.csproj') -c Release -r win-x64 `
-            --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=true -o $payload --verbosity minimal
+            --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=true `
+            -o $payload --verbosity minimal
     }
+    # The RID-specific publish makes NuGet rewrite the RID-free lock files; put the committed
+    # graphs back so a release run leaves the working tree clean (verified by the clean check).
+    & git -C $projectRoot checkout -- src/NextThought.Core/packages.lock.json src/NextThought.Platform/packages.lock.json src/NextThought.Desktop/packages.lock.json 2>$null
     Assert (Test-Path -LiteralPath (Join-Path $payload 'NextThought.exe')) 'Published payload has no NextThought.exe.'
+
+    Step 'release cleanliness audit (R8: no QA switches, debug startup switches or sample pages in the payload)' {
+        & python (Join-Path $projectRoot 'scripts\release_cleanliness.py') --payload $payload
+    }
     $manifest = [ordered]@{
         product  = 'NextThought.Desktop'
         version  = $Version

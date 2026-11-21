@@ -3,13 +3,14 @@ using System.Net.Http;
 namespace NextThought.Platform;
 
 /// <summary>
-/// Update-source policy shared with tests. Normal runs use the HTTPS release feed; overrides
-/// require NEXTTHOUGHT_QA=1 and plain HTTP is always rejected.
+/// Update-source policy shared with tests. Normal runs use the HTTPS release feed; a QA override
+/// (debug builds only) must be HTTPS or a local path. The formal package never carries the QA
+/// environment switch, so this assembly keeps no env names: callers decide whether an override is
+/// allowed and pass it explicitly.
 /// </summary>
 public static class UpdateFeedPolicy
 {
     public const string Default = "https://api.github.com/repos/OmnixSI/NextThought/releases";
-    public const string QaVariable = "NEXTTHOUGHT_QA";
 
     /// <summary>E27: Mac <c>updateRepository</c> — the GitHub repository the update feed reads.</summary>
     public static string DefaultFor(string repository)
@@ -20,16 +21,16 @@ public static class UpdateFeedPolicy
         return "https://api.github.com/repos/" + trimmed + "/releases";
     }
 
-    public static string ResolveSource(Func<string, string?> read) => ResolveSourceFor(null, read);
-
-    /// <summary>E27: the QA switch still wins; otherwise the saved repository builds the feed URL.</summary>
-    public static string ResolveSourceFor(string? repository, Func<string, string?> read)
+    /// <summary>
+    /// E27: a saved repository builds the feed URL. <paramref name="requestedOverride"/> is only
+    /// supplied by debug builds (R8: the formal package passes null and always uses the repository);
+    /// plain HTTP is always rejected.
+    /// </summary>
+    public static string ResolveSourceFor(string? repository, string? requestedOverride, bool overrideEnabled)
     {
-        var value = read("NEXTTHOUGHT_UPDATE_FEED");
-        if (string.IsNullOrWhiteSpace(value)) return DefaultFor(repository ?? "");
-        if (read(QaVariable) != "1") return DefaultFor(repository ?? "");
-        if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) return DefaultFor(repository ?? "");
-        return value;
+        if (!overrideEnabled || string.IsNullOrWhiteSpace(requestedOverride)) return DefaultFor(repository ?? "");
+        if (requestedOverride.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) return DefaultFor(repository ?? "");
+        return requestedOverride;
     }
 
     public static async Task<string> ReadAsync(string source, CancellationToken cancellationToken = default)

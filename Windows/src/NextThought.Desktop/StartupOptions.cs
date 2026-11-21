@@ -27,7 +27,9 @@ public static class StartupOptions
             else if (argument == "--screenshots" && index + 1 < args.Count) Screenshots = args[++index];
             else if (argument.StartsWith("--self-test=", StringComparison.OrdinalIgnoreCase)) SelfTest = argument["--self-test=".Length..];
             else if (argument == "--self-test" && index + 1 < args.Count) SelfTest = args[++index];
+#if DEBUG
             else if (argument == "--onboarding") Onboarding = true;
+#endif
         }
     }
 }

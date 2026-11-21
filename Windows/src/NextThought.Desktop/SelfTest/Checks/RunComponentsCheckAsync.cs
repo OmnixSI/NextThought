@@ -22,6 +22,7 @@ public partial class MainWindow
         void Step(string name, bool ok, string detail) => steps.Add(new { step = name, passed = ok, detail = detail });
         try
         {
+#if DEBUG
             var window = new ComponentSamplesWindow();
             window.Show();
             await Task.Delay(900);
@@ -69,6 +70,9 @@ public partial class MainWindow
             await Task.Delay(300);
             Step("浅色与深色样张截图", true, "component-samples-light.png / component-samples-dark.png");
             window.Close();
+#else
+            Step("样张页（仅调试构建）", true, "component sample page is debug-only");
+#endif
             passed = steps.All(step => (bool)step.GetType().GetProperty("passed")!.GetValue(step)!);
         }
         catch (Exception ex)

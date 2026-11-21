@@ -1,0 +1,72 @@
+{
+  "checkedAt": "2026-11-21T15:00:00+08:00",
+  "todoMarkers": [
+    {
+      "file": "src\\NextThought.Core\\MacPreferences.g.cs",
+      "line": 104,
+      "text": "new(\"recognitionVocabulary\", MacPreferenceKind.String, \"\", \"设置 → 高级 → 声音与识别·临时专业词\", \"string(forKey: \\\"recognitionVocabulary\\\") ?? \\\"\\\"\", null, null, null),"
+    },
+    {
+      "file": "src\\NextThought.Core\\UiTextMac.g.cs",
+      "line": 254,
+      "text": "[\"临时专业词\"] = \"Temporary terms\","
+    },
+    {
+      "file": "src\\NextThought.Core\\UiTextMac.g.cs",
+      "line": 255,
+      "text": "[\"临时签名（ad-hoc）· 每个版本签名不同，更新后系统会要求重新授权\"] = \"Temporary ad-hoc signature · each build has a different identity and macOS will request permission again after update"
+    },
+    {
+      "file": "src\\NextThought.Core\\UiTextWindows.cs",
+      "line": 400,
+      "text": "[\"局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。\"] = \"LAN HTTP is unencrypted; the pairing link is a temporary remote key, so use it only on a "
+    },
+    {
+      "file": "src\\NextThought.Core\\UiTextWindows.cs",
+      "line": 440,
+      "text": "[\"已在 %@:%lld 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。\"] = \"Listening on %@:%lld · the pairing link is a temporary remote key, so use it only on trusted networks.\","
+    },
+    {
+      "file": "src\\NextThought.Core\\UiTextWindows.cs",
+      "line": 1225,
+      "text": "[\"tertiary：占位和装饰 Placeholders and decoration only\"] = \"tertiary: placeholders and decoration only\","
+    },
+    {
+      "file": "src\\NextThought.Desktop\\AppState.Launcher.cs",
+      "line": 146,
+      "text": "CompanionInfo = UiText.Format(\"已在 %@:%lld 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。\", address.Address, companion.BaseUri.Port);"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\SelfTest\\Checks\\RunScreenshotContextCheckAsync.cs",
+      "line": 117,
+      "text": "// 5) 临时文件：启动清理只删旧的截图文件。"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\SelfTest\\Checks\\RunScreenshotContextCheckAsync.cs",
+      "line": 124,
+      "text": "Step(\"临时截图清理（只删旧文件）\", !File.Exists(stale) && File.Exists(fresh),"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\SelfTest\\Checks\\RunScreenshotContextCheckAsync.cs",
+      "line": 128,
+      "text": "// 6) 提问后删除临时截图（Mac：截图先留着，提问后清理）。"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\SelfTest\\Checks\\RunScreenshotContextCheckAsync.cs",
+      "line": 138,
+      "text": "Step(\"提问后删除临时截图\", !File.Exists(tempPicture), tempPicture);"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\SelfTest\\TypographySampleWindow.axaml",
+      "line": 85,
+      "text": "<TextBlock Classes=\"body\" Foreground=\"{DynamicResource Tertiary}\" Text=\"{loc:Tr tertiary：占位和装饰 Placeholders and decoration only}\" />"
+    },
+    {
+      "file": "src\\NextThought.Desktop\\Views\\SettingsView.axaml",
+      "line": 540,
+      "text": "<TextBlock Text=\"{loc:Tr 局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。}\""
+    }
+  ],
+  "unusedCoreFiles": [],
+  "unreferencedUiFiles": []
+}

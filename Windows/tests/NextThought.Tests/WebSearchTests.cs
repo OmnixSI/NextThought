@@ -94,45 +94,26 @@ public sealed class UpdateFeedSecurityTests
     [Fact]
     public void DefaultsToTheHttpsFeed()
     {
-        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(_ => null));
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSourceFor(null, null, false));
     }
 
     [Fact]
     public void IgnoresTheOverrideWithoutQa()
     {
-        string? Read(string name) => name switch
-        {
-            "NEXTTHOUGHT_UPDATE_FEED" => "https://evil.example/feed",
-            _ => null
-        };
-        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(Read));
+        // R8: the formal package passes no override; a stray environment variable cannot redirect it.
+        Assert.Equal(UpdateFeedPolicy.Default,
+            UpdateFeedPolicy.ResolveSourceFor(null, "https://evil.example/feed", false));
     }
 
     [Fact]
     public void QaMayUseHttpsOrLocalFilesButNotPlainHttp()
     {
-        string? ReadQa(string name) => name switch
-        {
-            "NEXTTHOUGHT_UPDATE_FEED" => "https://example.test/feed",
-            "NEXTTHOUGHT_QA" => "1",
-            _ => null
-        };
-        Assert.Equal("https://example.test/feed", UpdateFeedPolicy.ResolveSource(ReadQa));
-
-        string? ReadHttp(string name) => name switch
-        {
-            "NEXTTHOUGHT_UPDATE_FEED" => "http://example.test/feed",
-            "NEXTTHOUGHT_QA" => "1",
-            _ => null
-        };
-        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(ReadHttp));
-
-        string? ReadFile(string name) => name switch
-        {
-            "NEXTTHOUGHT_UPDATE_FEED" => @"C:\\qa\\feed.json",
-            "NEXTTHOUGHT_QA" => "1",
-            _ => null
-        };
-        Assert.Equal(@"C:\\qa\\feed.json", UpdateFeedPolicy.ResolveSource(ReadFile));
+        // Debug builds may pass an explicit override; the policy itself still rejects plain HTTP.
+        Assert.Equal("https://example.test/feed",
+            UpdateFeedPolicy.ResolveSourceFor(null, "https://example.test/feed", true));
+        Assert.Equal(UpdateFeedPolicy.Default,
+            UpdateFeedPolicy.ResolveSourceFor(null, "http://example.test/feed", true));
+        Assert.Equal(@"C:\\qa\\feed.json",
+            UpdateFeedPolicy.ResolveSourceFor(null, @"C:\\qa\\feed.json", true));
     }
 }

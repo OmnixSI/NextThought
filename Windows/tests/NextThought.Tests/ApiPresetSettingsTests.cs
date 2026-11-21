@@ -153,14 +153,9 @@ public sealed class ApiPresetSettingsTests
         Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor("A/B/C"));
         Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor("Bad Repo/Name"));
         Assert.Equal("https://api.github.com/repos/Org/Repo/releases",
-            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", _ => null));
+            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", null, false));
         Assert.Equal("https://example.test/feed",
-            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", name => name switch
-            {
-                UpdateFeedPolicy.QaVariable => "1",
-                "NEXTTHOUGHT_UPDATE_FEED" => "https://example.test/feed",
-                _ => null
-            }));
+            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", "https://example.test/feed", true));
     }
 
     [Fact]
