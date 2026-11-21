@@ -25,7 +25,7 @@
       </StackPanel>
       <TextBox Grid.Column="1" Text="{Binding GlossaryFilter}" PlaceholderText="{loc:Tr 查找}" Width="170" />
       <TextBox Grid.Column="2" Text="{Binding GlossaryQuery}"
-               PlaceholderText="{loc:Tr 在转写里查找（听错的写法也会找出来）}" MaxWidth="350" HorizontalAlignment="Left" />
+               PlaceholderText="{loc:Tr 在转写中查找（听错的写法也会找出来）}" MaxWidth="350" HorizontalAlignment="Left" />
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
         <TextBlock Text="{Binding GlossaryMatchCountText}" Classes="caption" VerticalAlignment="Center" />
         <Button Classes="quiet" Content="{loc:Tr 清空搜索}" Click="ClearFind_Click" />
@@ -49,7 +49,7 @@
     <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_10}"
             IsVisible="{Binding HasGlossaryTranscriptHits}">
       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-        <TextBlock Text="{loc:Tr 在转写里查找（听错的写法也会找出来）}" Classes="overline" />
+        <TextBlock Text="{loc:Tr 在转写中查找（听错的写法也会找出来）}" Classes="overline" />
         <ItemsControl ItemsSource="{Binding GlossaryTranscriptHits}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:GlossaryTranscriptHitRow">
