@@ -40,6 +40,13 @@
                      TextWrapping="Wrap" Foreground="{DynamicResource Secondary}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    IsVisible="{Binding HasNotesArchiveStatus}">
+          <TextBlock Text="{StaticResource IconClock}" FontFamily="{StaticResource IconFont}"
+                     FontSize="12" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding NotesArchiveStatusText}" Classes="caption"
+                     Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasNotesReadIssues}">
           <TextBlock Text="{StaticResource IconExclamationmarkTriangleFill}" FontFamily="{StaticResource IconFont}"
                      FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />

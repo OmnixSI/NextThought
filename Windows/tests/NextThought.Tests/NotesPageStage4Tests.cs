@@ -145,4 +145,16 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasSelectedNotesEvidence}", view);
         Assert.Contains("{Binding SelectedNotesEvidenceText}", view);
     }
+
+    [Fact]
+    public void TheArchiveStatusBarExplainsThePendingJob()
+    {
+        var state = Read("AppState.NotesStatus.cs");
+        Assert.Contains("RefreshNotesArchiveStatus", state);
+        Assert.Contains("HasNotesArchiveStatus", state);
+        Assert.Contains("正在整理纪要 · 通常 1–3 分钟", state);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasNotesArchiveStatus}", view);
+        Assert.Contains("{Binding NotesArchiveStatusText}", view);
+    }
 }

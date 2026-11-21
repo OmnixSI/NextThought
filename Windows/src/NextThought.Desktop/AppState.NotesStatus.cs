@@ -12,6 +12,8 @@ public partial class AppState
 {
     [ObservableProperty] private bool hasNotesStaleHint;
     [ObservableProperty] private bool hasNotesReadIssues;
+    [ObservableProperty] private bool hasNotesArchiveStatus;
+    [ObservableProperty] private string notesArchiveStatusText = "";
     [ObservableProperty] private string notesReadIssueText = "";
 
     /// <summary>Mac readIssues banner: skipped damaged transcript lines are reported, not hidden.</summary>
@@ -29,6 +31,15 @@ public partial class AppState
     public string NotesStaleHintText =>
         UiText.T("部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。");
 
+    /// <summary>Mac archive status bar: the notes ride along with the archive job.</summary>
+    public void RefreshNotesArchiveStatus(SessionMeta meta)
+    {
+        HasNotesArchiveStatus = meta.SummaryState is "saving" or "scanning" or "pending";
+        NotesArchiveStatusText = HasNotesArchiveStatus
+            ? UiText.T("正在整理纪要 · 通常 1–3 分钟")
+            : "";
+    }
+
     public void RefreshNotesStatus(SessionMeta meta)
     {
         HasNotesStaleHint = false;
@@ -39,6 +50,7 @@ public partial class AppState
             if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is not System.Text.Json.Nodes.JsonObject summary) return;
             var revision = summary["transcriptSourceRevision"]?.GetValue<string>() ?? "";
             HasNotesStaleHint = revision.Length == 0;
+            RefreshNotesArchiveStatus(meta);
         }
         catch { HasNotesStaleHint = false; }
     }
