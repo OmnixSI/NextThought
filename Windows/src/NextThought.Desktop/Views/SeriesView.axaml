@@ -113,7 +113,7 @@
               <ItemsControl ItemsSource="{Binding SeriesChangeRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="local:SeriesChangeRow">
-                    <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                    <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_8}">
                       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
                         <Grid ColumnDefinitions="*,Auto">
                           <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />
@@ -163,7 +163,7 @@
             </StackPanel>
           </Border>
 
-          <TabControl Name="Tabs" Grid.Row="3" Margin="{DynamicResource D4Margin_0_10_0_0}" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
+          <TabControl Name="Tabs" Grid.Row="3" SelectedIndex="{Binding SeriesSelectedTab}" Margin="{DynamicResource D4Margin_0_10_0_0}" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
             <TabItem Header="{Binding SeriesLessonsHeader}">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
@@ -189,10 +189,12 @@
                 <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
                   <TextBlock Text="{loc:Tr 知识候选}" Classes="section" />
                   <TextBlock Text="{loc:Tr 候选先保留在待审阅区；确认后才会影响后续回答。}" Classes="caption" TextWrapping="Wrap" />
+                  <Button Classes="quiet" Content="{Binding CollectKnowledgeLabel}" Click="CollectKnowledge_Click"
+                          IsVisible="{Binding CanCollectKnowledgeCandidates}" HorizontalAlignment="Left" />
                   <ItemsControl ItemsSource="{Binding SeriesCandidates}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="local:KnowledgeCandidateRow">
-                        <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_6_0_8}">
+                        <Border Classes="card" Background="{DynamicResource AiSoft}" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_6_0_8}">
                           <StackPanel Spacing="{DynamicResource D4Spacing_4}">
                             <Grid ColumnDefinitions="*,Auto">
                               <TextBlock Grid.Column="0" Text="{Binding KindLabel}" Classes="caption" VerticalAlignment="Center" />

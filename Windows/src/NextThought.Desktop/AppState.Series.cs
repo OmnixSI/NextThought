@@ -19,6 +19,8 @@ public partial class AppState
     public ObservableCollection<SeriesSkillRow> SeriesSkills { get; } = [];
 
     [ObservableProperty] private SeriesRow? selectedSeries;
+    /// <summary>Which editor tab is open (0 lessons, 1 pending); bound so checks can capture both.</summary>
+    [ObservableProperty] private int seriesSelectedTab;
     [ObservableProperty] private string newSeriesName = "";
     [ObservableProperty] private string newLessonText = "";
 
