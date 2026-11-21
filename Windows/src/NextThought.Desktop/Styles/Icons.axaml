@@ -95,4 +95,7 @@
     <x:String x:Key="IconIslandStop">&#xF0544;</x:String>
     <x:String x:Key="IconIslandWaveform">&#xE9DE;</x:String>
     <x:String x:Key="IconIslandWindow">&#xEE5F;</x:String>
+    <x:String x:Key="IconIslandCursor">&#xF05FC;</x:String>
+    <x:String x:Key="IconIslandCursorOff">&#xF62F;</x:String>
+    <x:String x:Key="IconIslandEllipsis">&#xE826;</x:String>
 </ResourceDictionary>

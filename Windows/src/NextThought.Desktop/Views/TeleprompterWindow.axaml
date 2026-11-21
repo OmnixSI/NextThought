@@ -1,58 +1,152 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
+        xmlns:v="using:NextThought.Desktop.Views"
         x:Class="NextThought.Desktop.Views.TeleprompterWindow"
         x:DataType="local:AppState"
-        Title="{loc:Tr NextThought 提词器}"
-        Width="640" Height="320" MinWidth="360" MinHeight="160"
+        Title="{loc:Tr NextThought 回答浮窗}"
+        Width="640" Height="300" MinWidth="360" MinHeight="160"
         CanResize="True" ShowInTaskbar="False" ShowActivated="False"
         WindowDecorations="None" Topmost="True"
         Background="Transparent" TransparencyLevelHint="Transparent"
         WindowStartupLocation="Manual">
-  <Border x:Name="Shell" Background="#E6121110" BorderBrush="#33ECEBE8" BorderThickness="0.5"
-          CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_6}" BoxShadow="0 12 26 0 #50000000">
-    <Grid RowDefinitions="Auto,*,Auto">
-      <!-- Drag handle + controls -->
-      <Grid x:Name="DragBar" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_10_6_6_6}" Background="Transparent"
-            PointerPressed="DragBar_PointerPressed">
-        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_7}" VerticalAlignment="Center">
-          <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" Background="{DynamicResource Seal}" />
-          <TextBlock Text="{loc:Tr 提词器}" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
-          <TextBlock x:Name="ModeText" Text="{loc:Tr 拖动可移动 · 双击隐藏控件}" Foreground="#6B6963" FontSize="10"
-                     VerticalAlignment="Center" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <TextBlock Text="{Binding DetectedQuestion}" Foreground="#B8B6AF" FontSize="11" MaxWidth="240"
-                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
-        </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-          <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="{loc:Tr 缩小字号}" />
-          <Button Classes="tp" Content="A+" Click="Larger_Click" ToolTip.Tip="{loc:Tr 放大字号}" />
-          <Button Classes="tp" Content="−" Click="Fade_Click" ToolTip.Tip="{loc:Tr 降低不透明度}" />
-          <Button Classes="tp" Content="+" Click="Solid_Click" ToolTip.Tip="{loc:Tr 提高不透明度}" />
-          <Button Classes="tp" x:Name="ThroughButton" Content="{loc:Tr 穿透}" Click="Through_Click"
-                  ToolTip.Tip="{loc:Tr 切换鼠标穿透（穿透后只能用快捷键改回）}" />
-          <Button Classes="tp" Content="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭提词器}" />
-        </StackPanel>
-      </Grid>
+  <!-- E29 / §6.7: the answer window (TeleprompterController.swift TeleprompterView). A floating
+       layer: raised surface + hairline over the window-server shadow, everything in Ink. With the
+       background hidden the fill disappears and only a 1.5 pt ink border keeps it readable. -->
+  <Window.Styles>
+    <Style Selector="Button.tpIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="Button.tpIcon:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="Button.tpGhost">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="Button.tpGhost:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+  </Window.Styles>
 
-      <ScrollViewer x:Name="BodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_14_4_14_12}">
-        <SelectableTextBlock x:Name="BodyText" Text="{Binding PlainAnswer}" Foreground="#F5F3EE"
-                             FontSize="26" LineHeight="38" TextWrapping="Wrap" />
-      </ScrollViewer>
-      <Button x:Name="FollowButton" Grid.Row="1" Content="{loc:Tr 回到最新}" Classes="tp" HorizontalAlignment="Right"
-              VerticalAlignment="Bottom" Margin="{DynamicResource D4Margin_0_0_12_12}" IsVisible="False"
-              Click="Follow_Click" />
-      <Border x:Name="Footer" Grid.Row="2" Margin="{DynamicResource D4Margin_10_4_10_8}">
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
-          <Button Grid.Column="0" Classes="tp" Content="{loc:Tr 改短}" Command="{Binding ShorterAnswerCommand}" />
-          <Button Grid.Column="1" Classes="tp" Content="{loc:Tr 举例}" Tag="Example" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="2" Classes="tp" Content="{loc:Tr 英文}" Tag="English" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="4" Classes="tp" Content="{loc:Tr 复制}" Command="{Binding CopyAnswerCommand}" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="5" Classes="tp" Content="{loc:Tr 工作台}" Click="Workbench_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="8" Classes="tp" Content="{loc:Tr 停止生成}" IsVisible="{Binding Answering}" Command="{Binding CancelCommand}" />
-          <Button Grid.Column="8" Classes="tp" Content="{loc:Tr 立即回答}" IsVisible="{Binding !Answering}" Command="{Binding ForceAnswerCommand}" />
+  <Panel>
+    <Border x:Name="Shell" Padding="2" Background="Transparent">
+      <Border x:Name="Surface" CornerRadius="22" Background="{DynamicResource SurfaceRaised}"
+              BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="10">
+          <!-- "● 正在听  如果删除缓存失败了怎么办？" plus the panel controls. -->
+          <Grid x:Name="Header" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+            <Border x:Name="StatusDot" Grid.Column="0" Width="7" Height="7" CornerRadius="4"
+                    Background="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+            <TextBlock x:Name="StatusText" Grid.Column="1" FontSize="12" FontWeight="Medium"
+                       Foreground="{DynamicResource InkBrush}" VerticalAlignment="Center" TextWrapping="NoWrap" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                        Margin="2,0,0,0">
+              <TextBlock x:Name="QuestionText" FontSize="12" Foreground="{DynamicResource Secondary}"
+                         TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
+              <ProgressBar x:Name="AnsweringProgress" IsIndeterminate="True" Width="16" Height="4"
+                           VerticalAlignment="Center" IsVisible="False" />
+            </StackPanel>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <Button x:Name="HistoryPrevButton" Classes="tpIcon" IsVisible="False" ToolTip.Tip="{loc:Tr 上一条回答}"
+                      Click="HistoryPrev_Click">
+                <TextBlock Text="{StaticResource IconIslandChevronLeft}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
+              <TextBlock x:Name="HistoryPosition" Classes="caption" Foreground="{DynamicResource Secondary}"
+                         VerticalAlignment="Center" IsVisible="False" />
+              <Button x:Name="HistoryNextButton" Classes="tpIcon" IsVisible="False" ToolTip.Tip="{loc:Tr 下一条回答}"
+                      Click="HistoryNext_Click">
+                <TextBlock Text="{StaticResource IconIslandChevronRight}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
+              <Button x:Name="FontSmallerButton" Classes="tpIcon" ToolTip.Tip="{loc:Tr 缩小文字}"
+                      Click="Smaller_Click">
+                <TextBlock Text="{StaticResource IconIslandFont}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
+              <Button x:Name="FontLargerButton" Classes="tpIcon" ToolTip.Tip="{loc:Tr 放大文字}"
+                      Click="Larger_Click">
+                <TextBlock Text="{StaticResource IconIslandFont}" FontFamily="{StaticResource IconFont}"
+                           FontSize="13" />
+              </Button>
+              <Button x:Name="ThroughButton" Classes="tpIcon" Click="Through_Click"
+                      ToolTip.Tip="{loc:Tr 回答浮窗鼠标穿透}">
+                <TextBlock x:Name="ThroughIcon" Text="{StaticResource IconIslandCursor}"
+                           FontFamily="{StaticResource IconFont}" FontSize="11" />
+              </Button>
+              <Button x:Name="CloseButton" Classes="tpIcon" ToolTip.Tip="{loc:Tr 关闭}" Click="Close_Click">
+                <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" FontSize="11" />
+              </Button>
+            </StackPanel>
+          </Grid>
+
+          <!-- The answer, rendered as markdown (bold, lists, inline code) at the teleprompter
+               font size; it follows the live edge until the reader scrolls away. -->
+          <ScrollViewer x:Name="BodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+            <v:MarkdownText x:Name="BodyText" BaseFontSize="22" />
+          </ScrollViewer>
+          <TextBlock x:Name="EmptyHint" Grid.Row="1" FontSize="17" Foreground="{DynamicResource Secondary}"
+                     TextWrapping="Wrap" VerticalAlignment="Top" IsVisible="False" />
+          <Button x:Name="FollowButton" Grid.Row="1" Classes="tpGhost" Content="{loc:Tr 回到最新}"
+                  HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="False" Click="Follow_Click" />
+
+          <!-- Three rewrites, "…" and one answer/stop button; hidden while click-through is on. -->
+          <Grid x:Name="Footer" Grid.Row="2" ColumnDefinitions="Auto,*" IsVisible="False">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+              <Button x:Name="ShorterButton" Classes="tpGhost" Content="{loc:Tr 更简短}" Tag="Shorter" Click="Refine_Click" />
+              <Button x:Name="ExampleButton" Classes="tpGhost" Content="{loc:Tr 举例}" Tag="Example" Click="Refine_Click" />
+              <Button x:Name="EnglishButton" Classes="tpGhost" Content="{loc:Tr 英文版}" Tag="English" Click="Refine_Click" />
+              <Button x:Name="MoreButton" Classes="tpGhost" ToolTip.Tip="{loc:Tr 更多}" Click="More_Click">
+                <TextBlock Text="{StaticResource IconIslandEllipsis}" FontFamily="{StaticResource IconFont}"
+                           FontSize="12" />
+                <Button.Flyout>
+                  <MenuFlyout>
+                    <MenuItem x:Name="MoreDetailedItem" Header="{loc:Tr 展开}" Tag="Detailed" Click="Refine_Click" />
+                    <MenuItem x:Name="MoreStarItem" Header="{loc:Tr STAR}" Tag="Star" Click="Refine_Click" />
+                    <MenuItem x:Name="MoreChineseItem" Header="{loc:Tr 中文}" Tag="Chinese" Click="Refine_Click" />
+                    <Separator />
+                    <MenuItem x:Name="MoreRegenerateItem" Header="{loc:Tr 重新生成}" Click="Regenerate_Click" />
+                    <MenuItem x:Name="MoreLookupItem" Header="{loc:Tr 联网查一下}" Click="Lookup_Click" />
+                    <MenuItem x:Name="MoreCopyItem" Header="{loc:Tr 复制回答}" Click="Copy_Click" />
+                    <Separator />
+                    <MenuItem x:Name="MoreWorkbenchItem" Header="{loc:Tr 打开主窗口}" Click="Workbench_Click" />
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+              <Button x:Name="StopButton" Classes="primary" Content="{loc:Tr 停止生成}"
+                      IsVisible="{Binding Answering}" Click="Stop_Click" />
+              <Button x:Name="AnswerButton" Classes="primary" Content="{loc:Tr 立即回答}"
+                      IsVisible="{Binding !Answering}" Click="Answer_Click" />
+            </StackPanel>
+          </Grid>
         </Grid>
       </Border>
-    </Grid>
-  </Border>
+    </Border>
+    <!-- With the background hidden, an opaque 1.5 pt ink border keeps the text readable. -->
+    <Border x:Name="HiddenBackgroundBorder" CornerRadius="22" BorderBrush="{DynamicResource InkBrush}"
+            BorderThickness="1.5" IsVisible="False" IsHitTestVisible="False" />
+  </Panel>
 </Window>
