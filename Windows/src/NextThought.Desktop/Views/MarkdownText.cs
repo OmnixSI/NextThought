@@ -71,9 +71,9 @@ public class MarkdownText : ContentControl
         Content = panel;
     }
 
-    private enum BlockKind { Paragraph, Heading, Bullet, Numbered, Check, Quote, Rule, Code }
+    private enum BlockKind { Paragraph, Heading, Bullet, Numbered, Check, Quote, Rule, Code, Table }
 
-    private sealed record Block(BlockKind Kind, string Text, int Level = 0);
+    private sealed record Block(BlockKind Kind, string Text, int Level = 0, IReadOnlyList<IReadOnlyList<string>>? Rows = null);
 
     private static List<Block> ParseBlocks(string text)
     {
@@ -87,8 +87,10 @@ public class MarkdownText : ContentControl
         }
 
         var inFence = false;
-        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        for (var index = 0; index < lines.Length; index++)
         {
+            var raw = lines[index];
             var line = raw.TrimEnd();
             if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
             {
@@ -102,6 +104,21 @@ public class MarkdownText : ContentControl
                 continue;
             }
             if (line.Length == 0) { Flush(); continue; }
+            // decisions §3.1 components 4: tables render as a table (Mac MarkdownText uses a Grid).
+            if (line.TrimStart().StartsWith('|')
+                && index + 1 < lines.Length && IsTableSeparator(lines[index + 1]))
+            {
+                Flush();
+                var rows = new List<IReadOnlyList<string>> { SplitTableRow(line) };
+                index++;
+                while (index + 1 < lines.Length && lines[index + 1].TrimStart().StartsWith('|'))
+                {
+                    index++;
+                    rows.Add(SplitTableRow(lines[index]));
+                }
+                blocks.Add(new Block(BlockKind.Table, "", Rows: rows));
+                continue;
+            }
             if (line.StartsWith("---", StringComparison.Ordinal) || line.StartsWith("***", StringComparison.Ordinal))
             {
                 Flush();
@@ -150,6 +167,57 @@ public class MarkdownText : ContentControl
         return blocks;
     }
 
+    private static bool IsTableSeparator(string line)
+    {
+        var cells = SplitTableRow(line);
+        return cells.Count > 0 && cells.All(cell => System.Text.RegularExpressions.Regex.IsMatch(cell, "^:?-{2,}:?$"));
+    }
+
+    private static IReadOnlyList<string> SplitTableRow(string line)
+    {
+        var trimmed = line.Trim();
+        if (trimmed.StartsWith('|')) trimmed = trimmed[1..];
+        if (trimmed.EndsWith('|')) trimmed = trimmed[..^1];
+        return trimmed.Split('|').Select(cell => cell.Trim()).ToList();
+    }
+
+    private Control Table(Block block, double size)
+    {
+        var rows = block.Rows ?? [];
+        var columns = rows.Count == 0 ? 1 : rows.Max(row => row.Count);
+        var grid = new Grid { RowDefinitions = new RowDefinitions() };
+        grid.ColumnDefinitions = new ColumnDefinitions(string.Join(",", Enumerable.Repeat("*", columns)));
+        for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            var row = rows[rowIndex];
+            for (var column = 0; column < columns; column++)
+            {
+                var cell = column < row.Count ? row[column] : "";
+                var content = Inline(cell, size - 1, rowIndex == 0 ? FontWeight.SemiBold : FontWeight.Normal,
+                    Fonts.Sans, "InkBrush", 1.5);
+                var border = new Border
+                {
+                    BorderBrush = Resource("Hairline"),
+                    BorderThickness = new Thickness(0, 0, 0, 0.5),
+                    Padding = new Thickness(8, 5),
+                    Child = content
+                };
+                Grid.SetRow(border, rowIndex);
+                Grid.SetColumn(border, column);
+                grid.Children.Add(border);
+            }
+        }
+        return new Border
+        {
+            BorderBrush = Resource("Hairline"),
+            BorderThickness = new Thickness(0.5, 0.5, 0.5, 0),
+            CornerRadius = new CornerRadius(8),
+            ClipToBounds = true,
+            Child = grid
+        };
+    }
+
     private Control BuildBlock(Block block)
     {
         var size = BaseFontSize;
@@ -173,6 +241,8 @@ public class MarkdownText : ContentControl
                     Padding = new Thickness(12, 2, 0, 2),
                     Child = Inline(block.Text, size, FontWeight.Normal, Fonts.Sans, "Secondary", 1.6)
                 };
+            case BlockKind.Table:
+                return Table(block, size);
             case BlockKind.Rule:
                 return new Border { Height = 1, Background = Resource("Hairline"), Margin = new Thickness(0, 4) };
             case BlockKind.Code:
