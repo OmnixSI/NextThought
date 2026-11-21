@@ -122,8 +122,8 @@ public partial class MainWindow
         state.ShortcutConflicts = hotkeys.Unregistered.Count == 0
             ? ""
             : UiText.T("以下全局快捷键被其他程序占用：") + string.Join(UiText.T("、"), hotkeys.Unregistered) + UiText.T("；界面按钮仍可使用。");
-        if (hotkeys.Unregistered.Count > 0)
-            state.SetStatus(state.ShortcutConflicts, true);
+        // §5.4: the permanent bottom shortcut-conflict line is gone; the conflicts are shown only in
+        // the settings shortcut page (SettingsView binds ShortcutConflicts/HasShortcutConflicts).
     }
 
     /// <summary>Tray icon: restore, hide everything while recording continues, record toggle, quit.</summary>

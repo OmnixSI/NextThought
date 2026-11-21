@@ -150,6 +150,13 @@ public partial class MainWindow : Window
         return new FilePickerFileType(name) { Patterns = patterns };
     }
 
+    /// <summary>§5.2: the three capsule destinations (Mac AppSection.primary).</summary>
+    private void SectionNav_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string name }) return;
+        if (Enum.TryParse<AppSection>(name, ignoreCase: true, out var section)) state.Section = section;
+    }
+
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);

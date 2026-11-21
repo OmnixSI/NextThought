@@ -19,6 +19,7 @@ public partial class AppState
         OnPropertyChanged(nameof(OnSeries));
         OnPropertyChanged(nameof(OnSettings));
         OnPropertyChanged(nameof(ContextSidebarVisible));
+        OnPropertyChanged(nameof(ShowsContextSidebarToggle));
         if (value == AppSection.Prepare) SetPageSubtitle("准备这场会 · 类型、资料与检查");
     }
 

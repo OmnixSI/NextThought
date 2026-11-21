@@ -15,8 +15,12 @@ public partial class AppState
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool contextSidebarHidden;
 
+    /// <summary>§5.2: the title row shows the context-sidebar toggle only on 所有记录 and 系列
+    /// (Mac AppNavigationSidebar: meetings and library sections).</summary>
+    public bool ShowsContextSidebarToggle => Section is AppSection.History or AppSection.Series;
+
     public bool ContextSidebarVisible => !ContextSidebarHidden && !Recording
-        && Section is AppSection.Live or AppSection.Library or AppSection.Series;
+        && Section is AppSection.History or AppSection.Series;
 
     partial void OnContextSidebarHiddenChanged(bool value) => OnPropertyChanged(nameof(ContextSidebarVisible));
 

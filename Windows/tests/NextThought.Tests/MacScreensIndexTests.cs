@@ -100,12 +100,29 @@ public sealed class MacScreensIndexTests
     }
 
     [Fact]
-    public void TheTitleBarKeepsTheTabsCenterAndTheSubtitleRight()
+    public void TheTitleBarKeepsTheCapsuleCenterAndTheIconToolsRight()
     {
+        // §5.2: Mac AppNavigationSidebar has only the centred capsule (首页/所有记录/系列) and the
+        // right-hand icon buttons - no brand, no version badge, no demo hint, no 设置 text.
         var xaml = Read("src", "NextThought.Desktop", "Views", "MainWindow.axaml");
-        Assert.Contains("ColumnDefinitions=\"Auto,*,Auto\"", xaml);
-        Assert.Contains("Grid.Column=\"1\" Orientation=\"Horizontal\" Spacing=\"{DynamicResource D4Spacing_2}\" HorizontalAlignment=\"Center\"", xaml);
-        Assert.Contains("Grid.Column=\"2\" Orientation=\"Horizontal\" Spacing=\"{DynamicResource D4Spacing_8}\" HorizontalAlignment=\"Right\"", xaml);
+        Assert.Contains("ColumnDefinitions=\"*,Auto,*\"", xaml);
+        Assert.Contains("Classes=\"pillnav\"", xaml);
+        Assert.Contains("Content=\"{loc:Tr 首页}\"", xaml);
+        Assert.Contains("Content=\"{loc:Tr 所有记录}\"", xaml);
+        Assert.Contains("Content=\"{loc:Tr 系列}\"", xaml);
+        Assert.Contains("ShowsContextSidebarToggle", xaml);
+        Assert.Contains("IconGearshape", xaml);
+        // The removed brand/demo/settings bits must be gone from the title row itself (the hidden
+        // legacy sidebar below it still contains a 设置 entry).
+        var titleStart = xaml.IndexOf("Name=\"TitleBar\"", StringComparison.Ordinal);
+        Assert.True(titleStart > 0, "title bar missing");
+        var titleEnd = xaml.IndexOf("<Grid Grid.Row=\"1\"", titleStart, StringComparison.Ordinal);
+        Assert.True(titleEnd > titleStart, "title bar end missing");
+        var title = xaml[titleStart..titleEnd];
+        Assert.DoesNotContain("Text=\"NextThought\"", title);
+        Assert.DoesNotContain("VersionText", title);
+        Assert.DoesNotContain("PageSubtitle", title);
+        Assert.DoesNotContain("Text=\"{loc:Tr 设置}\"", title);
     }
 
     [Fact]
