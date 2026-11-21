@@ -124,9 +124,13 @@
                 <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14"
                                     IsVisible="{Binding NotesFormatIsStandard}" />
                 <!-- 结构化纪要：鱼骨图画成骨图，观点对照画成矩阵 -->
-                <StackPanel Spacing="{DynamicResource D4Spacing_10}" IsVisible="{Binding !NotesFormatIsStandard}">
+                <StackPanel Spacing="{DynamicResource D4Spacing_10}" IsVisible="{Binding !NotesFormatIsStandard}"
+                            SizeChanged="NotesStructured_SizeChanged">
+                  <!-- Mac FishboneTree: below 520 points the chart becomes the collapsible narrow list. -->
+                  <views:FishboneTree x:Name="FishboneTree" Height="360" Notes="{Binding StructuredPayload.Fishbone}"
+                                      IsVisible="{Binding NotesShowFishboneTree}" />
                   <views:FishboneView x:Name="Fishbone" Height="360" Notes="{Binding StructuredPayload.Fishbone}"
-                                      IsVisible="{Binding HasFishboneDrawing}" />
+                                      IsVisible="{Binding NotesShowWideFishbone}" />
                   <views:ViewpointMatrixView x:Name="Viewpoints" Matrix="{Binding StructuredPayload.Viewpoints}"
                                              IsVisible="{Binding HasViewpointMatrix}" />
                 </StackPanel>
