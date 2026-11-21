@@ -12,6 +12,27 @@
     <StackPanel x:Name="ComponentRows" Spacing="{DynamicResource D4Spacing_6}" />
     <TextBlock Text="{loc:Tr 下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。}"
                Classes="caption" FontSize="11" TextWrapping="Wrap" />
+    <!-- §3.5: Mac LocalDocumentAssets — scan the machine for the pinned models and reuse them. -->
+    <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Text="{loc:Tr 复用已有组件}" Classes="label" />
+        <TextBlock Text="{loc:Tr 先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。}"
+                   Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <Button Content="{loc:Tr 扫描本机已有组件}" Command="{Binding ScanLocalDocumentAssetsCommand}"
+                  IsEnabled="{Binding !DocumentAssetsScanning}" />
+          <Button Content="{loc:Tr 选择其他目录…}" Command="{Binding ChooseLocalDocumentAssetsCommand}"
+                  IsEnabled="{Binding !DocumentAssetsScanning}" />
+          <Button Content="{loc:Tr 取消}" Command="{Binding CancelDocumentSetupCommand}"
+                  IsVisible="{Binding DocumentAssetsScanning}" />
+        </StackPanel>
+        <ProgressBar IsIndeterminate="True" MaxWidth="420" HorizontalAlignment="Left"
+                     IsVisible="{Binding DocumentAssetsScanning}" />
+        <TextBlock Text="{Binding DocumentAssetsScanStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        <TextBlock Text="{loc:Tr 扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。}"
+                   Classes="caption" FontSize="11" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
     <CheckBox Content="{loc:Tr 本机识别失败时用系统识别补读，并标明降级内容}" IsChecked="{Binding Settings.DocumentFallbackToVision}" />
     <TextBlock Text="{loc:Tr 关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
     <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
@@ -31,11 +52,19 @@
         <CheckBox Content="{loc:Tr 参考资料库时使用语义与关键词混合检索}" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
         <TextBlock Text="{loc:Tr Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。}"
                    Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <Button Content="{loc:Tr 启用语义增强}" Command="{Binding EnableSemanticEnhancementCommand}"
+                  IsEnabled="{Binding !DocumentSetupBusy}" />
+          <Button Content="{loc:Tr 重建语义索引}" Command="{Binding RebuildSemanticIndexCommand}"
+                  IsEnabled="{Binding DocumentEmbeddingInstalled}" />
+        </StackPanel>
       </StackPanel>
     </Border>
     <TextBlock Text="{Binding DocumentSetupStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
                IsVisible="{Binding DocumentSetupBusy}" />
     <ProgressBar Value="{Binding DocumentSetupProgress}" Maximum="1" MaxWidth="420" HorizontalAlignment="Left"
                  IsVisible="{Binding DocumentSetupBusy}" />
+    <Button Content="{Binding DocumentSetupCancelLabel}" Command="{Binding CancelDocumentSetupCommand}"
+            HorizontalAlignment="Left" IsVisible="{Binding DocumentSetupBusy}" />
   </StackPanel>
 </UserControl>

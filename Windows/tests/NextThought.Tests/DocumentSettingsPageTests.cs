@@ -74,6 +74,39 @@ public sealed class DocumentSettingsPageTests
         var row = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "ManagedModelRow.axaml"));
         Assert.Contains("{loc:Tr 安装}", row);
         Assert.Contains("{loc:Tr 校验／修复}", row);
+        // §3.5 deep items: scan/choose-directory, cancel, licence/source link, semantic enable/rebuild.
+        foreach (var member in new[]
+                 {
+                     "ScanLocalDocumentAssetsCommand", "ChooseLocalDocumentAssetsCommand",
+                     "CancelDocumentSetupCommand", "DocumentSetupBusy", "DocumentSetupCancelLabel",
+                     "DocumentAssetsScanning", "DocumentAssetsScanStatus",
+                     "EnableSemanticEnhancementCommand", "RebuildSemanticIndexCommand",
+                     "Settings.LocalOcrModelChoices", "Settings.SelectedLocalOcrModel",
+                     "{loc:Tr 复用已有组件}", "{loc:Tr 扫描本机已有组件}", "{loc:Tr 选择其他目录…}",
+                     "{loc:Tr 启用语义增强}", "{loc:Tr 重建语义索引}"
+                 })
+            Assert.Contains(member, advanced);
+        Assert.Contains("{Binding LicenseNote}", row);
+        Assert.Contains("Source_Click", row);
+        Assert.Contains("{loc:Tr 模型来源与版本}", row);
+        var rowCode = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "ManagedModelRow.axaml.cs"));
+        Assert.Contains("LaunchUriAsync", rowCode);
+        Assert.Contains("SourceUrl", rowCode);
+        var documents = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Documents.cs"));
+        foreach (var member in new[]
+                 {
+                     "CancelDocumentSetup", "BeginDocumentSetup", "ScanLocalDocumentAssetsAsync",
+                     "ReuseLocalDocumentAssets", "EnumerateNamedFiles", "ReuseLocalDocumentAssets",
+                     "EnableSemanticEnhancementAsync", "RebuildSemanticIndex",
+                     "DocumentSetupCancelLabel", "取消下载组件"
+                 })
+            Assert.Contains(member, documents);
+        Assert.Contains("LicenseNote", documents);
+        var retrieval = Read(Path.Combine("Windows", "src", "NextThought.Platform", "RetrievalService.cs"));
+        Assert.Contains("public void RebuildIndex()", retrieval);
+        var main = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs"));
+        Assert.Contains("PickFolderAsync", main);
+        Assert.Contains("OpenFolderPickerAsync", main);
     }
 
     [Fact]
@@ -124,6 +157,10 @@ public sealed class DocumentSettingsPageTests
                      "资料", "读取资料的方式", "系统识别", "本机增强", "Codex 代读",
                      "资料组件", "本机识别模型", "共用文档组件 · 已安装", "已安装", "未安装",
                      "安装", "校验／修复", "删除", "准备", "扫描本机已有组件",
+                     "复用已有组件", "选择其他目录…", "模型来源与版本", "启用语义增强", "重建语义索引",
+                     "先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。",
+                     "扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。",
+                     "本机识别模型", "查找方式", "按版面区域识别中英正文、表格与公式。", "中英语义检索，1024 维向量。",
                      "导入 Word、Excel、PowerPoint 需要文档组件", "最多下载约 186 MB，只需一次。",
                      "已选的识别方式还没准备好，当前读取会失败。", "先用系统识别",
                      "本机识别失败时用系统识别补读，并标明降级内容",

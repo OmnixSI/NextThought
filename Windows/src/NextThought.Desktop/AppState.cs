@@ -190,6 +190,8 @@ public partial class AppState : ObservableObject
     /// <summary>Set by the shell: save-file picker, open-file picker, clipboard writer, dialog host.</summary>
     public Func<string, string, Task<string?>>? PickSaveFile { get; set; }
     public Func<string, Task<string?>>? PickOpenFile { get; set; }
+    /// <summary>§3.5: 选择其他目录… for reusing local document models.</summary>
+    public Func<string, Task<string?>>? PickFolder { get; set; }
     public Func<string, Task>? CopyText { get; set; }
     public Func<string, string, Task>? Notify { get; set; }
 

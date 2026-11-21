@@ -42,6 +42,7 @@ public partial class MainWindow : Window
         ShowSection();
         state.PickSaveFile = PickSaveFileAsync;
         state.PickOpenFile = PickOpenFileAsync;
+        state.PickFolder = PickFolderAsync;
         screenShareTimer.Tick += (_, _) => EvaluateScreenSharing();
         screenShareTimer.Start();
         state.CopyText = async text =>
@@ -145,6 +146,18 @@ public partial class MainWindow : Window
             FileTypeChoices = [BuildType(filter)]
         });
         return file?.TryGetLocalPath();
+    }
+
+    private async Task<string?> PickFolderAsync(string message)
+    {
+        var storage = StorageProvider;
+        if (storage is null) return null;
+        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = message,
+            AllowMultiple = false
+        });
+        return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
     }
 
     private async Task<string?> PickOpenFileAsync(string filter)
