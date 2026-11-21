@@ -46,7 +46,9 @@ What it does, in order:
 4. Compiles the **unsigned** per-user installer `NextThought-0.9.0-windows-x64-setup.exe`
    (`AppId=NextThought.Desktop`, installs to `%LOCALAPPDATA%\Programs\NextThought`).
 5. Writes `SHA256SUMS.txt` and `update.json`.
-6. Runs the installer lifecycle and in-app update tests against the build.
+6. Runs the installer lifecycle test against the build (silent install, `--self-test=startup`,
+   overwrite install, uninstall that keeps user data, reinstall; the in-app update path is covered
+   by the update unit tests and the real-machine K10 run).
 7. Copies everything into `Windows/artifacts/release/0.9.0/` and prints each file's size and
    SHA-256.
 8. Prints the publish command (section 3) but does not run it.

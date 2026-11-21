@@ -117,9 +117,10 @@ try {
         [IO.File]::WriteAllText((Join-Path $outRoot 'RELEASE_NOTES.md'), $fallback, [Text.UTF8Encoding]::new($false))
     }
 
-    if (-not $SkipLifecycle -and -not $Ci) {
-        Step 'installer lifecycle and in-app update tests (scripts/test_installer_lifecycle.ps1)' {
-            & (Join-Path $projectRoot 'scripts\test_installer_lifecycle.ps1')
+    if (-not $SkipLifecycle -and -not $Ci -and $setup) {
+        Step 'installer lifecycle: silent install, --self-test, overwrite upgrade, uninstall, reinstall (scripts/test_installer_lifecycle.ps1)' {
+            & (Join-Path $projectRoot 'scripts\test_installer_lifecycle.ps1') -Setup $setup -Version $Version `
+                -LogDirectory (Join-Path $outRoot 'logs')
         }
     } elseif ($Ci) {
         Write-Host 'SKIP  installer lifecycle/update tests in CI (-Ci); run release.ps1 locally for them.'
