@@ -162,6 +162,7 @@ public partial class AppState
     {
         if (HistoryHits.Count == 0) return;
         HistoryHitIndex = (HistoryHitIndex + delta + HistoryHits.Count) % HistoryHits.Count;
+        OpenHistoryHitInMeeting(HistoryHits[HistoryHitIndex].Hit);
     }
 
     // MARK: 会议操作菜单 (MeetingActionsMenu.swift)
