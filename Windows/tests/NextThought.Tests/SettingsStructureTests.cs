@@ -121,6 +121,24 @@ public sealed class SettingsStructureTests
         Assert.Contains("{Binding Settings.NotesModel}", notesAdvanced);
         // §3.6 P1: the presenter page has the Mac 字号 slider.
         Assert.Contains("{Binding Settings.TeleprompterFontSize}", Card("提词"));
+        // §3.6 A3: Mac 模型 row — overline + 模型名 field + the fetched list + 获取列表 + status.
+        Assert.Contains("{loc:Tr 模型}", answer);
+        Assert.Contains("{loc:Tr 模型名}", answer);
+        Assert.Contains("{loc:Tr 请选择模型}", answer);
+        Assert.Contains("Settings.ApiModelChoices", answer);
+        Assert.Contains("{loc:Tr 获取列表}", answer);
+        Assert.Contains("Settings.ApiModelsStatus", answer);
+        // §3.6 V4: 高级 → 数据与维护 has the Mac toggles.
+        var about = Card("数据与关于");
+        Assert.StartsWith("Advanced|", about);
+        Assert.Contains("{loc:Tr 减少视觉特效}", about);
+        Assert.Contains("{Binding Settings.ReducedEffects}", about);
+        Assert.Contains("{loc:Tr 工作台置顶}", about);
+        Assert.Contains("{Binding Settings.KeepOnTop}", about);
+        // Mac 高级 order: 手机伴侣 sits before 更新（高级）; data/maintenance stay last.
+        var companionAt = xaml.IndexOf("{loc:Tr 手机伴侣}", StringComparison.Ordinal);
+        var updateAdvancedAt = xaml.IndexOf("{loc:Tr 更新（高级）}", StringComparison.Ordinal);
+        Assert.True(companionAt > 0 && updateAdvancedAt > companionAt, "高级 ordering");
         // §3.6 settings-structure: recordSessions gets its Mac B BGeneral card.
         var record = Card("记录每次会议");
         Assert.StartsWith("General|", record);

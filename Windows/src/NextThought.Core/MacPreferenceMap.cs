@@ -23,7 +23,7 @@ public static class MacPreferenceMap
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
         "cueScreen", "cueSurface", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen", "presenterSlideNotes",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
-        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "textZoom",
+        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "keepOnTop", "textZoom",
         "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository",
         "documentOcrProvider", "documentProviderWasSelected", "localOcrModelId",
         "ocrFallbackToVision", "codexOcrModel", "codexOcrEffort", "codexOcrTimeout"
@@ -42,7 +42,7 @@ public static class MacPreferenceMap
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
-        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "textZoom", "textZoom",
+        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "keepOnTop", "textZoom", "textZoom",
         "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository",
         "documentOCRProvider", "documentProviderWasSelected", "localOCRModelID",
         "ocrFallbackToVision", "codexOCRModel", "codexOCREffort", "codexOCRTimeout"
@@ -99,6 +99,7 @@ public static class MacPreferenceMap
         "teleprompterOpacity" => settings.TeleprompterOpacity,
         "teleprompterFontSize" => settings.TeleprompterFontSize,
         "reducedEffects" => settings.ReducedEffects,
+        "keepOnTop" => settings.KeepOnTop,
         "textZoom" => settings.TextZoom,
         "coachWatchesGaze" => settings.CoachWatchesGaze,
         "coachGazeSensitivity" => settings.CoachGazeSensitivity,
@@ -155,17 +156,9 @@ public static class MacPreferenceMap
                 settings.UseCodex = normalized is string backend && backend is "codexAppServer" or "codexExec";
                 break;
             case "webSearchMode":
-            case "webSearchProvider":
-            {
-                var provider = normalized as string ?? "codex";
-                settings.WebSearchProvider = provider is "tavily" ? "tavily" : "codex";
-                break;
-            }
             {
                 // 决议 §3.3: the Mac three-state value (off / auto / always), not a Windows bool.
-                // Old settings files stored the bool mapping; accept it once and migrate. Read the
-                // raw value: Normalize would turn the legacy bool into the string preference's
-                // default before this switch sees it.
+                // Read the raw value: Normalize would turn a legacy bool into the string default.
                 var mode = value switch
                 {
                     bool enabled => enabled ? "auto" : "off",
@@ -174,6 +167,12 @@ public static class MacPreferenceMap
                 };
                 settings.WebSearchMode = mode;
                 settings.WebSearch = mode != "off";
+                break;
+            }
+            case "webSearchProvider":
+            {
+                var provider = normalized as string ?? "codex";
+                settings.WebSearchProvider = provider is "tavily" ? "tavily" : "codex";
                 break;
             }
             case "semanticRetrievalEnabled":
@@ -215,6 +214,9 @@ public static class MacPreferenceMap
                 break;
             case "reducedEffects":
                 settings.ReducedEffects = normalized is bool reduced ? reduced : settings.ReducedEffects;
+                break;
+            case "keepOnTop":
+                settings.KeepOnTop = normalized is bool keepOnTop ? keepOnTop : settings.KeepOnTop;
                 break;
             case "textZoom":
                 settings.TextZoom = normalized is double zoom ? zoom : settings.TextZoom;

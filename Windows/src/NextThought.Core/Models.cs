@@ -293,6 +293,9 @@ public sealed record AppSettings
     /// <summary>Mac key <c>reducedEffects</c>: the app's own "less visual effects" switch (macOS default off).</summary>
     public bool ReducedEffects { get; set; }
 
+    /// <summary>Mac key <c>keepOnTop</c> (default true): the main window stays above other apps.</summary>
+    public bool KeepOnTop { get; set; } = true;
+
     /// <summary>Mac key <c>textZoom</c> (3.4.0): global text scale, Mac default 1, steps 0.9/1/1.1/1.2/1.3/1.45 (J7).</summary>
     public double TextZoom { get; set; } = 1.0;
 

@@ -12,7 +12,8 @@
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="52"
         WindowDecorations="BorderOnly"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Topmost="{Binding Settings.KeepOnTop}">
   <Window.Resources>
     <Thickness x:Key="ShellMargin_0_0_12_0">0,0,12,0</Thickness>
     <Thickness x:Key="ShellMargin_0_12_0_0">0,12,0,0</Thickness>
