@@ -1,3 +1,6 @@
+> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
 # 设置六页 / 快速设置 / 主窗口设置 逐元素对照（Mac 3.4.0 ↔ Windows，阶段 4 §6.7）
 
 Mac 参照：`Windows/validation/mac-screens/settings-pages/{scenes,answers,presenter,notes,general,advanced}-{light,dark}.png`、`mac-screens/settings/{quick-settings,window}-{light,dark}.png`。
@@ -116,4 +119,4 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 - 测试：`SettingsStructureTests` 断言顶栏/侧栏/页面归属/分段/联网/纪要/数据维护/顺序，`DocumentSettingsPageTests`、`SkillSettingsTests`、`SeriesEditorParityTests` 覆盖本轮各项；过滤运行 31/31 与 Core 12/12 通过（Desktop build 绿）。
 - 截图：本轮布局改动后的六页浅/深、教练快捷键、更新高级、主窗口设置覆盖层待 Lead 收口轮统一重拍（隔离数据目录）；对照结论按元素级判定。
 
-逐条一致；另有 1 条已裁决的差别（W1/W2 的窗口装饰/圆角阴影为全局平台差异，见 `ACCEPTED_DIFFERENCES.md` 全局第 1/3 条）。
+逐条一致；另有 2 条已裁决的差别（ACCEPTED_DIFFERENCES 全局窗口装饰 #1/#3、#13 签名）。
