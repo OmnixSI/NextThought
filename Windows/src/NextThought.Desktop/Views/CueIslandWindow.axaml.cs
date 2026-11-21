@@ -32,6 +32,7 @@ public partial class CueIslandWindow : Window
     private DateTimeOffset? pointerEntered;
     private DateTimeOffset? pointerLeft;
     private bool trackingSuspended;
+    private DateTimeOffset lastShareCheck;
     private bool leftButtonWasDown;
     private bool clickThrough = true;
 
@@ -296,8 +297,29 @@ public partial class CueIslandWindow : Window
         if (model.Pinned && leftDown && !leftButtonWasDown && !inside) model.UnpinFromOutside();
         leftButtonWasDown = leftDown;
 
-        var wantsClicks = CursorOverControl(cursor);
-        SetClickThrough(!wantsClicks);
+        // Mac track(): the whole panel takes clicks while hovering, peeking or pinned; otherwise
+        // (and while sharing makes it withdraw) events go to the window underneath.
+        var front = MainWindowIsFront();
+        if (front != model.MainWindowFront) model.SetMainWindowFront(front);
+        if (now - lastShareCheck >= TimeSpan.FromSeconds(2))
+        {
+            lastShareCheck = now;
+            // Mac ShareGuard: a meeting app is sharing; the island withdraws by itself. Reuse the
+            // existing best-effort detector instead of a second window walk.
+            var shared = state.CueIslandRunning && NextThought.Platform.ScreenShareDetector.IsSharingActive();
+            model.SetShareAvoiding(shared);
+        }
+        SetClickThrough(!model.WantsClicks);
+    }
+
+    /// <summary>Mac track()'s front: NextThought's own window is active on the island's display.</summary>
+    private bool MainWindowIsFront()
+    {
+        if (!state.CueIslandRunning) return false;
+        if (Avalonia.Application.Current?.ApplicationLifetime
+            is not Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime lifetime) return false;
+        var main = lifetime.MainWindow;
+        return main is not null && !ReferenceEquals(main, this) && main.IsVisible && main.IsActive;
     }
 
     /// <summary>The island's own rectangle on screen (not the shadow padding).</summary>

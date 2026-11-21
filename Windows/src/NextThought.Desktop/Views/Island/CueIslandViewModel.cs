@@ -127,6 +127,38 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
     /// <summary>Outside a meeting the island is the notch's launcher entry point.</summary>
     public bool LauncherEnabled => true;
 
+    /// <summary>NextThought's own window is active: the answer is already there (Mac mainWindowFront).</summary>
+    public bool MainWindowFront => mainWindowFront;
+    private bool mainWindowFront;
+
+    /// <summary>A meeting app is sharing this display: nothing of ours is drawn (Mac shareAvoiding).</summary>
+    public bool ShareAvoiding => shareAvoiding;
+    private bool shareAvoiding;
+
+    /// <summary>The whole panel takes clicks while it is open; collapsed it passes them through (Mac track()).</summary>
+    public bool WantsClicks => !shareAvoiding && (hovering || pinned || Peeking);
+
+    /// <summary>E4/island 7: the slide panel's 手动 tag (Mac insights.slideSource == .manual).</summary>
+    public bool SlideIsManual => state.SlideIsManual;
+
+    public void SetMainWindowFront(bool value)
+    {
+        if (mainWindowFront == value) return;
+        mainWindowFront = value;
+        if (value) forceCue = false;
+        OnPropertyChanged(nameof(MainWindowFront));
+        Refresh();
+    }
+
+    public void SetShareAvoiding(bool value)
+    {
+        if (shareAvoiding == value) return;
+        shareAvoiding = value;
+        OnPropertyChanged(nameof(ShareAvoiding));
+        OnPropertyChanged(nameof(WantsClicks));
+        Refresh();
+    }
+
     /// <summary>Screenshots and the self-check draw on the Mac desk colour.</summary>
     public bool Backdrop
     {
@@ -284,6 +316,8 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
     private CueIslandPhase ComputePhase()
     {
         if (ForcedPhase is { } forced) return forced;
+        // A meeting app is sharing this display: nothing of ours is drawn on it (Mac phase.hidden).
+        if (shareAvoiding) return CueIslandPhase.Hidden;
         // Nobody is talking: the meeting ends soon unless the user says otherwise.
         if (state.CueIslandRunning && (Peeking || DemoAutoEndSeconds is not null)) return CueIslandPhase.AutoEnd;
         var hasAnswer = state.CueIslandHasAnswer;
@@ -312,12 +346,15 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
                 return CueIslandPhase.Compact;
             return CueIslandPhase.Cue;
         }
+        // With NextThought's own window in front the answer is already there: stay compact
+        // (Mac covered = mainWindowFront && !forceCue; 上一条 forces it open).
+        var covered = mainWindowFront && !forceCue;
         // With the answer put away (or said), a new answer opens the island again.
-        if (hasAnswer && CollapsedKey != AnswerKey) return CueIslandPhase.Cue;
+        if (hasAnswer && CollapsedKey != AnswerKey && !covered) return CueIslandPhase.Cue;
         if (state.CueIslandRunning)
         {
             if (hovering || pinned) return CueIslandPhase.Deck;
-            if (state.CueIslandHasCandidate) return CueIslandPhase.Hearing;
+            if (!covered && state.CueIslandHasCandidate) return CueIslandPhase.Hearing;
             return CueIslandPhase.Compact;
         }
         return (hovering || pinned) && LauncherEnabled && Metrics.HasNotch ? CueIslandPhase.Launcher : CueIslandPhase.Hidden;
@@ -954,7 +991,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
                      nameof(ShowDeckHeardTranslation), nameof(ShowDeckStats), nameof(ShowDeckPrevious),
                      nameof(ShowAutoEndActions), nameof(ShowControls), nameof(ShowHistoryControls),
                      nameof(ShowCollapse), nameof(HistoryPosition), nameof(KeepsOpen), nameof(ShowClock),
-                     nameof(HoverBump), nameof(LauncherBusy), nameof(ShowAutoEndActions), nameof(ShowIsland),
+                     nameof(HoverBump), nameof(LauncherBusy), nameof(ShowAutoEndActions), nameof(ShowIsland), nameof(MainWindowFront), nameof(ShareAvoiding), nameof(SlideIsManual),
                      nameof(ListeningTextSize), nameof(ListeningTranslationSize), nameof(HeardStripTextSize),
                      nameof(HeardStripTranslationSize), nameof(AskedTextSize), nameof(EmptyTextSize),
                      nameof(SlideTransitionSize), nameof(DeckModeActionLabel), nameof(DeckPauseLabel), nameof(IsPaused)

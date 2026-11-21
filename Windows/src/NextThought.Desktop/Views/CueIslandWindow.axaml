@@ -322,7 +322,7 @@
               <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="{StaticResource IslandMargin_0_0_0_8}">
                 <TextBlock x:Name="SlideHeaderText" Text="{Binding SlideHeader}" FontSize="12" FontWeight="Medium"
                            Foreground="#80FFFFFF" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                <Border x:Name="SlideManualTag" Grid.Column="1" IsVisible="False" Background="{Binding TintSoftBrush}"
+                <Border x:Name="SlideManualTag" Grid.Column="1" IsVisible="{Binding SlideIsManual}" Background="{Binding TintSoftBrush}"
                         CornerRadius="{StaticResource IslandCornerRadius_8}" Padding="{StaticResource IslandPadding_5_1}" Margin="{StaticResource IslandMargin_6_0_0_0}" VerticalAlignment="Center">
                   <TextBlock Text="{loc:Tr 手动}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding TintBrush}" />
                 </Border>
