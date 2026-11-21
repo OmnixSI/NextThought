@@ -27,9 +27,9 @@
           <SolidColorBrush x:Key="SealSoft" Color="#14C4452C" />
           <SolidColorBrush x:Key="Ready" Color="#237542" />
           <SolidColorBrush x:Key="Caution" Color="#8A5707" />
-          <SolidColorBrush x:Key="ContactShadow" Color="#121C1B19" />
-          <SolidColorBrush x:Key="AmbientShadow" Color="#0F1C1B19" />
-          <SolidColorBrush x:Key="FloatShadow" Color="#1F1C1B19" />
+          <BoxShadows x:Key="ContactShadow">0 1 2 0 #121C1B19</BoxShadows>
+          <BoxShadows x:Key="AmbientShadow">0 8 14 0 #0F1C1B19</BoxShadows>
+          <BoxShadows x:Key="FloatShadow">0 12 16 0 #1F1C1B19</BoxShadows>
           <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19</BoxShadows>
           <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #1F1C1B19</BoxShadows>
           <SolidColorBrush x:Key="SidebarTint" Color="#F2F0EA" />
@@ -56,9 +56,9 @@
           <SolidColorBrush x:Key="SealSoft" Color="#22F07055" />
           <SolidColorBrush x:Key="Ready" Color="#4CC38A" />
           <SolidColorBrush x:Key="Caution" Color="#F0B24A" />
-          <SolidColorBrush x:Key="ContactShadow" Color="#66000000" />
-          <SolidColorBrush x:Key="AmbientShadow" Color="#52000000" />
-          <SolidColorBrush x:Key="FloatShadow" Color="#80000000" />
+          <BoxShadows x:Key="ContactShadow">0 1 2 0 #66000000</BoxShadows>
+          <BoxShadows x:Key="AmbientShadow">0 8 14 0 #52000000</BoxShadows>
+          <BoxShadows x:Key="FloatShadow">0 12 16 0 #80000000</BoxShadows>
           <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #66000000, 0 8 14 0 #52000000</BoxShadows>
           <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #80000000</BoxShadows>
           <SolidColorBrush x:Key="SidebarTint" Color="#181816" />
@@ -329,10 +329,19 @@
     <Setter Property="FontSize" Value="13" />
   </Style>
 
-  <!-- ScrollViewer: quiet scrollbars, no arrows -->
+  <!-- §5.5: Mac's scroll bars are thin overlays that appear while scrolling or hovering. -->
   <Style Selector="ScrollBar">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Width" Value="10" />
+    <Setter Property="Width" Value="8" />
+    <Setter Property="MinWidth" Value="8" />
+    <Setter Property="AllowAutoHide" Value="True" />
+    <Setter Property="HideDelay" Value="0:0:1.5" />
+  </Style>
+
+  <!-- §5.7: the content area keeps Mac's 720 column, centred in the window. -->
+  <Style Selector="Control.contentColumn">
+    <Setter Property="MaxWidth" Value="{StaticResource Content}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
 
   <Style Selector="ToolTip">
