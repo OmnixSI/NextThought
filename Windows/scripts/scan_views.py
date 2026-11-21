@@ -334,6 +334,11 @@ IMPLEMENTED = {
     ("NotesSettingsView.swift", "NotesAdvanced"): ("Views/SettingsView.axaml", "settings-pages"),
     ("NotesSettingsView.swift", "NotesTemplateEditor"): ("Views/SettingsView.axaml", "settings-pages"),
     ("NotesSettingsView.swift", "SectionEditor"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("ContentView.swift", "ErrorBanner"): ("Views/MainWindow.axaml", "shell"),
+    ("ContentView.swift", "FocusModeView"): ("Views/MainWindow.axaml", "shell"),
+    ("ContentView.swift", "LevelMeters"): ("Views/Shell/LevelMeters.cs", "shell"),
+    ("LiveWindowController.swift", "LiveWindowMenu"): ("Views/LiveView.axaml", "live"),
+    ("LiveSessionAcceptanceComponentSamples.swift", "LiveSessionAcceptanceComponentSamplesView"): ("Views/Shell/LiveComponentSamplesWindow.axaml", "shell"),
 }
 
 SKIPPED = {
