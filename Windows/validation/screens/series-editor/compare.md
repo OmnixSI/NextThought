@@ -1,4 +1,5 @@
-> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 
 # §6.7 E25/E30：系列编辑器各标签（WorkspacesView.swift ↔ SeriesEditorWindow）
 
@@ -35,7 +36,7 @@ Windows 实现：`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.SeriesEditor.
 
 ### 资料（WorkspaceDocumentsTab + PreparationQueueSummary）
 - Mac：`资料 N` 标题、导入菜单（自动归类/按分类导入）、导入进度、准备队列（失败/部分重试）、分类徽标、移除/撤销移除、支持格式说明。
-- Windows：准备摘要 + 导入资料按钮 + 进度条、准备队列行（文件名/进度/消息/重试/取消）、资料列表（启用勾选/名称/大小/格式/分类/移动/移除）、撤销移除、格式说明。一致（导入菜单只有单一「导入资料」，缺自动归类/按分类导入）。
+- Windows：准备摘要 + 「导入资料」菜单（Mac 结构：`自动归类` + 分隔线 + 每个分类一行「导入到 <分类>」；分类 = 当前模式 `ModeProfile.DocumentCategories` + 已用分类，空则「其他」；分类标签按 Mac `localizedCategory` 本地化）+ 进度条、准备队列行（文件名/进度/消息/重试/取消）、资料列表（启用勾选/名称/大小/格式/分类/移动/移除）、撤销移除、格式说明。一致。
 
 ### 经验积累（KnowledgeTab + ReviewTab）
 - Mac：`经验库与题库` 标题 + 编辑条目模式、搜索、经验列表（编辑/删除）、题库列表（编辑/删除）、阶段复盘（ReviewTab 统计与复盘）。
@@ -67,7 +68,7 @@ Windows 实现：`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.SeriesEditor.
 
 1. 头部 `SeriesStatsLine` 对无统计的系列显示空（应回退「N 场 · M 份资料」）。
 2. 配置菜单缺「类型选项」子菜单（仍在基本信息 ComboBox）；开下一场缺运行中禁用。
-3. 资料导入缺「自动归类 / 按分类导入」菜单；准备队列已有重试/取消。
+3. ~~资料导入缺「自动归类 / 按分类导入」菜单~~：已修（`ImportDocuments_Click` 的 MenuFlyout：自动归类 + 按分类导入，`ImportSeriesDocumentsAsync(paths, category)` 接线；`SeriesEditorClosureTests` 覆盖；准备队列已有重试/取消）。
 4. 经验积累缺编辑条目模式与搜索框；阶段复盘只保留文本框。
 5. 技能分区缺导入/管理按钮与「所有系列/已停用」徽标；缺 Mac 的导入并用于此系列。
 6. 基本信息缺字段折叠/背景笔记/自定义类型改名；缺未保存修改提示。
@@ -87,4 +88,4 @@ Windows 实现：`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.SeriesEditor.
 4. 经验积累：知识区头部「编辑条目 / 完成」切换（`SeriesEditorKnowledgeEditing`），经验与题库各自带搜索框（`SeriesEditorLessonQuery`/`SeriesEditorBankQuery`，过滤后列表），编辑/删除按钮只在编辑模式显示。
 5. 系列技能：行内「所有系列 / 已停用 / 摘要」徽标、全局技能不可切换（`CanToggle`）、「导入并用于此系列…」「管理技能」按钮（已有实现，本轮核对为一致）。
 6. 基本信息：自定义类型名（custom 模式显示）、背景笔记（备注）、领域字段折叠（核心 2 个 + 「更多/隐藏」切换额外字段）。
-剩余列差：资料导入的「自动归类/按分类导入」菜单、未保存修改提示、分区切换过渡动画（下一个增量）。
+剩余列差：未保存修改提示、分区切换过渡动画（下一增量）。资料导入的「自动归类/按分类导入」菜单已核对为一致（菜单截图见 `series-editor-documents-menu-*.png`）。
