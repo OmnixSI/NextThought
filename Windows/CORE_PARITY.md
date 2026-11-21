@@ -199,6 +199,28 @@ python Windows/scripts/core_usage.py
 - 3.4.0 的三个新测试文件（`LiveNotesTests`、`UtteranceTextTests`、`SpeakerClusteringTests.swift` 新增项）
   已全部逐方法同名翻译并通过：`dotnet test Windows/tests/NextThought.Core.Tests`。
 
+## J6：说话人改派与「改这一句的文字」（Core 数据层，J9 604 之外的新增测试）
+
+Mac 这些逻辑写在 app target（`Sources/NextThought/SpeakerID.swift`、`AppState+Notes.swift`、
+`SessionArchive.swift`），Core 侧按相同语义抽出纯函数；Desktop/Platform 接入由页面 owner 完成：
+
+| Mac 参照 | C# Core | 语义 |
+|---|---|---|
+| `AppState.assignLine` / `SessionArchive.assignVoice` | `SessionSpeakerEdits.AssignLine` | 一句改成「我」/某个 voice/「另一个人」（新 voice、名字「新说话人」），返回更新后的 meta 与 voices.jsonl 标签 |
+| `AppState.mergeVoices` / `SessionArchive.mergeVoice` | `SessionSpeakerEdits.MergeVoices` | 两个 voice 合并：重打标签，名字与「我」标记跟着走 |
+| `SessionArchive.setVoiceName` / `setMeVoice` | `SessionSpeakerEdits.SetVoiceName` / `SetMeVoice` | 写 meta.json 的同名键 voiceNames / meVoices（空则删） |
+| `SessionArchive` 读回 voices.jsonl | `SessionSpeakerEdits.ApplyVoiceTags` | 后写的标签覆盖行上的 voice |
+| `SessionDetail.effectiveLines`（SessionArchive.swift） | `SessionTextEdits.EffectiveLines` | 应用 correctionDecisions 后的转写，重新整理纪要的输入 |
+| `AppState.editLine` | `SessionTextEdits.EditLine` | 整句改字：user-content.json 的 correctionDecisions 写整句条目、句内校对改为 reverted、再存原文即撤销 |
+| `AppState.toggleCorrection` | `SessionTextEdits.ToggleCorrection` | 校对项撤销/重做（transcript.jsonl 不动） |
+
+测试 `Windows/tests/NextThought.Core.Tests/SessionLineEditsTests.cs` 11 项。它们**不计入 Mac 604 项**
+（Swift Core 没有这些 app 层测试；列在任务书 J6 的 Core 验收里）：说话人改派/合并/命名、整句改字与内部校对回退、
+撤销重做、`transcript.jsonl` 字节不变（改说话人 + 改字之后）、写出文件与 Mac 同名键（meta.json 的
+voiceNames/meVoices、voices.jsonl 的 id/voice、user-content.json correctionDecisions 的
+lineID/original/corrected/reverted）、写出再读入往返、`SessionSummaryPrompt.TranscriptText(EffectiveLines)`
+与 A11 的 `TranscriptSourceRevision` 使用改后文字。
+
 ## B22：Swift 测试文件逐行翻译进度
 
 | Swift 测试文件 | Swift 测试数 | 已翻译数 |
@@ -299,6 +321,7 @@ python Windows/scripts/core_usage.py
   均按 Swift 方法名逐字翻译，先看到失败（`CS0246` 缺类型 / 缺 `named` 参数）再实现。
 - J9 第二批新增 `WorkspaceSameNameTests`（20 项）与 `LocalModelReuseParityTests` 新增 4 项；第三批新增
   `DocumentJobSQLiteParityTests`（2 项，测试工程限定 SQLite 依赖）。J7 的 `TextZoomTests`（7 项）也通过。
-- 最近一次全量 Core 测试（J9 提交时）：**1751 项，1747 通过，4 项失败**。失败的 4 项属 localization
+- J6 Core 新增 `SessionLineEditsTests`（11 项，说话人改派 + 整句改字，见「J6」一节；不计入 Mac 604 项）。
+- 最近一次全量 Core 测试（J6 提交时）：**1767 项，1763 通过，4 项失败**。失败的 4 项属 localization
   任务进行中的 G8/G9/G10 测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`、
   `WordingTableTests`），不在本表 604 项范围内。
