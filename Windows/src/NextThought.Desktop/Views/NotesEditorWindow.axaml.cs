@@ -45,6 +45,14 @@ public partial class NotesEditorWindow : Window
             state.ConfirmNotesEditorItem(row);
     }
 
+    private void MarkEvidenceHighlight_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: SessionEvidenceRow row } || DataContext is not AppState state) return;
+        if (row.Reference.LineId is not { } lineId) return;
+        var transcriptRow = state.Transcript.FirstOrDefault(item => item.Id == lineId);
+        if (transcriptRow is not null) state.HighlightLineCommand.Execute(transcriptRow);
+    }
+
     private void FindEvidence_Click(object? sender, RoutedEventArgs e)
     {
         try

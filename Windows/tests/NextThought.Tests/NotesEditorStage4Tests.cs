@@ -48,4 +48,22 @@ public sealed class NotesEditorStage4Tests
         var view = Read("Views", "NotesEditorWindow.axaml");
         Assert.Contains("{Binding NotesEditorSaveLabel}", view);
     }
+
+    [Fact]
+    public void TheEvidenceSidebarShowsContextAndCanMarkTheLine()
+    {
+        var row = Read("SessionEvidenceRow.cs");
+        Assert.Contains("ContextText", row);
+        Assert.Contains("HasMissing", row);
+        Assert.Contains("此原话无法定位。已有笔记仍保留，请查看完整转写核实。", row);
+        var state = Read("AppState.cs");
+        Assert.Contains("lines[position].Text", state);
+        Assert.Contains("SessionEvidenceRow(reference, context, index >= 0)", state);
+        var view = Read("Views", "NotesEditorWindow.axaml");
+        Assert.Contains("{Binding ContextText}", view);
+        Assert.Contains("{Binding MissingText}", view);
+        Assert.Contains("MarkEvidenceHighlight_Click", view);
+        var code = Read("Views", "NotesEditorWindow.axaml.cs");
+        Assert.Contains("HighlightLineCommand.Execute", code);
+    }
 }
