@@ -136,7 +136,8 @@
                        TextWrapping="Wrap" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
               <ProgressBar IsIndeterminate="True" Width="80" IsVisible="{Binding SeriesEditorImporting}" />
-              <Button Content="{loc:Tr 导入资料}" Click="ImportDocuments_Click" />
+              <Button Content="{loc:Tr 导入资料}" Click="ImportDocuments_Click"
+                      ToolTip.Tip="{loc:Tr 一次可以选多个文件或整个文件夹：系统转成 Markdown、在后台归档，并按内容自动归类}" />
             </StackPanel>
           </Grid>
           <TextBlock Text="{Binding SeriesEditorImportStatus}" Classes="caption" />
@@ -350,5 +351,23 @@
     </ScrollViewer>
 
     <!-- Footer intentionally empty: Mac WorkspaceEditor has no persistent footer. -->
+
+    <!-- WorkspaceEditor.showUnsavedPrompt: save / discard / keep editing (决议 §3.5 series-editor 6). -->
+    <Border Grid.Row="0" Grid.RowSpan="5" IsVisible="{Binding ShowSeriesEditorUnsavedPrompt}"
+            Background="#8A000000">
+      <Border Classes="card" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Padding="24" Background="{DynamicResource Paper}">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{loc:Tr 有未保存的修改}" Classes="section" />
+          <TextBlock Text="{loc:Tr 保存后继续刚才的操作；放弃更改会丢弃本次草稿。}" Classes="caption"
+                     TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="primary" Content="{loc:Tr 保存更改}" Click="SaveUnsavedSeries_Click" />
+            <Button Classes="quiet" Content="{loc:Tr 放弃更改}" Click="DiscardUnsavedSeries_Click" />
+            <Button Classes="quiet" Content="{loc:Tr 继续编辑}" Click="KeepEditingSeries_Click" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
   </Grid>
 </Window>

@@ -23,13 +23,17 @@ public static class SeriesMaterials
         series.DocumentIds.Contains(materialId, StringComparer.OrdinalIgnoreCase)
         || series.Documents.Any(document => string.Equals(document.Id, materialId, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>Idempotent: importing the same library document twice does not duplicate it.</summary>
-    public static WorkspaceSeries Attach(WorkspaceSeries series, MaterialDocument material)
+    /// <summary>Idempotent: importing the same library document twice does not duplicate it.
+    /// <paramref name="category"/> is the material slot picked in the 导入到 … menu (null lets the
+    /// caller's auto-classification decide).</summary>
+    public static WorkspaceSeries Attach(WorkspaceSeries series, MaterialDocument material, string? category = null)
     {
         if (IsAttached(series, material.Id)) return series;
+        var document = DocumentOf(material);
+        if (!string.IsNullOrWhiteSpace(category)) document = document with { Category = category };
         return series with
         {
-            Documents = [.. series.Documents, DocumentOf(material)],
+            Documents = [.. series.Documents, document],
             DocumentIds = [.. series.DocumentIds, material.Id]
         };
     }
