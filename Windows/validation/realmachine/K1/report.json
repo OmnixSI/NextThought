@@ -1,0 +1,221 @@
+﻿{
+    "test":  "K1 防截屏（GDI + Windows.Graphics.Capture）",
+    "date":  "2026-11-21T14:53:18",
+    "exe":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-home-artifacts\\bin\\NextThought.Desktop\\release_win-x64\\NextThought.exe",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "screen":  "1488x880",
+    "osProbe":  {
+                    "samples":  3744,
+                    "magentaPixels":  0,
+                    "magentaRatio":  0,
+                    "excluded":  true
+                },
+    "wgc":  [
+                {
+                    "label":  "capturePrivacy=true",
+                    "affinity":  "0x11",
+                    "left":  177,
+                    "top":  2,
+                    "right":  1312,
+                    "bottom":  830,
+                    "region":  {
+                                   "mean":  15.23,
+                                   "stdDev":  12.57,
+                                   "brightRatio":  0.097,
+                                   "samples":  58788
+                               },
+                    "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\wgc-on\\wgc-capturePrivacy=true-145313975.png",
+                    "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\wgc-on\\wgc-window-capturePrivacy=true.png"
+                },
+                {
+                    "label":  "capturePrivacy=false",
+                    "affinity":  "0x0",
+                    "left":  177,
+                    "top":  2,
+                    "right":  1312,
+                    "bottom":  830,
+                    "region":  {
+                                   "mean":  31.75,
+                                   "stdDev":  59.32,
+                                   "brightRatio":  0.151,
+                                   "samples":  58788
+                               },
+                    "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\wgc-off\\wgc-capturePrivacy=false-145317141.png",
+                    "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\wgc-off\\wgc-window-capturePrivacy=false.png"
+                }
+            ],
+    "wgcDiffOnVsOff":  17.15,
+    "probeDiffOnVsOff":  {
+                             "subtitle":  211.65,
+                             "island":  196.9,
+                             "teleprompter":  148.59
+                         },
+    "privacyOn":  [
+                      {
+                          "label":  "main",
+                          "className":  "Avalonia-c61b2087-4a91-4431-8b79-e102ca418a11",
+                          "title":  "NextThought",
+                          "handle":  1902370,
+                          "affinity":  "0x11",
+                          "expectedAffinity":  "0x11",
+                          "left":  177,
+                          "top":  2,
+                          "right":  1312,
+                          "bottom":  830,
+                          "region":  {
+                                         "mean":  32.33,
+                                         "stdDev":  29.36,
+                                         "brightRatio":  0.484,
+                                         "samples":  58788
+                                     },
+                          "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\screen-main-145258440.png",
+                          "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\window-main-145258440.png"
+                      },
+                      {
+                          "label":  "island",
+                          "className":  "Avalonia-e30471eb-5e95-4f3a-9d70-4e966d59ce77",
+                          "title":  "NextThought 提词岛",
+                          "handle":  3409580,
+                          "affinity":  "0x11",
+                          "expectedAffinity":  "0x11",
+                          "left":  460,
+                          "top":  0,
+                          "right":  1029,
+                          "bottom":  210,
+                          "region":  {
+                                         "mean":  31.84,
+                                         "stdDev":  30.94,
+                                         "brightRatio":  0.437,
+                                         "samples":  7579
+                                     },
+                          "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\screen-island-145301823.png",
+                          "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\window-island-145301823.png"
+                      },
+                      {
+                          "label":  "subtitle",
+                          "className":  "Avalonia-15383efe-a946-45fd-9b54-c003c22ea908",
+                          "title":  "NextThought 字幕条",
+                          "handle":  1311088,
+                          "affinity":  "0x11",
+                          "expectedAffinity":  "0x11",
+                          "left":  274,
+                          "top":  716,
+                          "right":  1214,
+                          "bottom":  821,
+                          "region":  {
+                                         "mean":  34.23,
+                                         "stdDev":  26.91,
+                                         "brightRatio":  0.571,
+                                         "samples":  6345
+                                     },
+                          "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\screen-subtitle-145302056.png",
+                          "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\window-subtitle-145302056.png"
+                      },
+                      {
+                          "label":  "teleprompter",
+                          "className":  "Avalonia-8574bb2e-3c4d-40ee-852b-37ab32ebea7c",
+                          "title":  "NextThought 回答浮窗",
+                          "handle":  2163058,
+                          "affinity":  "0x11",
+                          "expectedAffinity":  "0x11",
+                          "left":  177,
+                          "top":  177,
+                          "right":  697,
+                          "bottom":  397,
+                          "region":  {
+                                         "mean":  31.78,
+                                         "stdDev":  22.91,
+                                         "brightRatio":  0.623,
+                                         "samples":  7150
+                                     },
+                          "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\screen-teleprompter-145302657.png",
+                          "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\on\\window-teleprompter-145302657.png"
+                      }
+                  ],
+    "privacyOff":  [
+                       {
+                           "label":  "main",
+                           "className":  "Avalonia-efcfb166-92e3-4b1b-bc43-afac9da463f0",
+                           "title":  "NextThought",
+                           "handle":  2033442,
+                           "affinity":  "0x0",
+                           "expectedAffinity":  "0x0",
+                           "left":  177,
+                           "top":  2,
+                           "right":  1312,
+                           "bottom":  830,
+                           "region":  {
+                                          "mean":  225.31,
+                                          "stdDev":  63.62,
+                                          "brightRatio":  1,
+                                          "samples":  58788
+                                      },
+                           "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\screen-main-145306727.png",
+                           "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\window-main-145306727.png"
+                       },
+                       {
+                           "label":  "island",
+                           "className":  "Avalonia-46f930c4-e5ea-4fbc-9ed3-1412b0effcf5",
+                           "title":  "NextThought 提词岛",
+                           "handle":  2753254,
+                           "affinity":  "0x0",
+                           "expectedAffinity":  "0x0",
+                           "left":  549,
+                           "top":  0,
+                           "right":  909,
+                           "bottom":  120,
+                           "region":  {
+                                          "mean":  229.58,
+                                          "stdDev":  51.45,
+                                          "brightRatio":  1,
+                                          "samples":  2700
+                                      },
+                           "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\screen-island-145309134.png",
+                           "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\window-island-145309134.png"
+                       },
+                       {
+                           "label":  "subtitle",
+                           "className":  "Avalonia-83b498c9-fefd-4623-8b33-87387d2a7c11",
+                           "title":  "NextThought 字幕条",
+                           "handle":  3868190,
+                           "affinity":  "0x0",
+                           "expectedAffinity":  "0x0",
+                           "left":  274,
+                           "top":  716,
+                           "right":  1214,
+                           "bottom":  821,
+                           "region":  {
+                                          "mean":  247.04,
+                                          "stdDev":  15.33,
+                                          "brightRatio":  1,
+                                          "samples":  6345
+                                      },
+                           "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\screen-subtitle-145310210.png",
+                           "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\window-subtitle-145310210.png"
+                       },
+                       {
+                           "label":  "teleprompter",
+                           "className":  "Avalonia-4f7e9a7b-a339-401a-9c5b-4bcc6a6deff3",
+                           "title":  "NextThought 回答浮窗",
+                           "handle":  3475020,
+                           "affinity":  "0x0",
+                           "expectedAffinity":  "0x0",
+                           "left":  101,
+                           "top":  101,
+                           "right":  621,
+                           "bottom":  321,
+                           "region":  {
+                                          "mean":  178.6,
+                                          "stdDev":  95.26,
+                                          "brightRatio":  1,
+                                          "samples":  7150
+                                      },
+                           "screenShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\screen-teleprompter-145310728.png",
+                           "cropShot":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K1\\off\\window-teleprompter-145310728.png"
+                       }
+                   ],
+    "passed":  true,
+    "failures":  [
+
+                 ]
+}
