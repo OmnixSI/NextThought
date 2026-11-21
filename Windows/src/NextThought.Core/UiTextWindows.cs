@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1211;
+    public const int Count = 1224;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1206,6 +1206,19 @@ internal static class UiTextWindowsEnglish
         ["技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。"] = "A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab.",
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
+        ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["每一级字号一行，中英文混排；文字颜色只用 Ink 的 ink / secondary / tertiary。"] = "One line per size, Chinese and English mixed; text colours use only Ink ink / secondary / tertiary.",
+        ["%@（%@）"] = "%@ (%@)",
+        ["面试进行到系统设计：先聊了订单缓存层的项目，现在在追问数据库和缓存的一致性。"] = "The interview reached system design: we covered the order-cache project and are now on database/cache consistency.",
+        ["项目经历"] = "Project experience",
+        ["负责订单服务的缓存层"] = "Owns the order-service cache layer",
+        ["核心查询从数据库迁到 Redis"] = "Moved the main query from the database to Redis",
+        ["缓存一致性"] = "Cache consistency",
+        ["先更新数据库，再删除缓存"] = "Update the database first, then delete the cache",
+        ["删除失败进重试队列"] = "Failed deletes go to the retry queue",
+        ["面试官追问：删除缓存失败怎么办"] = "The interviewer asked: what if deleting the cache fails?",
+        ["下一步讲热点 key 的处理"] = "Next: hot-key handling",
+        ["会后补一张读写时序图"] = "Add a read/write sequence diagram after the meeting",
         ["上一页"] = "Previous",
         ["下一句："] = "Next:",
         ["依据："] = "Based on:",
