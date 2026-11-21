@@ -14,6 +14,7 @@ public partial class MainWindow
             "zoom" => "RunTextZoomCheckAsync",
             "windows" => "RunWindowsCheckAsync",
             "share-test" => "RunShareTestCheckAsync",
+            "notes-structured" => "RunNotesStructuredCheckAsync",
             "subtitle-export" => "RunSubtitleExportCheckAsync",
             "backup" => "RunBackupCheckAsync",
             "acceptance" => "RunAcceptanceCheckAsync",

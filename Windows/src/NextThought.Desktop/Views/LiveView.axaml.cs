@@ -76,6 +76,8 @@ public partial class LiveView : UserControl
         state = DataContext as AppState;
         if (state is not null)
         {
+            // J8/Mac LiveRenderCount.page
+            LiveRenderCount.Page++;
             state.Transcript.CollectionChanged += OnTranscriptChanged;
             state.TranscriptJumpRequested += OnTranscriptJumpRequested;
             state.PropertyChanged += OnStatePropertyChanged;
@@ -102,6 +104,14 @@ public partial class LiveView : UserControl
 
     private void OnStatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        // J8/Mac LiveRenderCount: the parts of the page these properties re-render.
+        if (e.PropertyName is nameof(AppState.AnswerText) or nameof(AppState.Answering)
+            or nameof(AppState.DetectedQuestion) or nameof(AppState.HasBilingualQuestion))
+            LiveRenderCount.Partial++;
+        if (e.PropertyName is nameof(AppState.SelectedMode) or nameof(AppState.Recording))
+            LiveRenderCount.TopBar++;
+        if (e.PropertyName is nameof(AppState.LiveNotesEnabled) or nameof(AppState.AnswerModeIsAuto))
+            LiveRenderCount.RightColumn++;
         switch (e.PropertyName)
         {
             case nameof(AppState.AnswerText):
@@ -218,6 +228,7 @@ public partial class LiveView : UserControl
 
     private void ShowRightTab(RightTab tab)
     {
+        LiveRenderCount.RightColumn++;
         LiveNotesPanel.IsVisible = tab == RightTab.LiveNotes;
         AnswerPanel.IsVisible = tab == RightTab.Answers;
         NotesPanel.IsVisible = tab == RightTab.MyNotes;
@@ -256,6 +267,7 @@ public partial class LiveView : UserControl
     /// <summary>The more menu's 回答设置 section: show the current model (Mac AnswerSettingsMenu).</summary>
     private void MoreMenu_Opened(object? sender, EventArgs e)
     {
+        LiveRenderCount.MoreMenu++;
         if (state is null) return;
         LiveModelBox.SelectedItem = state.LiveModelChoices.FirstOrDefault(choice => choice.Id == state.Settings.Model);
     }
@@ -439,6 +451,9 @@ public partial class LiveView : UserControl
         if (TranscriptList.ItemCount == 0) return;
         state?.RefreshLiveSpeakerNames();
         var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
+        // J8/Mac LiveRenderCount: the list changed and this many lines arrived.
+        LiveRenderCount.Transcript++;
+        LiveRenderCount.Line += added;
         if (state is not null && !state.LiveIsFollowingTranscript)
         {
             // E4/Mac ScrollFollowState: reading history keeps the viewport; the banner counts new lines.

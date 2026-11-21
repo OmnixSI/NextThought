@@ -1,124 +1,120 @@
-# Windows 移植预览 · 0.5.145
+# NextThought for Windows
 
-0.4.0 增加每用户安装、独立版本目录、发布清单校验、显式回退、卸载保留数据和一键自检；修正 WAV 导入后会议标题输入框的同步，界面版本号改为读取程序集。未签名安装生命周期 20 项、79 项回归、实际远程 Windows CI 与两小时受控双路回放均通过；第二台客户端实测由用户延期，可信签名待证书。
+NextThought is a local-first meeting assistant: it listens to a meeting on your PC, keeps a live
+transcript, answers questions about what was just said, and writes the notes afterwards. This
+directory contains the Windows port of NextThought for Mac 3.4.0 (Avalonia/.NET 10). The Mac app is
+the reference; this port follows its wording, settings and meeting formats.
 
-源码构建安装包：`./scripts/build.ps1 -Publish -Installer -Unsigned`。包自带 .NET 运行环境，基础功能不要求目标电脑安装 SDK、Office、Codex 或 Python；增强 OCR 仍是可选独立环境。当前没有代码签名证书，未签名验收包不是可信签名正式版。见 [第二台电脑验收说明](P4_SECOND_PC.md)、[P4 验收](P4_VALIDATION.md)和[功能对照](FEATURE_PARITY.md)。
+**Status:** 0.9.0, unsigned preview build for Windows 10/11. Everything stays on your machine except
+the calls you explicitly configure (answer service, web search, cloud recognition).
 
-以下保留 P3 及更早版本记录。
+## System requirements
 
-# Windows P3 分步预览 · 0.3.1
+- Windows 10 version 2004 (build 19041) or later, Windows 11, **x64 only**.
+- No administrator rights: the app is per-user.
+- A microphone (or system audio capture) for recording; speakers are optional.
+- About 1 GB for the app and its first-run models; more if you import many documents.
 
-P3 分步预览加入可选增强 OCR、会议内说话人分组、远程完整句翻译和局域网伴侣；0.3.1 修正校园网地址遗漏。本轮桌面流程与 1 小时 CPU 组合长测已通过，手机命令和重连按用户要求暂跳，见 [P3_VALIDATION.md](P3_VALIDATION.md)。
+## Install
 
-设置 → 准备检索组件 → 勾选“参考资料库时使用语义与关键词混合检索”并保存。导入资料后，在回答区勾选“参考资料库”。首次生成索引，之后复用；模型未准备或失败时回退关键词并提示。
+1. Download `NextThought-0.9.0-windows-x64-setup.exe` from the `windows-v0.9.0` release.
+2. Run it. The build is **not code-signed**, so Windows SmartScreen shows a warning: choose
+   **更多信息 / More info** and then **仍要运行 / Run anyway**.
+3. The installer copies the app to `%LOCALAPPDATA%\Programs\NextThought` and creates Start-menu and
+   (optionally) desktop shortcuts. It installs for the current user only; it never asks for
+   administrator rights.
+4. Launch **NextThought** and follow the first-run guide. Step 1 offers to download the speech
+   recognition model.
 
-语义模型约 596 MiB，独立下载并校验；使用 CPU，不需要 Python、CUDA 或新的原生 ONNX Runtime。原 API、采音和麦克风增益设置沿用。
+If an old "NextThought Windows Preview" build (`NextThought.Windows.Preview`) is installed, the
+installer stops and asks you to uninstall it first. Your data is kept — uninstalling the old build
+only removes that build's program files.
 
-下面保留 P2 及更早版本说明。
+## First run: what gets downloaded
 
-# Windows P2 预览版 0.2.0
+Models are downloaded separately and verified against pinned SHA-256 values
+(`Windows/validation/models.md`); nothing is bundled in the installer.
 
-P2-1 至 P2-5 的实现、验收和明确边界见 [P2_VALIDATION.md](P2_VALIDATION.md)。
+- **Speech recognition (required for recording)**: one X-ASR streaming model for Chinese/English,
+  about 130 MB download (about 170 MB on disk). The setup checklist ("设置清单") shows the state and a
+  "下载" button.
+- **Semantic search (needed on the first document import)**: Qwen3-Embedding 0.6B (ONNX, quantised),
+  about 625 MB, downloaded when you first add documents; the 资料组件 page shows progress.
+- **Voiceprint (optional, 区分说话人)**: WeSpeaker ResNet34-LM, about 27 MB, downloaded when you
+  turn the feature on.
+- **Gaze reminder (optional, off by default)**: the MediaPipe face-landmarker models, about 4 MB.
+- **Document components (optional)**: Office/PDF enhanced reading needs an optional component
+  package (200 MB or more), installed from the 资料组件 page only if you need Word/Excel/PowerPoint
+  import.
 
-- 左侧“资料库”导入资料；回答区勾选“参考资料库”，完成后选择引用并点击“查看来源”。
-- 设置中勾选“使用本机 Codex CLI 账号”切换后端；先在终端安装并登录 Codex。模型留空采用账号默认模型。取消勾选后沿用已有 API 配置。
-- 系统声音设置可选整个设备或具体应用进程树；麦克风开关独立。每次开始前重新选择应用，PID 不跨重启保存。
-- Ctrl+Alt+N 恢复主窗，Ctrl+Alt+O 悬浮窗，Ctrl+Alt+R 开始/结束记录。快捷键冲突时使用界面按钮。主窗关闭仍正常退出；点击“收起到托盘”才隐藏。
-- 左侧导出/导入 `.ntbackup`；导入前自动保留安全备份，相同 ID 保留现有项。Mac 专属字段和原文件保存在 Migration 原始档案，不等于全部 Mac 功能已实现。
+Everything is downloaded to `%LOCALAPPDATA%\NextThought`; a failed or interrupted download is
+retried from the settings page and is checked before use.
 
-验收 CLI 示例（在 Windows 源码目录运行，先生成合成样本并发布）：
+## Where your data lives
 
-```powershell
-.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe documents-test --fixtures artifacts\p2\fixtures --data-root artifacts\p2\qa-data --json artifacts\p2\documents.json
-.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe retrieval-test --fixtures artifacts\p2\fixtures --data-root artifacts\p2\qa-data --json artifacts\p2\retrieval.json --live
-.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe codex-test --json artifacts\p2\codex.json
-.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe process-audio-test --json artifacts\p2\process-audio.json
-```
+- **Data directory:** `%LOCALAPPDATA%\NextThought` (`Sessions`, `models`, `settings.json`,
+  `Credentials\answer-api.dpapi`). The settings page can open it directly.
+- **Meetings, notes, series, templates, settings and voiceprints** stay there. The app never uploads
+  them; the settings page states exactly which services receive text when you configure one (answer
+  service, web search, cloud recognition).
+- **Backup / move to the Mac:** Settings → 通用 → 备份与恢复 → "导出全部数据…" writes a
+  `.ntbackup` file that the Mac app can import (and the Windows app can import a Mac backup). The
+  file contains meetings, series, settings, skills, templates and voiceprints, but **not** the
+  downloaded models (they are re-downloaded per machine). Answer-service keys are never written to
+  the backup.
+- **Import:** "导入…" restores a `.ntbackup` into this machine; the review sheet shows new, same and
+  conflicting records before anything is written, and a local recovery point is created first.
+- **Uninstall:** Windows Settings → Apps (or the Start-menu uninstaller) removes
+  `%LOCALAPPDATA%\Programs\NextThought` and the shortcuts. It deliberately **keeps**
+  `%LOCALAPPDATA%\NextThought`, so reinstalling restores your meetings and settings. Delete that
+  folder by hand if you want to remove everything.
 
-下面保留 P0/P1 使用说明与历史版本记录。
+## What is different from the Mac app
 
-# NextThought Windows 预览版 0.1.1
+NextThought for Windows intentionally differs in these areas only; the rest follows the Mac 3.4.0
+behaviour and wording, in both Chinese and English:
 
-原生 Windows 实现，基于上游 `af60a4def90c750872197f81ac8b91c726d05b63`。已通过 HECATE 实际单路/双路采音、DeepSeek 回答、分段纪要与重试，以及中断归档恢复验证。30 分钟受控回放单列记录，完整功能差异见 [PORTING_STATUS.md](PORTING_STATUS.md)。
+- The app window is a normal Windows window (title bar, taskbar, system close/maximize buttons); the
+  Mac's "刘海" (notch) presentation uses its no-notch layout.
+- Speech recognition runs on-device with X-ASR instead of Apple's speech frameworks; there is no
+  system speech-recognition option.
+- Translation goes through your configured answer service and the UI says the text leaves the
+  machine; there is no on-device offline translator.
+- The Mac's screen-recording permission guide does not exist (Windows has no equivalent permission);
+  the Windows permissions (microphone, camera) are shown in Settings → 通用 → 权限.
+- Legacy Office formats (`.doc`, `.odt`, `.rtf`) are not read directly; save as `.docx`/`.pdf` first
+  (Legacy PowerPoint support through LibreOffice is an optional component).
+- The Bluetooth fallback channel is not implemented (LAN/relay companion only).
+- The update channel selector is hidden: this release only has the formal `windows-v<version>`
+  channel.
+- Application name in files, "close the tab of the system window" and "click-through first click"
+  are Mac-only concepts and are adapted to Windows conventions.
+- Answer-service keys are protected with the Windows user protection API (DPAPI); the Mac uses the
+  Keychain.
 
-## 直接运行
+## Settings, shortcuts and help
 
-1. 将交付 ZIP **完整解压**，双击 `NextThought.exe` 或 `Launch.cmd`。程序自带 .NET 运行环境，不需要安装 Python、Node、CUDA 或 .NET SDK。当前验收平台为 Windows 11 x64。
-2. 打开“设置”。本机已准备 X-ASR 480 ms 流式模型及整句精修模型；另一台机器首次使用时点击“准备语音组件”，下载约 270 MB 并校验 SHA-256。之后语音识别在 CPU 本地离线运行。
-3. 先用“导入 WAV”验证识别。支持 `WaveFileReader` 可解码的 PCM / IEEE float WAV，自动转为单声道 16 kHz；不支持直接导入 MP3、M4A。导入文件按同一声音来源处理；可选声纹功能按完整句分组，不拆分一句中的重叠说话人。
-4. 开会时，在设置中选输出设备和麦克风，回到“会议记录”点击“开始记录”。线上会议通常选择系统输出设备混音及麦克风；线下会议可只选麦克风。结束后在“会后纪要”导出 Markdown。
-5. 需要回答或纪要时，填写兼容 Chat Completions 的 API 地址、模型名称和自己的 Key，保存后检查连接。可使用支持此接口的本机服务。程序不含预付费服务或模型 Key；远程服务的费用由相应服务方收取。
+- **Settings:** title-bar gear (quick settings) or the main window's 设置; six pages mirror the Mac
+  app: 场景 / 回答与资料 / 提词与教练 / 纪要 / 通用 / 高级.
+- **Setup checklist:** Settings → 通用 → 设置清单 shows permissions, models, answer service and
+  document components with a direct action per row.
+- **Shortcuts:** Settings → 提词与教练 → 全局快捷键; conflicts are reported there and the buttons
+  stay usable.
+- **About/version:** Settings → 通用 → 数据与关于; the title bar does not show a version badge.
+- **Logs:** `%LOCALAPPDATA%\NextThought\logs` (secrets, tokens and pairing codes are filtered).
 
-“系统输出设备混音”包含所选设备上其他应用的声音。当前没有按会议进程筛选；应在会议前选对输出设备。设备拔插、睡眠和长时会议恢复仍待实机验收。自动回答及会后自动整理默认关闭。
+## Development and release
 
-HECATE 麦克风在本机验收时声音偏低，已使用软件内 4 倍增益完成固定句及句尾识别。在“设置 → 声音来源”可以调整 1–8 倍增益；其他设备从 1 倍开始调整。采音停止时会排空设备缓存再结束识别。自动问题会等本地发言结束后再回答；手动提问会清除待触发的自动问题。
+The Windows port lives entirely under `Windows/`; do not edit `Sources/` (the Mac app) for Windows
+changes.
 
-回答服务现已按本机配置选择 DeepSeek 官方 `deepseek-flash`，推理强度为 `none`。纪要失败后再次整理会复用已完成片段；重新生成被取消时保留旧纪要。程序启动时会检查由本版本留下的中断会话，恢复完整行并保留修复前备份。另一台机器仍需自行填写服务与 Key。
+- Build and run: `Windows/scripts/build_desktop.ps1` (or `dotnet build
+  Windows/src/NextThought.Desktop`); the repository pins its SDK under `Windows/.tools`.
+- Tests: `Windows/verify.ps1` runs both suites, the UTC pass, the Mac fixture checks and the
+  screenshot batch; `Windows/release.ps1 -Version 0.9.0` produces the release artifacts.
+- Release process (for maintainers): `Windows/RELEASE.md`.
+- Third-party licences and the upstream snapshot: `Windows/THIRD_PARTY_NOTICES.txt`,
+  `Windows/licenses/`.
 
-## 数据和隐私
-
-- 默认目录：`%LOCALAPPDATA%\NextThought`。`models` 为模型，`Sessions` 为会议，`settings.json` 为设置，`Credentials\answer-api.dpapi` 为 API 凭据。界面可直接打开数据目录。
-- 原始音频只在内存中处理，不保存 WAV。转写、问题及回答会保存在本机。只有调用远程回答服务时，问题和相关转写才发送到所填服务。
-- Key 用 Windows DPAPI 的当前用户范围加密，不进入普通设置文件。复制数据到另一台机器或另一个 Windows 账户后，需要重新输入 Key。
-- 开发或隔离验证时，可在启动前设置环境变量 `NEXTTHOUGHT_DATA_DIR` 指向专用目录。设置只影响该进程及其子进程。
-- 归档采用与上游对应的 `meta.json`、`transcript.jsonl`、`answers.jsonl`、`summary.json`。日期写为 UTC ISO 8601，界面显示本地时间。尚未实现 Mac 备份导入向导，也未验证跨平台完整往返。
-
-## 源码与构建
-
-目录结构：
-
-```text
-src/NextThought.Core       问题意图、候选跟踪、RMS VAD、数据结构
-src/NextThought.Platform   WASAPI、Sherpa 原生桥接、模型安装、API、DPAPI、归档
-src/NextThought.Windows    WPF 桌面窗口
-src/NextThought.Cli        设备枚举、模型安装、WAV 转写诊断
-tests/NextThought.Tests    上游问题语料和存储、流式接口回归
-```
-
-在 Windows PowerShell 中进入本文件所在目录，然后执行：
-
-```powershell
-py -3.12 scripts/bootstrap_sdk.py
-.\scripts\build.ps1
-.\scripts\build.ps1 -Publish
-```
-
-第一次构建需要网络。SDK 由微软官方下载并校验 SHA-512，放在项目 `.tools\dotnet`，不修改系统 PATH。脚本使用锁定的 NuGet 依赖，构建和测试通过后生成带版本号的 `artifacts\NextThought-win-x64-0.1.1` 以及 ZIP 和 SHA-256 文件。若系统已有匹配 SDK，也可使用它运行解决方案；`global.json` 固定 SDK 版本。
-
-开发依赖：.NET SDK 10.0.403；C# 14 / WPF；Sherpa-ONNX 1.13.8；其 Windows 包中的 ONNX Runtime 1.28.2；NAudio.Core / Wasapi 2.2.1。所有识别模型与上游 SHA-256 保持一致。`xasr-bpe.vocab` 直接保留上游内嵌词表。
-
-注意：Sherpa C API 的 Windows 字符串需要 UTF-8。本项目用显式 UTF-8 封送及 EXE 的 UTF-8 活动代码页清单处理中文路径。请通过 **EXE apphost** 启动识别程序；直接运行 `dotnet NextThought.Cli.dll` 会绕过该清单。
-
-## 命令行输入、输出
-
-发布包的 `tools\NextThought.Cli.exe` 无需另装运行环境。以下命令在发布包目录执行：
-
-```powershell
-# 输出本机系统播放端点、麦克风端点列表，不开始录音
-& '.\tools\NextThought.Cli.exe' devices
-
-# 输入模型选择及数据目录；下载、校验并安装模型
-& '.\tools\NextThought.Cli.exe' install-models
-
-# 输入 WAV；输出终端转写，以及含分段、推理耗时的 JSON 文件
-& '.\tools\NextThought.Cli.exe' transcribe-wav 'D:\会议\样例.wav' --json '.\result.json'
-```
-
-开发环境的真实样例复现命令：
-
-```powershell
-py -3.12 scripts/prepare_test_models.py --data-root .cache/validation-data
-& '.\src\NextThought.Cli\bin\Release\net10.0-windows\win-x64\NextThought.Cli.exe' transcribe-wav '.cache\test-audio\xasr480-0.wav' --data-root '.cache\validation-data' --json 'artifacts\asr\manual.json'
-```
-
-可选参数：`--no-refine` 关闭整句精修，`--model xasr160` 选择另一个流式模型，`--data-root` 指定数据目录。160 ms 模型通路已提供，当前验收使用 480 ms 模型。
-
-## 当前验收与后续
-
-已完成：Release 构建、37 项自动回归、4 段官方音频推理、模型安装、HECATE 单路/双路实采、真实 DeepSeek 回答和纪要、分段恢复、WASAPI 暂停故障注入及重新启动、独立进程异常退出后恢复、桌面 WAV 导入、历史与导出。测试报告在源码的 `artifacts/p1` 下。
-
-验收范围限制：USB 物理拔插按用户要求跳过；真实系统休眠/唤醒、连续长时间硬件采音、其他麦克风与扬声器组合、160 ms 模型、干净 Windows 机器及完整 DPI/无障碍专项仍待验收。30 分钟受控 PCM 回放不能替代这些硬件测试。
-
-已提供 Codex、资料读取/检索、进程音频、备份、托盘/悬浮窗，以及 P3 可选能力。已补验一页合成扫描 PDF 的增强导入、表格单元格和检索定位，以及实际桌面 WAV 导入、声纹、补译取消重试、纪要、Markdown 导出和正常退出重启重载。1 小时公开 PCM 双路组合长测、取消恢复及备份往返通过，73 项回归全过。手机命令及重连按用户要求暂跳，热点已关闭；真实多页复杂扫描件、长时硬件采音等专项仍保留。安装器、签名升级等不在本预览交付中。详见 P3_VALIDATION.md。
-
-保留上游与第三方版权。上游没有顶层开源许可证，本地移植不改变其授权；第三方说明和许可证文本随包提供。
+The upstream Mac application has no top-level open-source licence; this Windows port does not change
+its licensing. Third-party components and models keep their own licences as listed in the notices.
