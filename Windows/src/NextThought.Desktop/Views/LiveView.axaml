@@ -802,24 +802,9 @@
             </Border>
           </Grid>
 
-          <!-- 我的笔记 tab (Mac MeetingUserNotes; the editor itself is E16's). -->
-          <Grid x:Name="NotesPanel" RowDefinitions="*,Auto" IsVisible="False" Margin="{DynamicResource LvMargin_24_16_24_12}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-              <StackPanel Spacing="{DynamicResource D4Spacing_8}">
-                <TextBlock Text="{loc:Tr 会中笔记}" Classes="overline" />
-                <TextBox Text="{Binding MeetingNoteDraft}" AcceptsReturn="True" TextWrapping="Wrap" Height="120"
-                         PlaceholderText="{loc:Tr 随手记；保存到 user-content.json}" />
-                <Button Classes="primary" Content="{loc:Tr 保存笔记}" Command="{Binding SaveMeetingNotesCommand}" HorizontalAlignment="Left" />
-                <ItemsControl ItemsSource="{Binding MeetingHighlights}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="core:SessionHighlight">
-                      <TextBlock Text="{Binding Quote}" Classes="caption" TextTrimming="CharacterEllipsis" Margin="{DynamicResource D4Margin_0_2_0_0}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </ScrollViewer>
-            <TextBlock Grid.Row="1" Text="{loc:Tr 高亮与这场的原话关联；保存后写入 user-content.json。}" Classes="caption" FontSize="11" />
+          <!-- 我的笔记 tab (§3.3 live 12): Mac LiveSessionView puts MeetingUserNotes here. -->
+          <Grid x:Name="NotesPanel" RowDefinitions="*" IsVisible="False" Margin="{DynamicResource LvMargin_24_16_24_12}">
+            <views:MeetingUserNotes />
           </Grid>
         </Grid>
       </Grid>
