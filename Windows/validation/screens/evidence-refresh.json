@@ -1,21 +1,9 @@
-{
-  "commit": "940a0280",
-  "batchImages": 132,
-  "liveStates": true,
-  "contrastPassed": true,
-  "contrastFailures": 2,
-  "batch": "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-evidence-1737ad2c\\batch",
-  "generatedAt": "2026-11-21T17:24:56",
-  "liveStateApproximations": [
-    "save-warning",
-    "save-recovery",
-    "stale",
-    "stale-manual-edit",
-    "selected-focus",
-    "selection",
-    "overlay",
-    "overlay-popover",
-    "cancel-late-callback"
-  ],
-  "contrastNote": "prepare 9 chips fixed (theme-aware Secondary); live 2 question capsules handed to runtime"
+﻿{
+    "commit":  "6d65a019",
+    "batchImages":  132,
+    "liveStates":  true,
+    "contrastPassed":  true,
+    "contrastFailures":  0,
+    "batch":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-evidence-3c903a48\\batch",
+    "generatedAt":  "2026-11-21T18:14:32"
 }

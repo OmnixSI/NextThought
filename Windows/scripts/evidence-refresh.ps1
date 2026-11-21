@@ -98,9 +98,11 @@ foreach ($pair in @(@('home','home'), @('prepare','prepare'), @('live','live'), 
                     @('history','history'), @('series','series'), @('library','library'), @('settings','settings'))) {
     $page = $pair[0]; $dir = Join-Path $screens $pair[1]
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    # 删掉旧截图：windows-*、单个 light/dark/en-*、以及任何不再产出的 png
-    Get-ChildItem $dir -Filter '*.png' | Remove-Item -Force -ErrorAction SilentlyContinue
-    Get-ChildItem $dir -Filter '*.png' -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue
+    # 删掉旧截图：windows-*、单个 light/dark/en-*，以及不再产出的 png。
+    # 但保留 Lead/owner 手工放进来的成品图（live/live-notes-*.png）。
+    $preserve = @('live-notes-light.png', 'live-notes-dark.png')
+    Get-ChildItem $dir -Filter '*.png' -ErrorAction SilentlyContinue | Where-Object { $preserve -notcontains $_.Name } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
     foreach ($suffix in $canonicalSuffixes + @('-en.png')) {
         $name = $page + $suffix
         $source = Join-Path $batchDir ($name)
@@ -178,8 +180,9 @@ $contrastReport = Join-Path $screens 'contrast\report.json'
 $contrastFailures = 0
 if (Test-Path $contrastReport) {
     try {
-        $parsed = Get-Content $contrastReport -Raw | ConvertFrom-Json
-        $contrastFailures = [int]$parsed.failures
+        $raw = Get-Content $contrastReport -Raw
+        $match = [regex]::Match($raw, '"failures"\s*:\s*(\d+)')
+        if ($match.Success) { $contrastFailures = [int]$match.Groups[1].Value } else { $contrastFailures = -1 }
     } catch { $contrastFailures = -1 }
 }
 $summary = [pscustomobject]@{

@@ -1,44 +1,41 @@
-﻿# §5 证据重拍（本机执行记录）
+﻿# §5 证据重拍（冻结版本）
 
-- 日期：2026-11-21 17:25
-- 截图来源提交：`940a0280`（管线自动写入每份 `compare.md` 开头；后续冻结点重跑会更新）
-- 构建：Release 自包含 exe（`%TEMP%\nt-k18-artifacts\...\NextThought.exe`），管线内部复制为私有
-  `NTEvidence.exe` 运行，避免共享机 host-wide kill 清扫打断长批。
-- 工具：`Windows/scripts/evidence-refresh.ps1`（删除旧图 + 浅/深/英矩阵 + live-states + compare 头 +
-  深色对比度）。新自检：`--self-test=live-states`、`--self-test=dark-contrast`。
+- 冻结点：代码冻结后最终构建，**截图来源提交 `6d65a019`**（每份 `compare.md` 开头已自动写入该 hash）。
+- 构建：`Windows/src/NextThought.Desktop/bin/Release/net10.0-windows10.0.19041.0/win-x64/NextThought.exe`
+  同源 Release 构建（管线内复制为私有 `NTEvidence.exe` 运行，避免共享机 kill 清扫打断长批）。
+- 工具：`Windows/scripts/evidence-refresh.ps1`（删旧图/规范命名/compare 头/深色对比度）；
+  新自检：`--self-test=live-states`、`--self-test=dark-contrast`。
+- `live/live-notes-light.png`、`live/live-notes-dark.png` 为 Lead 生成；管线保留规则已生效，本轮从 live-shots 暂存恢复后再提交。
 
-## 产物
+## 数字
 
 | 内容 | 数量/位置 |
 |---|---|
-| 页面矩阵截图（8 页 × 浅/深/英 + notes 页签/settings 页/island/onboarding/zoom 等） | 132 张，分发到 `validation/screens/<页面>/`，原样快照 `validation/screens/current/` |
-| 会中页状态矩阵（Mac live-states 20 状态 × 浅/深） | **40 张**，`validation/screens/live-states/<状态>-light|dark.png` + `report.json` |
-| 深色对比度报告 | `validation/screens/contrast/report.json` |
-| 汇总 | `validation/screens/evidence-refresh.json` |
+| 页面矩阵截图（8 页 × 浅/深/英 + notes 页签、settings 六页、island、onboarding 4 步、zoom 3 档等） | **132 张**，分发到 `validation/screens/<页面>/`，原样副本 `screens/current/` |
+| 会中页状态矩阵（Mac live-states 20 状态 × 浅/深） | **40 张** → `screens/live-states/<状态>-light|dark.png` |
+| 深色对比度 | **8/8 页 0 条 <4.5、0 个白底块**（`screens/contrast/report.json`） |
+| 汇总 | `screens/evidence-refresh.json`（commit=6d65a019、batch=132、liveStates=true、contrastFailures=0） |
 
-## live-states 自检
+## 本轮修复（证据工具，不改 UI）
 
-`RunLiveStatesCheckAsync` 从 demo live 舞台出发，对 Mac 的 20 个状态逐个应用 Windows 页面能力里
-最接近的状态并各截浅/深一张。**近似状态**（Windows 暂无 Mac QA 注入对应入口，已在 report.json 列出，
-需要 owner 提供状态入口后重拍）：`save-warning`、`save-recovery`、`stale`、`stale-manual-edit`、
-`selected-focus`、`selection`、`overlay`、`overlay-popover`、`cancel-late-callback`。其余 11 个状态
-为精确驱动（normal/streaming/busy/focus/focus-busy/success/unavailable/streaming-reading-history/
-reading-history/large-text/empty）。
+1. `RunDarkContrastCheckAsync`：背景刷 alpha 合成修正——场景 tint 刷常是“不透明颜色 + `Opacity=0.13`”，
+   之前把它当实色 `#93AEE0`，对白字算出 1.88 的假失败；现在按 `颜色 alpha × 刷 Opacity` 逐层合成到
+   主题 Paper（深色 `#1B1B19`），live「问题」胶囊实测为深色胶囊底 + Ink 文字，对比度达标。
+2. `SecondaryBrush`（prepare 页）按当前主题变体取色：深色未选中胶囊文字从浅色 `#6B6963` 改为
+   `#A3A19B`（`d44cf3fa`）。
+3. 管线对比度失败解析改为正则取 `"failures": N`，并保留 `live-notes-*` 手工图。
 
-## 深色对比度（文字/背景 < 4.5，逐控件）
+## live-states 说明
 
-自动检查覆盖 8 页深色界面。**prepare 的 9 条已修复**（`Evidence:` 提交：`SecondaryBrush` 改为按当前
-主题变体解析资源，深色下用 `#A3A19B` 而不是浅色 `#6B6963`；重跑 `--self-test=dark-contrast` 后 prepare
-页面 0 条失败）。**剩余 2 条已交 runtime owner**：
+40 张齐全；11 个状态为精确驱动（normal/streaming/busy/focus/focus-busy/success/unavailable/
+streaming-reading-history/reading-history/large-text/empty），**9 个为近似**（save-warning/
+save-recovery/stale/stale-manual-edit/selected-focus/selection/overlay/overlay-popover/
+cancel-late-callback），已在 `live-states/report.json` 的 `approximatedStates` 列出，等 owner
+提供状态入口后重拍。
 
-- **live（2 条）**：两个「问题」小胶囊文字颜色与背景同为 `#93aee0`，对比度 1（不可读）。
-- 其余页面（home/notes/history/series/library/settings、prepare）深色文字均 ≥4.5，无白底块。
+## DEBUG 产物（已补拍）
 
-## 已知限制
-
-- 本批用 **Release** 构建：`Controls`/`Typography` 样张与部分旧 `CorrectedTranscript` 单图仅
-  `#if DEBUG` 产出，旧图被清理后这两个目录暂时为空，需 owner/后续在冻结点用相应自检或 Debug 构建补拍。
-- `--screenshots` 本批 132 张（比历史 128 张多出 quick-settings/home-stats 等新增项）；英文矩阵
-  由批内 `-en-light/-en-dark` 覆盖。
-- live-states 自检写完截图后应用退出较慢（Close 后仍存活到超时），管线已改为「完整 40 张即接受」。
-- 等 Lead 宣布冻结点后重跑 `evidence-refresh.ps1` 即更新提交行与全部图片。
+- `controls/controls-light|dark.png`、`typography/typography-light|dark.png`：用 **Debug 构建**的
+  `--demo --screenshots` 补拍。
+- `CorrectedTranscript/corrected-transcript-{light,dark,en-light,en-dark}.png`：同一 Debug 批补拍。
+- 方法可复现：Debug 构建 → `--demo --screenshots=<dir>` → 拷入对应目录。

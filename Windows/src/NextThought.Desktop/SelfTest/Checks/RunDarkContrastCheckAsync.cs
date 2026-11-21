@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -122,10 +122,17 @@ public partial class MainWindow
 
     private static Color? ActualColor(IBrush? brush) => brush is SolidColorBrush solid ? solid.Color : null;
 
-    /// <summary>Walks up collecting solid backgrounds, then composites them over the first opaque one.</summary>
+    private static Color Opaque(Color color) => color.A == 255 ? color : Color.FromArgb(255, color.R, color.G, color.B);
+
+    /// <summary>
+    /// Walks up collecting solid backgrounds and composites them over an opaque base, exactly like
+    /// Avalonia renders them. The layer alpha is the colour alpha times the brush Opacity: scene
+    /// tint brushes are often a fully opaque colour with `Opacity = 0.13`, and treating that as an
+    /// opaque #93AEE0 produced bogus 1.88 ratios for white text that actually sits on the dark Paper.
+    /// </summary>
     private static Color? Backdrop(Visual visual)
     {
-        var layers = new List<Color>();
+        var layers = new List<(Color Color, double Alpha)>();
         Color? baseColor = null;
         foreach (var ancestor in visual.GetVisualAncestors())
         {
@@ -136,25 +143,30 @@ public partial class MainWindow
                 Window window => window.Background,
                 _ => null
             };
-            if (brush is not SolidColorBrush solid || solid.Color.A == 0) continue;
-            if (solid.Color.A == 255)
+            if (brush is not SolidColorBrush solid) continue;
+            var alpha = (solid.Color.A / 255.0) * Math.Clamp(solid.Opacity, 0, 1);
+            if (alpha <= 0.001) continue;
+            if (alpha >= 0.999)
             {
-                baseColor = solid.Color;
+                baseColor = Opaque(solid.Color);
                 break;
             }
-            layers.Add(solid.Color);
+            layers.Add((solid.Color, alpha));
         }
         if (baseColor is null)
         {
-            baseColor = Avalonia.Application.Current?.Resources["Surface"] is SolidColorBrush surface
-                ? surface.Color
-                : Color.Parse("#0F0E0D");
+            var theme = Avalonia.Application.Current?.ActualThemeVariant;
+            var dark = theme == Avalonia.Styling.ThemeVariant.Dark;
+            if (Avalonia.Application.Current is { } app
+                && app.TryGetResource("Paper", theme, out var paper) && paper is SolidColorBrush paperBrush)
+                baseColor = Opaque(paperBrush.Color);
+            else
+                baseColor = dark ? Color.Parse("#1B1B19") : Color.Parse("#ECEBE8");
         }
         var effective = baseColor.Value;
         for (var index = layers.Count - 1; index >= 0; index--)
         {
-            var layer = layers[index];
-            double alpha = layer.A / 255.0;
+            var (layer, alpha) = layers[index];
             effective = Color.FromArgb(255,
                 (byte)Math.Round(layer.R * alpha + effective.R * (1 - alpha)),
                 (byte)Math.Round(layer.G * alpha + effective.G * (1 - alpha)),

@@ -1,6 +1,6 @@
 {
-  "passed": false,
-  "failures": 2,
+  "passed": true,
+  "failures": 0,
   "pages": [
     {
       "page": "home",
@@ -16,22 +16,9 @@
     },
     {
       "page": "live",
-      "failures": [
-        {
-          "text": "问题",
-          "foreground": "#ff93aee0",
-          "background": "#ff93aee0",
-          "ratio": 1
-        },
-        {
-          "text": "问题",
-          "foreground": "#ff93aee0",
-          "background": "#ff93aee0",
-          "ratio": 1
-        }
-      ],
+      "failures": [],
       "whiteBlocks": [],
-      "passed": false
+      "passed": true
     },
     {
       "page": "notes",
