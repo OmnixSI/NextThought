@@ -64,6 +64,20 @@ public partial class AppState
         : UiText.Format("%lld 处", GlossaryTranscriptHits.Count);
     public bool HasGlossaryTranscriptHits => GlossaryTranscriptHits.Count > 0;
     public bool HasGlossarySelection => GlossarySelectedId.Length > 0;
+
+    /// <summary>Mac duplicatesAnother: the spelling being edited already exists in this scope.</summary>
+    public bool HasGlossaryDuplicate
+    {
+        get
+        {
+            var key = Glossary.LooseKey(GlossaryEditorCanonical);
+            if (key.Length == 0) return false;
+            return GlossaryEntriesInScope().Any(entry => entry.Id != GlossarySelectedId
+                && Glossary.LooseKey(entry.Canonical) == key);
+        }
+    }
+
+    partial void OnGlossaryEditorCanonicalChanged(string value) => OnPropertyChanged(nameof(HasGlossaryDuplicate));
     public string GlossaryEditorHeading => GlossarySelectedId.Length > 0 ? UiText.T("编辑条目") : UiText.T("新增条目");
     public string GlossaryVariantsPlaceholder => UiText.T("识别出来的错误写法，逗号分隔");
     public string GlossaryNotePlaceholder => UiText.T("可选，例如“我们的数据库项目”");
@@ -198,6 +212,7 @@ public partial class AppState
     {
         OnPropertyChanged(nameof(HasGlossarySelection));
         OnPropertyChanged(nameof(GlossaryEditorHeading));
+        OnPropertyChanged(nameof(HasGlossaryDuplicate));
     }
 
     private static string[] SplitVariants(string text) => text

@@ -1,18 +1,176 @@
+using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
 
 /// <summary>
-/// E22: 术语和人名（GlossaryView.swift）。全局 / 当前系列两个作用域；左列条目，右侧编辑器；
-/// 批量粘贴与导入导出；转写查找会把听错的写法一起找出来并显示 MisheardMark。
+/// E22 / §6.7: 术语和人名 — the glossary page, ported from GlossaryView.swift. Two scopes
+/// (全局/当前系列), a 270 pt list, the entry editor on the right (canonical spelling, 术语/人名,
+/// misheard spellings as removable tags, note, delete) or the bulk-paste editor. The open entry is
+/// committed as it is typed (debounced), 完成 closes with the default action, and closing tidies
+/// duplicates like Mac's onDisappear.
 /// </summary>
 public partial class GlossaryWindow : Window
 {
-    public GlossaryWindow() => InitializeComponent();
+    private readonly ObservableCollection<string> variants = [];
+    private readonly DispatcherTimer commitTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private bool syncing;
 
-    private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
+    public GlossaryWindow()
+    {
+        InitializeComponent();
+        VariantTags.ItemsSource = variants;
+        commitTimer.Tick += (_, _) =>
+        {
+            commitTimer.Stop();
+            CommitDraft();
+        };
+        DataContextChanged += (_, _) => Attach();
+        Opened += (_, _) => Attach();
+        Closing += (_, _) =>
+        {
+            commitTimer.Stop();
+            CommitDraft();
+            if (DataContext is AppState state) state.TidyGlossariesCommand.Execute(null);
+        };
+    }
+
+    private AppState? state;
+
+    private void Attach()
+    {
+        if (DataContext is not AppState next || ReferenceEquals(next, state)) return;
+        state = next;
+        state.PropertyChanged += OnStateChanged;
+        UpdateViewState();
+    }
+
+    private void OnStateChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(AppState.GlossarySelectedId) or nameof(AppState.GlossaryPasteMode)
+            or nameof(AppState.GlossaryEditorCanonical) or nameof(AppState.GlossaryRows))
+            UpdateViewState();
+    }
+
+    /// <summary>Mac body: entry editor, paste editor, or the "nothing selected" card.</summary>
+    private void UpdateViewState()
+    {
+        if (state is null) return;
+        var selected = state.GlossarySelectedId.Length > 0;
+        var paste = state.GlossaryPasteMode;
+        EntryEditor.IsVisible = !paste && selected;
+        EmptyEditor.IsVisible = !paste && !selected;
+        PasteEditor.IsVisible = paste;
+        RefreshRowSelection();
+        SyncVariants();
+        SyncSegmented();
+    }
+
+    /// <summary>The three segmented controls mirror the model.</summary>
+    private void SyncSegmented()
+    {
+        if (state is null) return;
+        ScopeGlobalButton.Classes.Set("selected", !state.GlossarySeriesScope);
+        ScopeSeriesButton.Classes.Set("selected", state.GlossarySeriesScope);
+        KindTermButton.Classes.Set("selected", !state.GlossaryEditorIsPerson);
+        KindPersonButton.Classes.Set("selected", state.GlossaryEditorIsPerson);
+        PasteTermButton.Classes.Set("selected", !state.GlossaryPastePerson);
+        PastePersonButton.Classes.Set("selected", state.GlossaryPastePerson);
+    }
+
+    private void ScopeGlobal_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UseGlobalGlossaryScopeCommand.Execute(null);
+        UpdateViewState();
+    }
+
+    private void ScopeSeries_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UseSeriesGlossaryScopeCommand.Execute(null);
+        UpdateViewState();
+    }
+
+    private void KindTerm_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UseGlossaryTermKindCommand.Execute(null);
+        QueueCommit();
+        SyncSegmented();
+    }
+
+    private void KindPerson_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UseGlossaryPersonKindCommand.Execute(null);
+        QueueCommit();
+        SyncSegmented();
+    }
+
+    private void PasteTerm_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UsePasteTermKindCommand.Execute(null);
+        SyncSegmented();
+    }
+
+    private void PastePerson_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        state?.UsePastePersonKindCommand.Execute(null);
+        SyncSegmented();
+    }
+
+    private void QueueCommit()
+    {
+        commitTimer.Stop();
+        commitTimer.Start();
+    }
+
+    /// <summary>Mac draft.variants: the editor's tag list mirrors the comma-joined model field.</summary>
+    private void SyncVariants()
+    {
+        if (state is null || syncing) return;
+        syncing = true;
+        try
+        {
+            var parts = state.GlossaryEditorVariants
+                .Split([',', '，', '、', ';', '；', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (!variants.SequenceEqual(parts))
+            {
+                variants.Clear();
+                foreach (var part in parts) variants.Add(part);
+            }
+        }
+        finally { syncing = false; }
+    }
+
+    private void RefreshRowSelection()
+    {
+        if (state is null) return;
+        foreach (var button in GlossaryList.GetVisualDescendants().OfType<Button>())
+        {
+            if (button.Tag is not GlossaryEntryRow row) continue;
+            button.Classes.Set("selected", row.Entry.Id == state.GlossarySelectedId);
+        }
+    }
+
+    private void Field_Changed(object? sender, TextChangedEventArgs e)
+    {
+        if (syncing) return;
+        commitTimer.Stop();
+        commitTimer.Start();
+    }
+
+    private void CommitDraft()
+    {
+        if (state is null) return;
+        if (state.GlossarySelectedId.Length == 0 && state.GlossaryEditorCanonical.Trim().Length == 0) return;
+        if (state.GlossaryEditorCanonical.Trim().Length == 0) return;
+        state.SaveGlossaryEntryCommand.Execute(null);
+    }
+
+    // ---- list / entry commands ---------------------------------------------------------
 
     private void SelectEntry_Click(object? sender, RoutedEventArgs e)
     {
@@ -20,8 +178,17 @@ public partial class GlossaryWindow : Window
         {
             if (sender is Button { Tag: GlossaryEntryRow row } && DataContext is AppState state)
                 state.BeginGlossaryEntry(row);
+            UpdateViewState();
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private void New_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.StartNewGlossaryEntryCommand.Execute(null);
+        UpdateViewState();
+        CanonicalBox.Focus();
     }
 
     private void DeleteSelected_Click(object? sender, RoutedEventArgs e)
@@ -33,23 +200,77 @@ public partial class GlossaryWindow : Window
             if (row is null) return;
             row.Remove(row.Entry);
             state.GlossaryStatusText = UiText.T("已删除");
+            UpdateViewState();
         }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
-    private void RemoveSeries_Click(object? sender, RoutedEventArgs e)
+    // ---- misheard spellings as tags (Mac variantTag) -----------------------------------
+
+    private void VariantInput_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (sender is Button { Tag: GlossaryEntryRow row }) row.Remove(row.Entry);
+        if (e.Key is not (Key.Enter or Key.OemComma)) return;
+        e.Handled = true;
+        AddVariantsFromInput();
     }
 
-    private void ClearFind_Click(object? sender, RoutedEventArgs e)
+    private void VariantInput_TextChanged(object? sender, TextChangedEventArgs e)
     {
-        if (DataContext is AppState state) state.GlossaryQuery = "";
+        if (VariantInput.Text is { } text && text.IndexOfAny([',', '，', '、', ';', '；']) >= 0) AddVariantsFromInput();
     }
+
+    private void AddVariantsFromInput()
+    {
+        if (state is null) return;
+        var canonical = state.GlossaryEditorCanonical.Trim();
+        var parts = (VariantInput.Text ?? "")
+            .Split([',', '，', '、', ';', '；', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(part => part.Length >= 2 && part != canonical);
+        foreach (var part in parts)
+            if (!variants.Contains(part)) variants.Add(part);
+        VariantInput.Text = "";
+        PublishVariants();
+    }
+
+    private void RemoveVariant_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string tag }) variants.Remove(tag);
+        PublishVariants();
+    }
+
+    private void PublishVariants()
+    {
+        if (state is null) return;
+        syncing = true;
+        try { state.GlossaryEditorVariants = string.Join(", ", variants); }
+        finally { syncing = false; }
+        commitTimer.Stop();
+        commitTimer.Start();
+    }
+
+    // ---- paste / import / export -------------------------------------------------------
 
     private void Paste_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is AppState state) state.BeginGlossaryPaste();
+        UpdateViewState();
+    }
+
+    private void CancelPaste_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state)
+        {
+            state.GlossaryPasteText = "";
+            state.GlossaryPasteMode = false;
+            state.GlossaryEditorCanonical = "";
+        }
+        UpdateViewState();
+    }
+
+    private void ImportPasted_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.ImportGlossaryPastedCommand.Execute(null);
+        UpdateViewState();
     }
 
     private async void ImportFile_Click(object? sender, RoutedEventArgs e)
@@ -71,7 +292,7 @@ public partial class GlossaryWindow : Window
                 ? UiText.Format("已加入 %lld 项", added)
                 : UiText.T("没有新的内容");
         }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
     private async void ExportFile_Click(object? sender, RoutedEventArgs e)
@@ -92,7 +313,7 @@ public partial class GlossaryWindow : Window
             await File.WriteAllTextAsync(path, state.ExportGlossaryText());
             state.GlossaryStatusText = UiText.T("已导出");
         }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
     private async void CopyText_Click(object? sender, RoutedEventArgs e)
@@ -105,21 +326,17 @@ public partial class GlossaryWindow : Window
             await Clipboard.SetDataAsync(transfer);
             state.GlossaryStatusText = UiText.T("已复制");
         }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { state?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
-    /// <summary>AddToGlossarySheet: opens for the matched transcript line (misheard spelling prefilled).</summary>
-    private async void AddFromTranscript_Click(object? sender, RoutedEventArgs e)
+    /// <summary>Mac 完成: commits the open entry, imports pending paste text, closes.</summary>
+    private void Done_Click(object? sender, RoutedEventArgs e)
     {
-        try
-        {
-            if (sender is not Button { Tag: GlossaryTranscriptHitRow row } || DataContext is not AppState state) return;
-            state.BeginAddToGlossary(row.Text);
-            if (!row.IsMisheard) state.GlossaryDraftHeard = row.Form;
-            await new AddToGlossarySheet { DataContext = state }.ShowDialog(this);
-        }
-        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        if (DataContext is AppState state && state.GlossaryPasteMode
+            && state.GlossaryPasteText.Trim().Length > 0)
+            state.ImportGlossaryPastedCommand.Execute(null);
+        commitTimer.Stop();
+        CommitDraft();
+        Close();
     }
-
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }

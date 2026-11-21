@@ -4,11 +4,11 @@
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.AddToGlossarySheet"
         x:DataType="local:AppState"
-        Title="{loc:Tr 加入术语表}" Width="460" Height="420" WindowStartupLocation="CenterOwner"
+        Title="{loc:Tr 加入术语表}" Width="440" Height="420" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
   <StackPanel Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_20}">
     <TextBlock Text="{loc:Tr 加入术语表}" Classes="section" />
-    <TextBlock Text="{Binding GlossaryDraftLine}" Classes="caption" TextWrapping="Wrap" MaxLines="4"
+    <SelectableTextBlock Text="{Binding GlossaryDraftLine}" Classes="caption" TextWrapping="Wrap" MaxLines="4"
                TextTrimming="CharacterEllipsis" />
     <TextBlock Text="{loc:Tr 在这句里选中听错的词并复制（⌘C），再打开本窗口，会自动填入。}"
                Classes="caption" FontSize="11" TextWrapping="Wrap" />
@@ -29,8 +29,8 @@
                 IsVisible="{Binding HasSelectedSeries}" />
     </StackPanel>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
-      <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
-      <Button Classes="primary" Content="{loc:Tr 加入}" Click="Add_Click" />
+      <Button Classes="quiet" Content="{loc:Tr 取消}" Click="Cancel_Click" />
+      <Button Classes="primary" Content="{loc:Tr 加入}" Click="Add_Click" IsDefault="True" />
     </StackPanel>
   </StackPanel>
 </Window>
