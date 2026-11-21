@@ -156,6 +156,7 @@ public sealed record NotesSectionSpec(
 /// <summary>A notes template: named sections, each with a one-sentence requirement.</summary>
 public sealed record NotesTemplate(string Id, string Name, IReadOnlyList<NotesSectionSpec> Sections)
 {
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsBuiltIn => NotesTemplateKinds.Parse(Id).Raw() == Id;
 
     /// <summary>The built-in template a custom copy came from (NotesTemplate.base).</summary>

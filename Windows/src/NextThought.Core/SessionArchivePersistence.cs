@@ -124,6 +124,7 @@ public sealed record SessionAnswerEvent
     /// <summary>Whether the answer finished; missing on old archives and unknown values stay incomplete.</summary>
     public AnswerCompletion? Completion { get; init; }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsComplete => Completion is null or AnswerCompletion.Complete;
 }
 

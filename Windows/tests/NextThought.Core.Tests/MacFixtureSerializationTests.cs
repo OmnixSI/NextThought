@@ -195,7 +195,10 @@ public sealed class MacFixtureSerializationTests
             DateTimeOffset.Parse("2025-11-24T16:00:00Z"));
         var written = Node(translation);
         Assert.Equal(2, written["revision"]!.GetValue<int>());
-        Assert.Equal("2025-11-24T16:00:00Z", written["date"]!.GetValue<DateTime>().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+        // Archive dates use Foundation's seconds-since-2001 number, the same as every other Mac file.
+        var seconds = written["date"]!.GetValue<double>();
+        var macEpoch = new DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        Assert.Equal(DateTimeOffset.Parse("2025-11-24T16:00:00Z"), macEpoch.AddSeconds(seconds));
         Assert.Equal("11111111-1111-4111-8111-111111111111", written["id"]!.GetValue<string>());
     }
 }

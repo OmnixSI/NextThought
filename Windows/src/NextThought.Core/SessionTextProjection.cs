@@ -51,6 +51,7 @@ public sealed record SessionProjectedAnswer(
     string SourceRevision,
     AnswerCompletion? Completion = null)
 {
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsComplete => Completion is null or AnswerCompletion.Complete;
 }
 

@@ -100,6 +100,7 @@ public sealed record WorkspaceSeries(
     public IReadOnlyList<WorkspaceSeriesItem> SeriesItems { get; init; } = [];
 
     /// <summary>Materials that belong to this series (Windows ids of enabled documents).</summary>
+    [JsonIgnore]
     public IReadOnlyList<string> DocumentIds { get; init; } = [];
 
     /// <summary>Material metadata of this series (port of Workspace.documents).</summary>
@@ -205,6 +206,7 @@ public sealed record WorkspaceSeries(
     }
 
     /// <summary>B18: a custom type behaves like its base type (Workspace.effectiveMode).</summary>
+    [JsonIgnore]
     public MeetingMode EffectiveMode
     {
         get
@@ -216,6 +218,7 @@ public sealed record WorkspaceSeries(
         }
     }
 
+    [JsonIgnore]
     public ModeProfile Profile => ModeProfile.For(EffectiveMode);
 
     private static MeetingMode ParseMode(string? raw)
@@ -239,6 +242,7 @@ public sealed record WorkspaceSeries(
         + (string.IsNullOrWhiteSpace(Notes) ? "" : (Fields is { Count: > 0 } ? "\n" : "") + Notes.Trim());
 
     /// <summary>B18: the question bank becomes one more searchable document (Workspace.retrievalDocuments).</summary>
+    [JsonIgnore]
     public IReadOnlyList<ContextDocument> RetrievalDocuments
     {
         get
@@ -291,15 +295,26 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
 {
     public static readonly WorkspaceData Empty = new([]);
 
-    public WorkspaceSeries? SeriesOfSession(string sessionId) =>
-        Series.FirstOrDefault(series => (series.SessionIds ?? []).Contains(sessionId));
+    /// <summary>A6: identifiers compare as parsed GUIDs, never as differently-cased strings.</summary>
+    public static bool SameId(string? left, string? right)
+    {
+        if (left is null || right is null) return false;
+        if (Guid.TryParse(left, out var a) && Guid.TryParse(right, out var b)) return a == b;
+        return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+    }
 
-    public WorkspaceSeries? Find(string seriesId) => Series.FirstOrDefault(series => series.Id == seriesId);
+    private static bool ContainsId(IReadOnlyList<string>? ids, string id) =>
+        ids is not null && ids.Any(candidate => SameId(candidate, id));
+
+    public WorkspaceSeries? SeriesOfSession(string sessionId) =>
+        Series.FirstOrDefault(series => ContainsId(series.SessionIds, sessionId));
+
+    public WorkspaceSeries? Find(string seriesId) => Series.FirstOrDefault(series => SameId(series.Id, seriesId));
 
     /// <summary>Replaces one series in place (knowledge review returns a new record).</summary>
     public WorkspaceData WithSeries(WorkspaceSeries series) => this with
     {
-        Series = Series.Select(item => item.Id == series.Id ? series : item).ToList()
+        Series = Series.Select(item => SameId(item.Id, series.Id) ? series : item).ToList()
     };
 
     /// <summary>Adds a series (names are unique, case-insensitively).</summary>
@@ -331,7 +346,7 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
     /// <summary>Deletes a whole series (used by the throw-away series of the self-check).</summary>
     public WorkspaceData RemoveSeries(string seriesId) => this with
     {
-        Series = Series.Where(series => series.Id != seriesId).ToList()
+        Series = Series.Where(series => !SameId(series.Id, seriesId)).ToList()
     };
 
     public WorkspaceData AddLesson(string seriesId, string text, string? sourceSessionId = null)
@@ -340,7 +355,7 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
         var lesson = WorkspaceLesson.Create(text, sourceSessionId);
         return this with
         {
-            Series = Series.Select(item => item.Id == seriesId
+            Series = Series.Select(item => SameId(item.Id, seriesId)
                 ? item with { Lessons = [.. item.Lessons, lesson] }
                 : item).ToList()
         };
@@ -357,11 +372,11 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
     {
         var trimmed = name.Trim();
         if (trimmed.Length == 0) return this;
-        if (Series.Any(series => series.Id != seriesId && string.Equals(series.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
+        if (Series.Any(series => !SameId(series.Id, seriesId) && string.Equals(series.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
             return this;
         return this with
         {
-            Series = Series.Select(series => series.Id == seriesId ? series with { Name = trimmed } : series).ToList()
+            Series = Series.Select(series => SameId(series.Id, seriesId) ? series with { Name = trimmed } : series).ToList()
         };
     }
 }
@@ -380,6 +395,7 @@ public sealed class WorkspaceStore
 
     private readonly string path;
     private readonly string seriesDirectory;
+    private readonly string windowsStatePath;
     private readonly HashSet<string> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> unreadableFiles = new(StringComparer.OrdinalIgnoreCase);
     private bool loadFailed;
@@ -388,6 +404,8 @@ public sealed class WorkspaceStore
     {
         path = Path.Combine(dataDirectory, "Workspace", "workspace.json");
         seriesDirectory = Path.Combine(dataDirectory, "Workspaces");
+        // A6: DocumentIds are Windows-only state; they live beside the data, never in a Mac file or backup.
+        windowsStatePath = Path.Combine(dataDirectory, "WindowsState", "workspace-documents.json");
     }
 
     public string Path_ => path;
@@ -423,7 +441,7 @@ public sealed class WorkspaceStore
                         LogLoadFailure(name, error);
                     }
                 }
-                if (series.Count > 0) return SyncSessionMeta(Sanitise(new WorkspaceData(series)));
+                if (series.Count > 0) return ApplyDocumentIds(SyncSessionMeta(Sanitise(new WorkspaceData(series))));
                 if (unreadableFiles.Count > 0) return WorkspaceData.Empty;
             }
             if (!File.Exists(path)) return WorkspaceData.Empty;
@@ -451,7 +469,7 @@ public sealed class WorkspaceStore
                         ? item with { SessionIds = sessions } : item).ToList()
                 };
             }
-            return SyncSessionMeta(Sanitise(data));
+            return ApplyDocumentIds(SyncSessionMeta(Sanitise(data)));
         }
         catch (Exception error)
         {
@@ -470,7 +488,7 @@ public sealed class WorkspaceStore
         var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var series in data.Series)
         {
-            var name = series.Id.ToUpperInvariant() + ".json";
+            var name = StableSeriesId(series.Id) + ".json";
             keep.Add(name);
             AtomicWrite(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
         }
@@ -483,10 +501,56 @@ public sealed class WorkspaceStore
             if (File.Exists(file) && !unreadableFiles.Contains(name)) File.Delete(file);
         }
         SyncSessionMetaFiles(data);
+        SaveDocumentIds(data);
         // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
         AtomicWrite(path, JsonSerializer.Serialize(data, Options));
     }
 
+    /// <summary>A6/§4.3: the on-disk identifier spelling is upper-case with hyphens.</summary>
+    private static string StableSeriesId(string id) =>
+        Guid.TryParse(id, out var guid) ? guid.ToString("D").ToUpperInvariant() : id.ToUpperInvariant();
+
+    /// <summary>§4.4: Windows-only material ids never enter the Mac workspace file or a backup.</summary>
+    private void SaveDocumentIds(WorkspaceData data)
+    {
+        try
+        {
+            var map = data.Series
+                .Where(series => series.DocumentIds.Count > 0)
+                .ToDictionary(series => StableSeriesId(series.Id), series => series.DocumentIds.ToList());
+            if (map.Count == 0)
+            {
+                if (File.Exists(windowsStatePath)) File.Delete(windowsStatePath);
+                return;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(windowsStatePath)!);
+            AtomicWrite(windowsStatePath, JsonSerializer.Serialize(map, JsonDefaults.ArchiveOptions));
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private WorkspaceData ApplyDocumentIds(WorkspaceData data)
+    {
+        if (!File.Exists(windowsStatePath)) return data;
+        try
+        {
+            var map = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(File.ReadAllText(windowsStatePath),
+                JsonDefaults.ArchiveOptions);
+            if (map is null) return data;
+            return data with
+            {
+                Series = data.Series.Select(series =>
+                {
+                    var key = map.Keys.FirstOrDefault(candidate => WorkspaceData.SameId(candidate, series.Id));
+                    return key is null ? series : series with { DocumentIds = map[key] };
+                }).ToList()
+            };
+        }
+        catch (JsonException) { return data; }
+        catch (IOException) { return data; }
+        catch (UnauthorizedAccessException) { return data; }
+    }
     private static void AtomicWrite(string target, string content)
     {
         var temporary = target + ".tmp-" + Guid.NewGuid().ToString("N");

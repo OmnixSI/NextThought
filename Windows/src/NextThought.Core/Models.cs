@@ -331,20 +331,32 @@ public sealed record AppSettings
 
 public static class JsonDefaults
 {
-    public static readonly JsonSerializerOptions Options = new()
+    public static readonly JsonSerializerOptions Options = CreateOptions();
+    public static readonly JsonSerializerOptions ArchiveOptions = CreateArchiveOptions(includeWorkspaceSeriesConverter: true);
+
+    private static JsonSerializerOptions CreateOptions() => new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new SessionModeJsonConverter(), new GlossaryKindJsonConverter(), new GlossaryJsonConverter(), new StructuredNotesPayloadJsonConverter(), new AnswerCompletionJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
+        Converters =
+        {
+            // A6: UUIDs are upper-case with hyphens and Mac translation lines stay minimal.
+            new UpperCaseGuidJsonConverter(), new SessionTranslationJsonConverter(),
+            new SessionModeJsonConverter(), new GlossaryKindJsonConverter(), new GlossaryJsonConverter(),
+            new StructuredNotesPayloadJsonConverter(), new AnswerCompletionJsonConverter(),
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter()
+        }
     };
-    public static readonly JsonSerializerOptions ArchiveOptions = Archive();
-    private static JsonSerializerOptions Archive()
+
+    internal static JsonSerializerOptions CreateArchiveOptions(bool includeWorkspaceSeriesConverter)
     {
-        var options = new JsonSerializerOptions(Options);
-        options.Converters.Insert(0, new ArchiveDateConverter()); return options;
+        var options = new JsonSerializerOptions(CreateOptions());
+        options.Converters.Insert(0, new ArchiveDateConverter());
+        if (includeWorkspaceSeriesConverter) options.Converters.Insert(0, new WorkspaceSeriesJsonConverter());
+        return options;
     }
     private sealed class ArchiveDateConverter : JsonConverter<DateTimeOffset>
     {

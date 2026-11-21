@@ -43,6 +43,7 @@ public sealed record SessionSummary
     }
 
     /// <summary>The formats that have a saved view, in the order of the notes formats.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public IReadOnlyList<NotesFormat> StoredFormats =>
         new[] { NotesFormat.Fishbone, NotesFormat.Outline, NotesFormat.Viewpoints, NotesFormat.Standard }
             .Where(format => Payload(format) is not null).ToList();
@@ -161,6 +162,7 @@ public sealed record SessionUserContent
     public DateTimeOffset? BasedOnGeneratedAt { get; init; }
     public IReadOnlyList<SessionCorrectionDecision> CorrectionDecisions { get; init; } = [];
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool HasContent =>
         PersonalNotes.Trim().Length > 0 || Highlights.Count > 0 || EditedNotes is not null
         || EditedSummary is not null || EditedMarkdown is not null || CorrectionDecisions.Count > 0;
