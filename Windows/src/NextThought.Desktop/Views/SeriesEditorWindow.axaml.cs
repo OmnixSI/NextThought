@@ -1,4 +1,6 @@
+using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Styling;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;

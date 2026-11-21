@@ -101,7 +101,7 @@
       </Grid>
     </Border>
 
-    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer x:Name="SectionsScroller" Grid.Row="3" VerticalScrollBarVisibility="Auto">
       <Grid>
         <!-- 记录：WorkspaceRecordsTab -->
         <StackPanel x:Name="RecordsSection" Spacing="{DynamicResource D4Spacing_6}">
