@@ -12,6 +12,7 @@ public partial class MainWindow
         {
             "startup" => "WriteStartupReportAsync",
             "zoom" => "RunTextZoomCheckAsync",
+            "windows" => "RunWindowsCheckAsync",
             "subtitle-export" => "RunSubtitleExportCheckAsync",
             "backup" => "RunBackupCheckAsync",
             "acceptance" => "RunAcceptanceCheckAsync",

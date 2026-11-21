@@ -6,6 +6,22 @@
              xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
+  <UserControl.Styles>
+    <!-- §6.7 / Mac SettingsSection: a flat section with a hairline divider instead of a raised card. -->
+    <Style Selector="Border.settings-section">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0,0,0,0.5" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="Border.settings-section TextBlock.section">
+      <Setter Property="FontFamily" Value="{DynamicResource SansFamily}" />
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+  </UserControl.Styles>
   <Grid ColumnDefinitions="184,*">
     <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
             BorderThickness="0,0,0.5,0">
@@ -34,7 +50,7 @@
                   AutomationProperties.Name="{loc:Tr 设置搜索结果}" />
 
       <!-- Sound sources -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorScene" Text="{loc:Tr 声音来源}" Classes="section" />
           <CheckBox Content="{loc:Tr 系统输出设备混音}" IsChecked="{Binding Settings.CaptureSystem}" />
@@ -63,7 +79,7 @@
       </Border>
 
       <!-- Recognition -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer" Text="{loc:Tr 本机语音识别}" Classes="section" />
           <TextBlock Text="{loc:Tr 识别模型}" Classes="label" />
@@ -81,7 +97,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral" Text="{loc:Tr 界面语言 / Language}" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.UiLanguages}" SelectedItem="{Binding Settings.UiLanguage}"
@@ -95,7 +111,7 @@
       </Border>
 
       <!-- §6.7: 区分说话人（声纹） belongs to 通用 (Mac GeneralSettings SpeakerSettingsSection). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorGeneralSpeaker" Text="{loc:Tr 区分说话人}" Classes="section" />
 <CheckBox Content="{loc:Tr 区分会议中的说话人（本机实验功能）}" IsChecked="{Binding Settings.SeparateSpeakers}" />
@@ -112,7 +128,7 @@
       </Border>
 
       <!-- §6.7: 术语和人名 belongs to 通用 (Mac GeneralSettings GlossarySettingsEntry). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorGeneralGlossary" Text="{loc:Tr 术语和人名}" Classes="section" />
           <TextBlock Text="{loc:Tr 名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。}"
@@ -133,7 +149,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoach" Text="{loc:Tr 提词}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
@@ -162,7 +178,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoach2" Text="{loc:Tr 字幕条}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
@@ -180,7 +196,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorAdvanced" Text="{loc:Tr 云端识别（实验）}" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
@@ -196,7 +212,7 @@
       </Border>
 
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral2" Text="{loc:Tr 全局快捷键（Ctrl+Alt + 按键）}" Classes="section" />
           <TextBlock Text="{loc:Tr 点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。}"
@@ -209,7 +225,7 @@
       </Border>
 
       <!-- E29: 会议自动收尾 — Mac 纪要页 (AutoEndViews.swift AutoEndSettingsSection) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorNotesAutoEnd" Text="{loc:Tr 会议自动收尾}" Classes="section" />
           <TextBlock Text="{loc:Tr 会议没人说话时}" Classes="label" />
@@ -228,7 +244,7 @@
       </Border>
 
       <!-- Custom notes templates: imported Mac note-templates.json. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorNotes" Text="{loc:Tr 自定义纪要模板}" Classes="section" />
           <TextBlock Text="{loc:Tr 每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。}"
@@ -272,7 +288,7 @@
       </Border>
 
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAdvanced2" Text="{loc:Tr 技能}" Classes="section" />
           <TextBlock Text="{loc:Tr 技能可用于所有系列，或在系列中按系列选择。}" Classes="caption" FontSize="11" />
@@ -298,7 +314,7 @@
       </Border>
 
       <!-- §6.7: 同声传译 lives on 提词与教练 (with 字幕条); the speaker/voiceprint part moved to 通用. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorCoach3" Text="{loc:Tr 同声传译}" Classes="section" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
@@ -312,7 +328,7 @@
       </Border>
 
       <!-- Screen reading and slide following (InsightSettingsView.swift, E9) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoachScreen" Text="{loc:Tr 屏幕与讲稿}" Classes="section" />
           <CheckBox Content="{loc:Tr 会议中每隔几秒读一次屏幕}" IsChecked="{Binding Settings.InsightScreenWatch}" />
@@ -347,7 +363,7 @@
       </Border>
 
       <!-- Dual-screen presenting (PresenterMode.swift) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorCoach4" Text="{loc:Tr 双屏演讲}" Classes="section" />
           <CheckBox Content="{loc:Tr 开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口}"
@@ -364,7 +380,7 @@
       </Border>
 
       <!-- E23: 资料 — Mac DocumentReadingSettings（组件细节在 高级 → 资料组件） -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 资料}" Classes="section" />
           <views:DocumentReadingSettings />
@@ -372,7 +388,7 @@
       </Border>
 
       <!-- E23: 高级 → 资料组件 — Mac DocumentComponentsAdvanced -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorAnswer2" Text="{loc:Tr 资料组件}" Classes="section" />
           <views:DocumentComponentsAdvanced />
@@ -380,7 +396,7 @@
       </Border>
 
       <!-- Answer service -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer3" Text="{loc:Tr 回答服务}" Classes="section" />
           <!-- §6.7 English: the Mac label wraps; give it a wrapping TextBlock so the checkbox grows
@@ -452,7 +468,7 @@
       </Border>
 
       <!-- E27: Codex 推理强度 / 快速模式 / GitHub 访问（Mac 高级→回答服务 / 高级→更新） -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 回答服务（Codex）}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -488,7 +504,7 @@
       </Border>
 
       <!-- Phone companion (LAN channel) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 手机伴侣}" Classes="section" />
           <TextBlock Text="{loc:Tr 手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。}"
@@ -526,7 +542,7 @@
       </Border>
 
       <!-- E3: 设置清单 — Mac 通用页 SetupChecklist（排除 Windows 没有的录屏/签名项） -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 设置清单}" Classes="section" />
           <views:SettingsSetupChecklist />
@@ -534,14 +550,14 @@
       </Border>
 
       <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <views:BackupSettingsSection />
         </StackPanel>
       </Border>
 
       <!-- E29: 权限 — Mac 通用页 PermissionSettingsSection；Windows 没有录屏授权，只显示麦克风/摄像头 -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 权限}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -568,7 +584,7 @@
       </Border>
 
       <!-- Updates -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 更新}" Classes="section" />
           <TextBlock Text="{loc:Tr 检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。}"
@@ -591,7 +607,7 @@
       </Border>
 
       <!-- Data and about -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
@@ -605,7 +621,7 @@
           </Border>
         </StackPanel>
       </Border>
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 各场景开会时的设置}" Classes="section" />
           <TextBlock Text="{loc:Tr 开始一场会时按这里的设置来；会中仍可随时切换。}"

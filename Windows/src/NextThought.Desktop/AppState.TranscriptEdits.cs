@@ -16,7 +16,7 @@ public partial class AppState
     {
         if (row is null || CurrentSession is not { } meta)
         {
-            SetStatus(UiText.T("先选择一场会议，再改这一句的说话人。"));
+            SetStatus(UiText.T("先开始记录，再改这一句的说话人。"));
             return;
         }
         try
@@ -74,7 +74,7 @@ public partial class AppState
             SessionUserContentStore.Save(updated, folder);
             ReloadTranscriptAfterEdit(meta, updated);
         }
-        catch (Exception error) { SetStatus(UiText.T("保存这一句失败：") + error.Message, true); }
+        catch (Exception error) { SetStatus(UiText.T("保存失败：") + error.Message, true); }
     }
 
     private void ReloadTranscriptAfterEdit(SessionMeta meta, SessionUserContent content)

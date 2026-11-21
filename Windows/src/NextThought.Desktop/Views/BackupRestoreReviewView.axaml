@@ -5,10 +5,10 @@
              x:Class="NextThought.Desktop.Views.BackupRestoreReviewView"
              x:DataType="local:BackupReviewModel"
              Background="{DynamicResource Paper}">
-  <DockPanel Margin="{DynamicResource D4Padding_22}">
-    <StackPanel DockPanel.Dock="Bottom" Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_12_0_0}">
+  <DockPanel Margin="24">
+    <StackPanel DockPanel.Dock="Bottom" Spacing="16" Margin="0,16,0,0">
       <CheckBox Content="{loc:Tr 同时导入偏好设置}" IsChecked="{Binding ApplySettings, Mode=TwoWay}" IsEnabled="{Binding !Busy}" />
-      <TextBlock Text="{Binding Failure}" Classes="caption" TextWrapping="Wrap" Foreground="{DynamicResource Caution}"
+      <SelectableTextBlock Text="{Binding Failure}" Classes="caption" TextWrapping="Wrap" Foreground="{DynamicResource Caution}"
                  IsVisible="{Binding HasFailure}" />
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Busy}">
@@ -21,11 +21,11 @@
         <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 应用所选内容}" Click="Apply_Click" IsEnabled="{Binding !Busy}" />
       </Grid>
     </StackPanel>
-    <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource D4Spacing_8}">
+    <StackPanel DockPanel.Dock="Top" Spacing="16">
       <TextBlock Text="{loc:Tr 导入与恢复预览}" Classes="section" />
       <TextBlock Text="{loc:Tr 新增内容会导入；相同内容会跳过。有冲突时默认保留本机，只有明确选择后才使用备份。}"
                  Classes="body" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_16}" Margin="{DynamicResource D4Margin_0_6_0_0}">
+      <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,6,0,0">
         <StackPanel Spacing="{DynamicResource D4Spacing_2}">
           <TextBlock Text="{Binding NewCount}" Classes="section" />
           <TextBlock Text="{loc:Tr 新增记录}" Classes="caption" />
@@ -43,19 +43,18 @@
           <TextBlock Text="{loc:Tr 备份模板}" Classes="caption" />
         </StackPanel>
       </StackPanel>
-      <TextBlock Text="{loc:Tr 系列按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。}"
+      <TextBlock Text="{loc:Tr 资料夹按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。}"
                  Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
     </StackPanel>
     <ScrollViewer>
-      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+      <StackPanel Spacing="12">
         <ItemsControl ItemsSource="{Binding Sessions}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:BackupReviewRow">
-              <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}"
-                      Padding="{DynamicResource D4Padding_8}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <Border Background="{DynamicResource Sunken}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_3}">
-                    <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
+                  <StackPanel Spacing="4">
+                    <SelectableTextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding StatusText}" Classes="caption" Foreground="{DynamicResource Caution}"
                                IsVisible="{Binding IsConflict}" />
                     <TextBlock Text="{Binding StatusText}" Classes="caption" IsVisible="{Binding !IsConflict}" />
@@ -67,15 +66,14 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Text="{loc:Tr 自定义纪要模板}" Classes="label" Margin="{DynamicResource D4Margin_0_8_0_0}"
+        <TextBlock Text="{loc:Tr 自定义纪要模板}" Classes="label" Margin="0,8,0,0"
                    IsVisible="{Binding HasTemplates}" />
         <ItemsControl ItemsSource="{Binding Templates}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:BackupReviewRow">
-              <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}"
-                      Padding="{DynamicResource D4Padding_8}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <Border Background="{DynamicResource Sunken}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_3}">
+                  <StackPanel Spacing="4">
                     <TextBlock Text="{Binding Title}" Classes="label" />
                     <TextBlock Text="{Binding StatusText}" Classes="caption" />
                   </StackPanel>

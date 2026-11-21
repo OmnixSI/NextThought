@@ -57,6 +57,14 @@ public partial class MainWindow
             await Task.Delay(400);
 
             // 1) SpeakerStrip：我（0 号）+ 陈老师（说话人 1），句数与 meta 一致。
+            // The demo home stage keeps a meeting running; my-voice setup is a stand-by action
+            // (Mac blocks it during recording), so end the demo meeting before the my-voice step.
+            if (state.Recording)
+            {
+                state.StopRecordingCommand.Execute(null);
+                for (var attempt = 0; attempt < 120 && state.Recording; attempt++) await Task.Delay(100);
+            }
+
             state.OpenSpeakerEditorCommand.Execute(null);
             var people = state.SpeakerPeople.ToList();
             var chen = people.First(person => !person.IsMe && person.Label == "陈老师");
@@ -96,6 +104,11 @@ public partial class MainWindow
             speakerWindow.Show();
             await Task.Delay(700);
             CaptureVisual(speakerWindow, Path.Combine(directory, "speaker-strip-light.png"));
+            Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(350);
+            CaptureVisual(speakerWindow, Path.Combine(directory, "speaker-strip-dark.png"));
+            Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(250);
             speakerWindow.Close();
 
             // 6) 我的声音设置/录入面板（无麦克风，不实际录音）。
@@ -103,12 +116,17 @@ public partial class MainWindow
             voiceWindow.Show();
             await Task.Delay(600);
             CaptureVisual(voiceWindow, Path.Combine(directory, "my-voice-light.png"));
+            Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(350);
+            CaptureVisual(voiceWindow, Path.Combine(directory, "my-voice-dark.png"));
+            Application.Current.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(250);
             voiceWindow.Close();
             state.BeginMyVoiceSetupCommand.Execute(null);
             Step("我的声音：录入流程可打开（录音未执行）", state.MyVoiceSetupVisible
                 && state.MyVoiceTakeHint.Length > 0 && state.MyVoiceRecordLabel.Length > 0
                 && state.MyVoiceTotalTakes == 4,
-                state.MyVoiceTakeHint);
+                "visible=" + state.MyVoiceSetupVisible + " label=" + state.MyVoiceRecordLabel + " takes=" + state.MyVoiceTotalTakes + " hint=" + state.MyVoiceTakeHint);
             state.CancelMyVoiceSetupCommand.Execute(null);
 
             Step("真实麦克风录音未在自检中执行", true, "需要麦克风与声纹组件；见 compare.md 未解决项");

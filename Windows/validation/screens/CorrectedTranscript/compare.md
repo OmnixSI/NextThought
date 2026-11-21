@@ -31,3 +31,11 @@ Mac 的 `CorrectedTranscript` 是 Notes 页「转写」标签里的内嵌 pane�
 - 原始 `transcript.jsonl` 不被改写；撤销/恢复只改 `user-content.json` 的 `CorrectionDecisions.Reverted`（与 Mac 的非破坏性行为一致）。
 - 窗口打开时从原始转写 + 用户决定重建投影；切换版本/查找只影响显示。
 - 演示模式（`--demo`）没有可写的会议目录，窗口用 Mac 演示会议的内存数据 + 2 条演示用决定（`DemoCorrectedTranscriptCorrections`，仅内存、不落盘），用于截图。
+
+## task-62 / E17 复核（2026-11-21，阶段 4 §6.7）
+
+- Mac 参照：`Sources/NextThought/NotesPageView.swift:1257-1327` 的 `CorrectedTranscript`（本轮按源码逐条重核，Mac 无对应截图）。
+- Windows 截图（本目录，1120 宽窗口位图）：`light.png` / `dark.png`，2026-11-21 由 `--demo --screenshots` 在隔离数据目录重新生成（入口依旧是 Notes 页「转写」标签的「校正原话」按钮）。
+- 测试：`Windows/tests/NextThought.Tests/CorrectedTranscriptViewTests.cs` 4 条（视图/类名、逐句本地化、按 decisions 建行、命令入口）作为每次改动的契约。
+- 逐元素结论沿用上表：**一致 8 条**（版本切换、查找、匹配数、三列行、逐条撤销/恢复、已校对计数、空态、入口），**部分一致 1 条**（Mac 右键撤销 ↔ Windows 可见按钮，交互等价），**缺口 2 条**（上下文菜单「标为重点/加入术语表…」归 E8/E22；说话人条与误听标记归 E12/E22）。数据行为：`transcript.jsonl` 不写，撤销/恢复只改 `user-content.json` 的 `CorrectionDecisions.Reverted`（与 Mac 一致）。
+- 结论：E17 校对结果窗口**无本轮新增不一致**；缺口均已归到对应 owner 的后续步骤，故本步只更新证据与结论，不改代码。

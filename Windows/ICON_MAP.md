@@ -163,3 +163,11 @@ Microsoft；系统 `Segoe Fluent Icons` 作为回退）。字形的码点来自 
 | `stop.fill` | `U+F0544` | `IconIslandStop` | `ic_fluent_stop_24_regular` |
 | `waveform` | `U+E9DE` | `IconIslandWaveform` | `ic_fluent_pulse_24_regular` |
 | `macwindow` | `U+EE5F` | `IconIslandWindow` | `ic_fluent_window_24_regular` |
+
+## E29 回答浮窗图标（§6.7）
+
+| SF Symbol | 字形 | 资源 | Fluent 名称 |
+|---|---|---|---|
+| `cursorarrow` | `U+F05FC` | `IconIslandCursor` | `ic_fluent_cursor_24_regular` |
+| `cursorarrow.slash` | `U+F62F` | `IconIslandCursorOff` | `ic_fluent_prohibited_24_regular`（近似） |
+| `ellipsis` | `U+E826` | `IconIslandEllipsis` | `ic_fluent_more_horizontal_24_regular` |

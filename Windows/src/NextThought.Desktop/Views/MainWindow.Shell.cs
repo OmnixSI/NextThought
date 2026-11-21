@@ -189,7 +189,7 @@ public partial class MainWindow
         if (presenterActive)
         {
             presenterPageWanted = true;
-            ExitPresenterMode("双屏演讲：主窗口已由你叫回，本场会议不再自动隐藏。");
+            ExitPresenterMode(UiText.T("双屏演讲：主窗口已由你叫回，本场会议不再自动隐藏。"));
         }
         Show();
         WindowState = WindowState.Normal;
@@ -644,7 +644,7 @@ public partial class MainWindow
             var plan = CurrentPresenterPlan();
             if (!plan.CanActivate)
             {
-                if (presenterActive) ExitPresenterMode("外接屏已断开，双屏演讲已退出，主窗口已恢复。");
+                if (presenterActive) ExitPresenterMode(UiText.T("外接屏已断开，双屏演讲已退出，主窗口已恢复。"));
                 return;
             }
             if (!presenterActive) ApplyPresenterModeForRecording();
@@ -669,7 +669,7 @@ public partial class MainWindow
         }
         if (!presenterActive) return;
         var plan = CurrentPresenterPlan();
-        if (!plan.CanActivate) ExitPresenterMode("外接屏已断开，双屏演讲已退出，主窗口已恢复。");
+        if (!plan.CanActivate) ExitPresenterMode(UiText.T("外接屏已断开，双屏演讲已退出，主窗口已恢复。"));
         else state.SetStatus("双屏演讲：" + plan.Summary + "；Ctrl+Alt+N 唤回主窗口。");
     }
 
