@@ -58,4 +58,24 @@ public sealed class StructuredNotesEditorTests
         Assert.Contains("LoadStructuredNotesEditor(meta, content);", editor);
         Assert.Contains("SaveStructuredNotesEditorAsync(meta, content);", editor);
     }
+
+    [Fact]
+    public void TheNotesEditorShowsTheMacVerdictAndConfirmBadges()
+    {
+        var view = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop",
+            "Views", "NotesEditorWindow.axaml"));
+        Assert.Contains("ImproveLabel", view);
+        Assert.Contains("GoodLabel", view);
+        Assert.Contains("ConfirmLabel", view);
+        Assert.Contains("BetterHeading", view);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop",
+            "AppState.NotesStructuredEditor.cs"));
+        Assert.Contains("ShowsImprove", state);
+        Assert.Contains("ShowsGood", state);
+        Assert.Contains("HasBetter", state);
+        Assert.Contains("ImproveLabel", state);
+        Assert.Contains("GoodLabel", state);
+        Assert.Contains("value.Verdict", state);
+        Assert.Contains("value.Better", state);
+    }
 }
