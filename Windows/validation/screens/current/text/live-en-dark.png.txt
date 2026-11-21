@@ -5,13 +5,12 @@ content	Example
 content	In English
 content	Live notes
 content	My notes
-content	Pause
 content	Q&A
 content	Record only
 content	Shorter
 content	That was me
 placeholder	Type a question, press Return to send
-text	00:12:53
+text	00:12:55
 text	2 / 2
 text	Answer now
 text	Answer this
@@ -34,14 +33,15 @@ text	Possible question
 text	Q&A
 text	Question
 text	Record only
-text	Selected system output mix + microphone · adjust in settings
 text	Shorter
 text	Suggested answer
 text	That was me
 text	Them
 text	Type a question, press Return to send
 text	What if deleting the cache fails?
+text	Zoom · Backend engineer, second round
 text	·
+text	· 1 echo lines ignored
 text	· Microphone
 text	嗯，这个挺关键的。
 text	好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。
@@ -63,6 +63,7 @@ text	
 text	
 text	
 text	
+text	
 text	
 title	NextThought
 tooltip	Answer the latest question or transcript without waiting
@@ -72,16 +73,18 @@ tooltip	Ask about a screenshot
 tooltip	Audio is recognized on this device only and no recording is kept; text and answers stay on this device.
 tooltip	Based on:
 tooltip	Close
-tooltip	End and write notes
+tooltip	End now and write notes
 tooltip	Live window
 tooltip	Maximize
 tooltip	Meeting settings and tools
 tooltip	Minimize
 tooltip	More
 tooltip	Next
+tooltip	No answer service is connected, so questions won't get automatic answers
 tooltip	Pause listening
 tooltip	Previous
 tooltip	Return to live and resume following
 tooltip	Send question
 tooltip	Shorten answer
+tooltip	Them · system audio 0 · Me · microphone 0
 tooltip	Toggle highlight

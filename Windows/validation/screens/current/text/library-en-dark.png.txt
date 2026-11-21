@@ -1,38 +1,46 @@
+content	Add this scene
 content	All records
+content	Edit series
 content	Home
-content	Open file location
-content	Review
+content	New series
+content	Remove
 content	Series
-placeholder	Filter material names
-text	.md
-text	.pdf
-text	.pptx
-text	1
-text	6 materials, all parsed on this device, never uploaded.
+content	Start next meeting
+content	经验积累
+content	记录
+content	资料
+placeholder	New series name
+placeholder	Search series or materials
+text	0 materials · 0 questions · 1 meeting
+text	1 meeting · 3 lessons
+text	2 materials · 0 questions · 0 meetings
+text	3 series · 2 meetings
+text	4 materials · 3 questions · 1 meeting
+text	ACL 2026 口头报告
+text	Add this scene
 text	All records
-text	Choose a material to see the text parsed on this device.
-text	Demo mode: built-in sample data, nothing is written to your materials.
-text	Filter material names
+text	Edit series
 text	Home
-text	Import PDF, Word, PPT, Excel, Markdown and images; parsing is local and only relevant excerpts are sent to the answer service.
-text	Import materials
-text	Library
-text	Locate by the material's own page, slide or sheet
-text	Open file location
-text	Parse result
-text	Review
+text	Keep one course, project or interview loop in a series; conclusions and lessons accumulate across meetings.
+text	New series
+text	New series name
+text	No records yet. Start a meeting in this series and it will appear here.
+text	Remove
+text	Search series or materials
 text	Series
-text	paper-final.pdf
-text	segment
-text	slides-v3.pptx
-text	八股-缓存与数据库.md
-text	岗位JD-后端开发.md
-text	抖音电商-团队介绍.pdf
-text	简历-2026.pdf
+text	Sort
+text	Start next meeting
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	经验积累
+text	记录
+text	资料
+text	
+text	
+text	
 text	
 title	NextThought
 tooltip	Close
 tooltip	Maximize
 tooltip	Minimize
 tooltip	Settings
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

@@ -4,18 +4,19 @@ content	回答这句
 content	实时纪要
 content	我的笔记
 content	是我说的
-content	暂停
 content	更简短
 content	结束
 content	自动回答
 content	英文版
 content	问答
 placeholder	输入问题，回车发送
-text	00:13:03
+text	00:13:05
 text	2 / 2
 text	Ctrl+Alt+Enter
 text	Ctrl+L
+text	Zoom · 后端工程师二面
 text	·
+text	· 1 句回声已忽略
 text	· 麦克风
 text	举例
 text	依据：资料 2 · 屏幕 · 联网 1 · 1 项限制
@@ -35,7 +36,6 @@ text	我
 text	我主要负责订单服务的缓存层，把核心查询从数据库迁移到 Redis。
 text	我们用的是先更新数据库、再删除缓存的方式。
 text	我的笔记
-text	所选系统输出设备混音 + 麦克风 · 在设置中调整
 text	数据库和缓存同时更新的时候你们是怎么保证一致性的
 text	是我说的
 text	暂停
@@ -63,6 +63,7 @@ text	
 text	
 text	
 text	
+text	
 text	
 title	NextThought
 tooltip	上一条
@@ -76,6 +77,7 @@ tooltip	回到现场并恢复跟随
 tooltip	回答最新的问题或转写，不等自动判断
 tooltip	回答浮窗
 tooltip	回答这句
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
 tooltip	截图提问
 tooltip	把回答改短
 tooltip	暂停聆听
@@ -83,5 +85,6 @@ tooltip	更多
 tooltip	最大化
 tooltip	最小化
 tooltip	标记或取消重点
-tooltip	结束并整理纪要
+tooltip	现在结束并整理纪要
+tooltip	还没有连接回答服务，听到问题也不会自动回答
 tooltip	音频只在本机识别，不保存录音；文字与回答只保存在本机。

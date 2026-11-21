@@ -1,24 +1,20 @@
 content	10
+content	high
 content	保存模板
 content	保存结构
 content	只看要点
 content	只记录
-content	回答与资料
-content	场景
-content	完成
 content	客户沟通
 content	导入 .json…
 content	小组作业
 content	小组讨论
 content	工作会议
 content	所有记录
-content	提词与教练
 content	新建模板
 content	汇报 / 答辩
 content	添加章节
 content	简洁
 content	系列
-content	纪要
 content	组会 / 研究讨论
 content	自动回答
 content	讲座 / 课程
@@ -27,7 +23,6 @@ content	逐句
 content	通用
 content	面试复盘
 content	首页
-content	高级
 placeholder	## 客户会
 ### 决定
 只写已经拍板的事。
@@ -42,6 +37,8 @@ text	## 客户会
 ### 待办
 写清负责人和日期。
 text	10
+text	NotesLanguageChoice { Value = auto, Title = 自动 / 中英混说 }
+text	high
 text	会中
 text	会议没人说话时
 text	会议自动收尾
@@ -65,8 +62,8 @@ text	尚无自定义模板。
 text	工作会议
 text	工作布置
 text	开始一场会时按这里的设置来；会中仍可随时切换。
-text	所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。
 text	所有记录
+text	推理强度
 text	提词
 text	提词与教练
 text	搜索设置
@@ -75,11 +72,12 @@ text	模板名
 text	每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。
 text	汇报 / 答辩
 text	添加章节
-text	演示模式：内置样本数据，不会写入你的资料。
 text	简洁
 text	系列
 text	纪要
+text	纪要模型（留空沿用回答模型）
 text	纪要模板
+text	纪要高级
 text	组会
 text	组会 / 研究讨论
 text	组会讨论
@@ -87,8 +85,8 @@ text	自动回答
 text	自定义
 text	自定义纪要模板
 text	讲座 / 课程
-text	设置
 text	详细
+text	语言
 text	选择自定义模板
 text	逐句
 text	通用
@@ -98,10 +96,15 @@ text	面试复盘
 text	首页
 text	高级
 text	高级：也可以直接按文本批量编辑。
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
 text	
 title	NextThought
 tooltip	关闭
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
 tooltip	最大化
 tooltip	最小化
 tooltip	设置

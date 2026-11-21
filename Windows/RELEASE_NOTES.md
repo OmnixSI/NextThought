@@ -21,6 +21,16 @@ Windows 10 2004+ / Windows 11 的 x64。
   安装/卸载保留用户数据；应用内更新只接受 `windows-v*` 且同时带安装包和 `update.json` 的发布。
 - 设置六页与 Mac 3.4.0 对齐（场景 / 回答与资料 / 提词与教练 / 纪要 / 通用 / 高级），中英文界面。
 
+### 与 Mac 版的已知差别（第二批，`Windows/KNOWN_GAPS.md`）
+
+1. 麦克风电平条的回声着色：Windows 目前只有文字层面的回声兜底，音频层回声监测在第二批接入。
+2. 屏幕类型判断：Windows 用启发式，第二批接入本机模型判断。
+3. 讲稿要点生成质量：Windows 的启发式生成只是近似，第二批按 Mac 模型路径替换（本版已在 presenter 里用回答模型生成，质量仍有差距）。
+4. 助手独立窗口的拖动改列/拖动调权重：本版未实现，第二批补。
+5. 截图提问对复杂画面的本机模型增强读取：本版只用 OCR/文本上下文，第二批接入。
+6. 导出对话框的 PDF 分页预览：本版用同一投影源文本预览，第二批用 `Windows.Data.Pdf` 渲染页面图。
+7. 回答服务直接读取原文件和图片：本版先转文本/OCR，第二批把原文件作为模型输入。
+
 ### 安装
 
 下载 `NextThought-0.9.0-windows-x64-setup.exe` 运行。未签名，SmartScreen 提示时选"更多信息"→"仍要运行"。
@@ -41,7 +51,7 @@ Windows 10 2004+ / Windows 11 的 x64。
 - K14 真实手机通过局域网和中转配对（需手机）。
 - K15 多屏与不同缩放比例（需第二块屏幕）。
 - K16 真实云端识别三家服务、真实联网搜索、真实回答服务账号（需账号）。
-- K11 干净 Windows 沙盒安装与引导、K12 音频设备切换/拔出/睡眠唤醒（本机无对应条件时留给人）。
+- K11 干净 Windows 沙盒安装与引导（本机无沙盒，留给人）；K12 音频设备切换已由 Agent 实测通过，拔出/睡眠唤醒留给人；K7 两小时长会已由 Agent 实测通过（120 采样、内存平稳、1,391 行转写）。
 - 看镜头提醒：本机摄像头（BisonCam, NB Pro）可打开并采到帧，但摄像头前没有真人；「看镜头/移开」两态用录好的
   正面像走同一条 FaceLandmarker + GazeEstimator 处理路径验证（移开为虹膜点按眼宽外移模拟），尚未用真人在真实
   摄像头前实测。
@@ -85,6 +95,16 @@ per-user build for Windows 10 2004+/Windows 11 x64 only.
   `windows-v*` releases that ship both the installer and `update.json`.
 - The six settings pages mirror Mac 3.4.0 (场景 / 回答与资料 / 提词与教练 / 纪要 / 通用 / 高级), in
   Chinese and English.
+
+### Known differences from the Mac version (second batch, `Windows/KNOWN_GAPS.md`)
+
+1. Echo coloring on the microphone level meter is a second-batch item (Windows has the text-level echo fallback only).
+2. Screen-type classification uses heuristics; the on-device model version is second batch.
+3. Talking-point generation is approximate; the presenter now asks the answer model, but Mac-quality tuning is second batch.
+4. Assistant drag-to-resize columns and drag-to-weight are not in this version.
+5. Model-enhanced reading of complex screenshots is second batch (OCR/text context only here).
+6. PDF paginated preview in the export sheet is second batch (`Windows.Data.Pdf`); the sheet previews the same projection text.
+7. Answer services reading original files/images directly is second batch (text/OCR first).
 
 ### Install
 

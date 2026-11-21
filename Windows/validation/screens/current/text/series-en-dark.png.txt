@@ -1,7 +1,6 @@
 content	Add this scene
 content	All records
 content	Data folder
-content	Delete
 content	Edit series
 content	Hidden
 content	Home
@@ -9,57 +8,51 @@ content	New series
 content	Remove
 content	Series
 content	Start next meeting
-content	学术答辩应对
-content	系统设计答题框架
-content	面试口语化
+content	经验积累
+content	记录
+content	资料
 placeholder	New series name
-placeholder	One-line lesson, e.g. lead with the conclusion, then the evidence
-text	0 meetings · 2 materials
-text	1 meeting
+placeholder	Search series or materials
+text	0 materials · 0 questions · 1 meeting
 text	1 meeting · 3 lessons
-text	1 meeting · 4 materials · 3 lessons
-text	1 meetings · 44 min · 6 questions · 2 answers
-text	3 lessons
+text	2 materials · 0 questions · 0 meetings
 text	3 series · 2 meetings
+text	4 materials · 3 questions · 1 meeting
 text	ACL 2026 口头报告
 text	Add this scene
 text	All records
-text	Attach skills
-text	Checked skills apply to this series only; global skills still apply.
 text	Context
 text	Data folder
-text	Delete
-text	Demo mode: built-in sample data, nothing is written to your materials.
 text	Edit series
-text	Has notes
 text	Hidden
 text	Home
 text	Keep one course, project or interview loop in a series; conclusions and lessons accumulate across meetings.
-text	Meetings
 text	New series
 text	New series name
-text	No meetings yet
-text	Nov 20, 15:37 · 6 lines · 2 answers
-text	Nov 21, 10:00 · 4 lines
-text	One-line lesson, e.g. lead with the conclusion, then the evidence
-text	Question bank 3
+text	No records yet. Start a meeting in this series and it will appear here.
+text	Nov 18, 14:08 · 87 lines · 13 answers
+text	Nov 19, 23:01 · 15 lines · 1 answer
+text	Nov 20, 13:20
+text	Nov 7, 20:46 · 31 lines
+text	Nov 7, 20:54
+text	Nov 7, 20:57 · 5 lines · 1 answer
+text	Nov 7, 20:58 · 36 lines · 3 answers
 text	Recent meetings
 text	Remove
-text	Save
+text	Search series or materials
 text	Series
+text	Sort
 text	Start next meeting
-text	To confirm
-text	一致性问题先画读写时序，再说兜底方案
-text	反问环节准备 2 个关于团队技术栈的问题
-text	后端二面：缓存一致性与项目经历
-text	周一产品例会
 text	周一客户例会 · 华东区
 text	字节后端二面
-text	学术答辩应对
-text	系统设计答题框架
-text	被问项目时先报规模和结果数字，再讲方案
-text	面试口语化
+text	新会议
+text	经验积累
+text	记录
+text	资料
+text	
 text	
+text	
+text	
 text	
 title	NextThought
 tooltip	Close
@@ -67,4 +60,3 @@ tooltip	Maximize
 tooltip	Minimize
 tooltip	Settings
 tooltip	Show
-tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

@@ -1,6 +1,4 @@
 content	Close
-content	Corrected transcript
-content	Original transcript
 content	Undo correction: 先写数据库、再删缓存 → 先更新数据库、再删除缓存
 content	Undo correction: 我主要负责订单业务 → 我主要负责订单服务
 placeholder	Find in transcript (misheard spellings too)
@@ -15,7 +13,6 @@ text	Close
 text	Corrected transcript
 text	Find in transcript (misheard spellings too)
 text	Me
-text	Original transcript
 text	Them
 text	Transcript version
 text	Undo correction: 先写数据库、再删缓存 → 先更新数据库、再删除缓存
@@ -27,5 +24,3 @@ text	我们用的是先写数据库、再删缓存的方式。
 text	数据库和缓存同时更新的时候你们是怎么保证一致性的
 text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
 title	Corrected transcript
-tooltip	View corrected transcript
-tooltip	View original transcript
