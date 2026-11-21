@@ -6,6 +6,7 @@ using Xunit;
 namespace NextThought.Core.Tests;
 
 /// <summary>G8: explicit string lookup, placeholder formatting and live language switching.</summary>
+[Collection("UiTextGlobalState")]
 public sealed class UiTextSourceTests
 {
     [Fact]

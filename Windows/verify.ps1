@@ -62,6 +62,9 @@ try {
         $results.Add('SKIP  A15 MacCodec check (fixtures missing: human must run emit on macOS)')
         Write-Warning "A15 fixtures missing: $fixtures"
     } else {
+        Invoke-Step 'build (A15 check tool)' {
+            & $dotnet build tools/MacCodecCheck -c Release --no-restore --verbosity minimal
+        }
         Invoke-Step 'A15 MacCodec check' {
             & $dotnet run --project tools/MacCodecCheck -c Release --no-build -- --fixtures $fixtures
         }

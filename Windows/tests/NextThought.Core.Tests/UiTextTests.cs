@@ -3,6 +3,7 @@ using Xunit;
 
 namespace NextThought.Core.Tests;
 
+[Collection("UiTextGlobalState")]
 public sealed class UiTextTests
 {
     [Fact]

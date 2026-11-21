@@ -7,6 +7,7 @@ namespace NextThought.Core.Tests;
 /// <summary>
 /// E1: the home page's meeting outcome lines (HomeView.swift MeetingOutcome).
 /// </summary>
+[Collection("UiTextGlobalState")]
 public sealed class MeetingOutcomeTests : IDisposable
 {
     private readonly bool previousEnglish = UiText.EnglishUi;
