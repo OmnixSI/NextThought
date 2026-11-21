@@ -46,11 +46,19 @@ public class ControlButtonBody : ContentControl
         AvaloniaProperty.Register<ControlButtonBody, double>(nameof(ButtonHeight), 32);
     public static readonly StyledProperty<bool> IsBusyProperty =
         AvaloniaProperty.Register<ControlButtonBody, bool>(nameof(IsBusy));
+    public static readonly StyledProperty<ICommand?> CommandProperty =
+        AvaloniaProperty.Register<ControlButtonBody, ICommand?>(nameof(Command));
+    public static readonly StyledProperty<object?> CommandParameterProperty =
+        AvaloniaProperty.Register<ControlButtonBody, object?>(nameof(CommandParameter));
 
     public ControlButtonBody()
     {
         Focusable = true;
         Cursor = new Cursor(StandardCursorType.Hand);
+        PointerReleased += (_, _) =>
+        {
+            if (Command is { } command && command.CanExecute(CommandParameter)) command.Execute(CommandParameter);
+        };
         PropertyChanged += (_, change) =>
         {
             if (change.Property == IsBusyProperty) Classes.Set("busy", IsBusy);
@@ -69,6 +77,19 @@ public class ControlButtonBody : ContentControl
         };
         Classes.Add("primary");
         Height = 32;
+    }
+
+    /// <summary>§6.7: pages bind commands directly, like a Button.</summary>
+    public ICommand? Command
+    {
+        get => GetValue(CommandProperty);
+        set => SetValue(CommandProperty, value);
+    }
+
+    public object? CommandParameter
+    {
+        get => GetValue(CommandParameterProperty);
+        set => SetValue(CommandParameterProperty, value);
     }
 
     public ControlEmphasis Emphasis
