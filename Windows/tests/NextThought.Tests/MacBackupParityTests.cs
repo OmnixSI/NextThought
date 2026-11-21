@@ -1,6 +1,9 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Xml.Linq;
 using NextThought.Core;
 using NextThought.Platform;
 using Xunit;
@@ -386,14 +389,143 @@ public sealed class MacBackupParityTests
         finally { Delete(extractedChain, destinationRoot); }
     }
 
-    // MARK: Windows export (generated after the §4.3/4.4 serialization fixes land) -------
+    // MARK: Windows export --------------------------------------------------------------
 
-    [Fact(Skip = "win-export fixture is generated and committed once the serialization fixes (runtime-gaps §4.3/4.4) land")]
+    private const string WinExportSha256 = "6e8d961fe962d76cbab1417f1bd3d42364752acac0c357ff05ff704c3340b92c";
+
+    private static string WinExportFixture() =>
+        Path.Combine(RepoRoot(), "Windows", "tests", "Fixtures", "win-export", "all-scenarios-from-windows.ntbackup");
+
+    /// <summary>Files of a backup ZIP with the Mac wrapper/AppleDouble noise removed.</summary>
+    private static Dictionary<string, byte[]> ArchiveFiles(string archive)
+    {
+        using var zip = ZipFile.OpenRead(archive);
+        var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (var entry in zip.Entries)
+        {
+            var name = entry.FullName;
+            if (name.EndsWith("/", StringComparison.Ordinal)) continue;
+            if (name.StartsWith("__MACOSX/", StringComparison.Ordinal)) continue;
+            if (name.Split('/').Any(segment => segment.StartsWith("._", StringComparison.Ordinal))) continue;
+            var logical = name.StartsWith(Wrapper, StringComparison.Ordinal) ? name[Wrapper.Length..] : name;
+            using var stream = entry.Open();
+            using var memory = new MemoryStream();
+            stream.CopyTo(memory);
+            files[logical] = memory.ToArray();
+        }
+        return files;
+    }
+
+    private static JsonNode? Sorted(JsonNode? node) => node switch
+    {
+        JsonObject obj => new JsonObject(obj.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new KeyValuePair<string, JsonNode?>(pair.Key, Sorted(pair.Value)))),
+        JsonArray array => new JsonArray(array.Select(Sorted).ToArray()),
+        _ => node?.DeepClone()
+    };
+
+    private static string CanonicalJson(byte[] bytes) => Sorted(JsonNode.Parse(bytes)!)!.ToJsonString();
+
+    private static string CanonicalJsonLines(byte[] bytes) => string.Join("\n",
+        Encoding.UTF8.GetString(bytes).Replace("\r\n", "\n").Split('\n')
+            .Where(line => line.Trim().Length > 0)
+            .Select(line => CanonicalJson(Encoding.UTF8.GetBytes(line))));
+
+    private static Dictionary<string, XElement> PlistPairs(byte[] plist)
+    {
+        var document = XDocument.Parse(Encoding.UTF8.GetString(plist));
+        var elements = document.Root!.Element("dict")!.Elements().ToList();
+        var pairs = new Dictionary<string, XElement>(StringComparer.Ordinal);
+        for (var index = 0; index + 1 < elements.Count; index += 2)
+            if (elements[index].Name == "key") pairs[elements[index].Value] = elements[index + 1];
+        return pairs;
+    }
+
+    private static string PlistValue(XElement element) => element.ToString(SaveOptions.DisableFormatting);
+
+    private static byte[] PlistData(XElement element) =>
+        Convert.FromBase64String(string.Concat(element.Value.Where(character => !char.IsWhiteSpace(character))));
+
+    /// <summary>
+    /// §4.5.5: the committed Windows export must hold the same data as the Mac all-scenarios backup.
+    /// Bytes are compared first; JSON/JSONL files may only differ by key order or whitespace; the
+    /// manifest and settings.plist may only differ in export metadata/format (documented in
+    /// Fixtures/win-export/README.md); there must be no substantive differences and no missing file.
+    /// </summary>
+    [Fact]
     public void WindowsExportMatchesTheMacArchiveFileByFile()
     {
-        // Implemented together with the committed fixture: compare every non-AppleDouble entry of
-        // all-scenarios.ntbackup with all-scenarios-from-windows.ntbackup, requiring byte equality,
-        // then JSON key-order/whitespace equality, and zero substantive differences.
+        var fixture = WinExportFixture();
+        Assert.True(File.Exists(fixture), "tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup is missing");
+        Assert.Equal(WinExportSha256, HashFile(fixture));
+
+        var original = ArchiveFiles(Ntbackup("all-scenarios.ntbackup"));
+        var export = ArchiveFiles(fixture);
+        var missing = original.Keys.Except(export.Keys, StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal).ToList();
+        Assert.Empty(missing);
+        var extras = export.Keys.Except(original.Keys, StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal).ToList();
+        Assert.Equal(
+        [
+            "Glossary/glossary.json",
+            "Migration/78637d64b3dcdaf77351ee45272b70c65fdf875cf9167b763a496593ace18f56.ntbackup",
+            "settings.json"
+        ], extras);
+
+        var exact = new List<string>();
+        var equivalent = new List<string>();
+        var metadata = new List<string>();
+        var substantive = new List<string>();
+        foreach (var name in original.Keys.OrderBy(key => key, StringComparer.Ordinal))
+        {
+            var before = original[name];
+            var after = export[name];
+            if (before.AsSpan().SequenceEqual(after)) { exact.Add(name); continue; }
+            if (name == "manifest.json") { metadata.Add(name); continue; }
+            if (name.EndsWith(".jsonl", StringComparison.Ordinal))
+            {
+                if (CanonicalJsonLines(before) == CanonicalJsonLines(after)) equivalent.Add(name); else substantive.Add(name);
+                continue;
+            }
+            if (name.EndsWith(".json", StringComparison.Ordinal))
+            {
+                if (CanonicalJson(before) == CanonicalJson(after)) equivalent.Add(name); else substantive.Add(name);
+                continue;
+            }
+            if (name == "settings.plist")
+            {
+                var originalPairs = PlistPairs(before);
+                var exportPairs = PlistPairs(after);
+                foreach (var (key, value) in originalPairs)
+                {
+                    Assert.True(exportPairs.ContainsKey(key), "settings.plist lost the Mac key " + key);
+                    if (key == "apiPresets")
+                        Assert.Equal(CanonicalJson(PlistData(value)), CanonicalJson(PlistData(exportPairs[key])));
+                    else
+                        Assert.Equal(PlistValue(value), PlistValue(exportPairs[key]));
+                }
+                Assert.True(exportPairs.Count > originalPairs.Count);
+                metadata.Add(name);
+                continue;
+            }
+            substantive.Add(name);
+        }
+
+        Assert.Empty(substantive);
+        Assert.Equal(21, exact.Count);
+        Assert.Equal(7, equivalent.Count);
+        Assert.Equal(["manifest.json", "settings.plist"], metadata.OrderBy(name => name, StringComparer.Ordinal).ToArray());
+
+        // The two files that differ in shape only differ in export metadata/format.
+        using (var before = JsonDocument.Parse(original["manifest.json"]))
+        using (var after = JsonDocument.Parse(export["manifest.json"]))
+        {
+            foreach (var property in new[] { "format", "version", "kind", "includesSecrets", "workspaceCount", "sessionCount" })
+                Assert.Equal(before.RootElement.GetProperty(property).GetRawText(), after.RootElement.GetProperty(property).GetRawText());
+            Assert.Equal(1, after.RootElement.GetProperty("windowsExtensionVersion").GetInt32());
+            Assert.True(after.RootElement.TryGetProperty("fileHashes", out _));
+            Assert.NotEqual("0.2.0", after.RootElement.GetProperty("appVersion").GetString());
+            Assert.Equal("windows", after.RootElement.GetProperty("appBuild").GetString());
+        }
     }
 }
 

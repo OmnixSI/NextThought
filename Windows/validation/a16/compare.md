@@ -87,13 +87,23 @@ Mac 打包用 `ditto --sequesterRsrc --keepParent`：ZIP 带 `__MACOSX/` 与 `._
 
 `04-incremental-chain-Backups.zip` 解压后（忽略 `._*` 伴随文件）`IncrementalBackupStore.List()` 得 4 个恢复点，按 Mac 秒级 `createdAt` 排序：session / 夹具 A / 夹具 B / 夹具 C；逐个 `Restore` 到独立目录，会议数 **1 → 2 → 3 → 4** 递增，`manifest.sessionCount` 相同；旧路径前缀 `Sessions/essions/<id>` 被 `NormaliseLegacyPath` 纠正，恢复结果无 `Sessions/essions` 残留。
 
-### 8.5 Windows 导出（win-export）—— 待 runtime-gaps §4.3/4.4 后生成
+### 8.5 Windows 导出（win-export）
 
-按 §4.5.5，all-scenarios 导入后立即从 Windows 导出，提交 `Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup` 与同目录 `README.md`（逐文件：逐字节相同 / 仅键序或空白不同 / 实质差别）。导出字节依赖 runtime-gaps 正在做的 §4.3（UUID 大写）与 §4.4（去掉多写出的键）序列化修复；这些修复进 HEAD 前生成的导出会有实质差别（如新增键、UUID 小写），不能作为提交夹具。比较由 `Windows/scripts/compare_mac_backup_export.py` + `MacBackupParityTests` 的 win-export 项共同保证，实质差别必须为 0。
+按 §4.5.5 生成并提交：`Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup`（31,869 字节，SHA-256 `6e8d961fe962d76cbab1417f1bd3d42364752acac0c357ff05ff704c3340b92c`）＋同目录 `README.md`（逐文件比较表）。生成条件：A6 `62bbb117`（UUID 大写/去多余键）、A11 `f2103503`、A16 `8b6c09a7`、导出格式 `8a20b528` 之后，在干净 worktree（本提交的源码树，含 A6 最终 `a254e825`）build `NextThought.Platform`，空数据目录导入 all-scenarios（SessionsAdded=4、WorkspacesAdded=4、SettingsRestored=true）后立即导出，未做任何修改。
+
+逐文件比较（忽略 `__MACOSX/`、`._*`、目录条目；由 `MacBackupParityTests.WindowsExportMatchesTheMacArchiveFileByFile` 断言）：
+
+| 分类 | 数量 | 文件 |
+|---|---|---|
+| 逐字节相同 | 21 | 四场会议的全部数据文件（context/meta/summary/transcript/questions/user-content/voices/translations，见 win-export/README.md 清单）；UUID 大小写、日期、JSONL 紧凑行、译文/声纹行均逐字节一致 |
+| 仅键顺序或空白不同 | 7 | 4 个 `Workspaces/<ID>.json`、`glossary.json`、`note-templates.json`、`skills.json`（JSON 规范化后逐键相同） |
+| 导出元数据/格式（非数据实质差别） | 2 | `manifest.json`：format/version/kind/includesSecrets/workspaceCount/sessionCount 相同；createdAt、appVersion/appBuild（Windows 版本）与 Windows 扩展 `windowsExtensionVersion`、`fileHashes` 不同。`settings.plist`：原有 3 个键（activeWorkspaceID、apiPresets、transcriptionBackend）解码后相同，Windows 额外写出 75 个 Mac 偏好键（默认值），XML 格式不同 |
+| Windows 额外文件（Mac 导入忽略） | 3 | `settings.json`（Windows 设置）、`Glossary/glossary.json`（Windows 术语表存储副本，内容与根 glossary.json 一致）、`Migration/78637d64….ntbackup`（A13 迁移存档保留的原始备份） |
+| 缺失文件 | 0 | — |
+| **实质差别** | **0** | — |
 
 ### 8.6 未解决 / 待 verify（A16）
 
-- win-export 夹具尚未生成与提交（等待 §4.3/4.4 序列化提交进 HEAD）。
 - Mac 端导入 Windows 导出仍需人做（任务书第 12 节「需要人做的事」）；本机只验证到 Windows 导入→导出→逐文件比较。
 - 夹具里 note-templates.json 为空数组，自定义模板的双向已由 A13 其它测试覆盖，不在本夹具范围。
 - Windows 导出 manifest 的 appVersion/appBuild 仍是 Windows 自己的值（Mac 导入只校验 format/version，见第 6 节）。
