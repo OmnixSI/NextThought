@@ -78,19 +78,6 @@
             <TextBlock Text="{loc:Tr 首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。}"
                        Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
           </StackPanel>
-          <TextBlock Text="{loc:Tr 术语表（人名与专有名词）}" Classes="label" />
-          <TextBlock Text="{loc:Tr 每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。}"
-                     Classes="caption" FontSize="11" />
-          <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   PlaceholderText="{loc:Tr Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees}" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="{loc:Tr 保存术语表}" Command="{Binding SaveGlossaryCommand}" />
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
-            <Button Classes="quiet" Content="{loc:Tr 打开术语表}" Click="OpenGlossary_Click" />
-          </StackPanel>
-          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -104,6 +91,45 @@
                     Width="200" HorizontalAlignment="Left" />
           <TextBlock Text="{loc:Tr 保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- §6.7: 区分说话人（声纹） belongs to 通用 (Mac GeneralSettings SpeakerSettingsSection). -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Name="AnchorGeneralSpeaker" Text="{loc:Tr 区分说话人}" Classes="section" />
+<CheckBox Content="{loc:Tr 区分会议中的说话人（本机实验功能）}" IsChecked="{Binding Settings.SeparateSpeakers}" />
+          <TextBlock Text="{loc:Tr 仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。}"
+                     Classes="caption" FontSize="11" />
+          <Button Content="{loc:Tr 准备声纹组件（约 26 MB）}" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
+          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="{loc:Tr 我的声音}" Classes="label" />
+            <TextBlock Text="{Binding MyVoiceStatus}" Classes="caption" FontSize="11" />
+            <Button Content="{loc:Tr 录入 / 管理我的声音}" Click="OpenMyVoice_Click" HorizontalAlignment="Left" />
+            <TextBlock Text="{loc:Tr 只在本机运行，声纹只是一组数字。}" Classes="caption" FontSize="11" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- §6.7: 术语和人名 belongs to 通用 (Mac GeneralSettings GlossarySettingsEntry). -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Name="AnchorGeneralGlossary" Text="{loc:Tr 术语和人名}" Classes="section" />
+          <TextBlock Text="{loc:Tr 名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr 术语表（人名与专有名词）}" Classes="label" />
+          <TextBlock Text="{loc:Tr 每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。}"
+                     Classes="caption" FontSize="11" />
+          <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   PlaceholderText="{loc:Tr Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees}" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <Button Content="{loc:Tr 保存术语表}" Command="{Binding SaveGlossaryCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
+            <Button Classes="quiet" Content="{loc:Tr 打开术语表}" Click="OpenGlossary_Click" />
+          </StackPanel>
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -271,20 +297,10 @@
         </StackPanel>
       </Border>
 
-      <!-- Speakers and translation -->
+      <!-- §6.7: 同声传译 lives on 提词与教练 (with 字幕条); the speaker/voiceprint part moved to 通用. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorCoach3" Text="{loc:Tr 说话人与翻译}" Classes="section" />
-          <CheckBox Content="{loc:Tr 区分会议中的说话人（本机实验功能）}" IsChecked="{Binding Settings.SeparateSpeakers}" />
-          <TextBlock Text="{loc:Tr 仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。}"
-                     Classes="caption" FontSize="11" />
-          <Button Content="{loc:Tr 准备声纹组件（约 26 MB）}" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
-          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-            <TextBlock Text="{loc:Tr 我的声音}" Classes="label" />
-            <TextBlock Text="{Binding MyVoiceStatus}" Classes="caption" FontSize="11" />
-            <Button Content="{loc:Tr 录入 / 管理我的声音}" Click="OpenMyVoice_Click" HorizontalAlignment="Left" />
-            <TextBlock Text="{loc:Tr 只在本机运行，声纹只是一组数字。}" Classes="caption" FontSize="11" />
-          </StackPanel>
+          <TextBlock Name="AnchorCoach3" Text="{loc:Tr 同声传译}" Classes="section" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_10}">
               <CheckBox Content="{loc:Tr 记录时将完整句中英互译（使用当前回答服务）}" IsChecked="{Binding Settings.TranslateSpeech}" />
