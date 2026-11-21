@@ -1,4 +1,4 @@
-﻿# 文字缩放（J7 · Mac TextZoom / DesignSystem.swift ↔ Windows TextZoomService）
+# 文字缩放（J7 · Mac TextZoom / DesignSystem.swift ↔ Windows TextZoomService）
 
 - 日期：2026-11-21（windows/parity）
 - Mac 基准：v3.4.0 `f015e8c6`，`Sources/NextThought/DesignSystem.swift` 的 `TextZoom`（六档 0.9/1/1.1/1.2/1.3/1.45、`Font.zoomed`、`textZoom` 键）与菜单快捷键 ⌘+ / ⌘− / ⌘0
@@ -21,6 +21,10 @@
 
 ## 未解决项
 
-1. `textZoom` 尚未并入 `MacPreferenceMap`/`MacPreferences.g.cs` 的 113 项注册表与 SETTINGS_PARITY 行（Lead 侧把它从「未做」转 done 时一并处理）；Windows 目前用数据目录下的 `TextZoom.json` 持久化同名键，功能与重启保留已验证。
-2. 新出现的内容（切页/弹窗）由 600 ms 定时器在缩放非 1 时补缩放；批量截图为立即生效，实际使用最多 0.6 s 的瞬时尺寸跳变。
-3. 缩放到 1.45 时首页场景胶囊换行（与文字同比例），截图见 `zoom-1.45-home-light.png`；这是 Mac 上文字放大后的预期行为，非截断。
+1. ~~`textZoom` 尚未并入注册表~~：E25 已完成——`textZoom` 在 114 键 `MacPreferences`/`MacPreferenceMap` 中（默认 1.0，SettingsStore 以 settings.json 同名键读写），`SETTINGS_PARITY.md` 行与 `RecordSessionsAndTextZoomPreferenceTests` 覆盖；旧 `TextZoom.json` 仅作迁移兜底。
+2. 新出现的内容由 600 ms 定时器补缩放（任务 81 的 zoom 2，不属本任务）。
+3. 已接受差别 zoom 3（缩放步进外的个别内容近似，见 `ACCEPTED_DIFFERENCES.md`）。
+
+## 结论
+
+逐条一致；另有 1 条已裁决的差别（zoom 3，已在 `ACCEPTED_DIFFERENCES.md` 记录）。
