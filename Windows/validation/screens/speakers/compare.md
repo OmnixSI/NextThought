@@ -68,3 +68,28 @@ Windows 截图：`Windows/validation/screens/speakers/`（自检 `speakers` 生�
 - 截图：`Windows/validation/screens/current/` 暂无 speakers 产物；自检 `--self-test=speakers` 生成 `speaker-strip-light.png` / `my-voice-light.png` 到 `%TEMP%/nextthought-selftest/speakers/`，本轮共享树多次被并行构建打断（“No precompiled XAML”），待构建稳定后拷入本目录并补浅/深两版。
 - 本轮修复（E12）：Mac 在没有安装声纹组件时也打开四句录入面板（只是禁用“开始”按钮并提示先准备组件）；Windows 之前直接 return 不显示面板，导致 `speakers` 自检的「我的声音：录入流程可打开」失败。已改为始终打开面板，`MyVoiceCanStart` 仍要求 `MyVoiceModelAvailable`。
 - 待复核/未解决：自检在共享树稳定后需重跑确认 `speakers-check: passed`；说话人条在实时页的呈现属 live-parity；Mac popover vs Windows 独立窗口为平台差异；shallow/deep 截图待补。
+
+## task-62 / E12 闭环：说话人编辑器 / MeEditor / 我的声音窗口（2026-11-21）
+
+- 自检：`--self-test=speakers` **passed**（`speakers-check.json` 随本目录入库，6 步全过）。
+- 截图（本目录，1120 宽的窗口位图，浅/深各一组）：
+  - `speaker-strip-light.png` / `speaker-strip-dark.png`（SpeakerEditorWindow：顶部人名单胶囊 + 选中人编辑区 + 命名/这是我/合并选择）
+  - `my-voice-light.png` / `my-voice-dark.png`（MyVoiceWindow：我的声音设置 + 四句录入面板）
+- 本轮修复：
+  1. **E12 主修复**（`0e121444`）：声纹组件未安装时 Mac 也打开四句录入面板（只禁用“开始”并提示先准备组件）；Windows 之前直接 return，现已始终打开，`MyVoiceCanStart` 仍要求组件可用。
+  2. **自检前置**：`--demo` 首页演示会议处于录音态（Mac 规则：会议进行中不能录入），自检在「我的声音」步前先 `StopRecordingCommand` 并等 `Recording=false`，之后面板 `visible=True`、`takes=4`。
+  3. **浅/深两张窗口截图**：自检对 SpeakerEditorWindow 与 MyVoiceWindow 分别切 Light/Dark 后各截一张（`Application.RequestedThemeVariant`）。
+- 逐元素结论（对照 `SpeakerViews.swift` / `MyVoiceViews.swift` / `MyVoice.swift`，Mac 无对应截图，按源码）：
+  | # | Mac | Windows | 结论 |
+  |---|---|---|---|
+  | 1 | SpeakerEditor：一人一胶囊（Mark+名字/句数），点选编辑 | SpeakerEditorWindow 顶部 `SpeakerPeople` 胶囊条，点选后 `SelectedSpeaker` 更新 | 逐条一致 |
+  | 2 | 名字输入 +「这是我」勾选 + 句数 | 名字 TextBox + 这是我 CheckBox + 句数 caption；写入 meta.json voiceNames/meVoices | 逐条一致 |
+  | 3 | 「其实是同一个人」合并 chips + 取消/完成 | `SpeakerMergeChoices` chips（每个其他人一个，合并即 MergeVoices）+ 取消/完成 | 逐条一致 |
+  | 4 | MeEditor：这个声音被当作你自己…不是 / 好 | 选中被标成我的人时显示 MeEditor 卡片（同文案 + 不是/好） | 逐条一致 |
+  | 5 | MyVoiceSettings：已录入/还没有录入、开始录入/重新录入、删除 | MyVoiceWindow 同状态（`MyVoiceSummaryLine`、开始/重新录入、删除、模型缺失提示） | 逐条一致 |
+  | 6 | MyVoiceSetupPanel：四句、第 N/4 句提示、开始/处理中/正在听、进度、取消 | 同名同结构（`VoicePrompts` 4 句、`MyVoiceTakeHint`、`MyVoiceRecordLabel`、进度条、取消）；本轮验证无组件时也打开 | 逐条一致 |
+  | 7 | 说话人条在转写页顶部，点胶囊开编辑器 | `NotesView` 转写标签 `TranscriptSpeakerStrip`（已存在）+ 编辑器打开 | 逐条一致（E12 既有实现） |
+- 未解决/记录：
+  - 真实麦克风录入（四句话音、声纹组件下载）未在自检执行，标注为“需真机麦克风”；`speakers-check.json` 最后一步如实记录；
+  - Mac 是 popover，Windows 是独立窗口（平台差异，交互等价）；
+  - 引导里的我的声音页（OnboardingVoicePage）属 E3 owner，不在 E12 范围。
