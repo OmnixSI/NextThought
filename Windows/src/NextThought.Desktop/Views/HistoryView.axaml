@@ -222,6 +222,7 @@
           <!-- Archive overview for the selected meeting (MeetingArchiveOverview compact card). -->
           <Border Classes="card" IsVisible="{Binding HasSelectedHistory}">
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 归档概览}" Classes="overline" />
               <TextBlock Text="{Binding CurrentSessionTitle}" Classes="section" />
               <TextBlock Text="{Binding SelectedSessionFacts}" Classes="caption" TextWrapping="Wrap" />
               <TextBlock Text="{Binding CurrentSession.SummaryError}" Classes="caption"

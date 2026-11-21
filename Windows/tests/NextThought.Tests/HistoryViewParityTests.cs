@@ -84,7 +84,7 @@ public sealed class HistoryViewParityTests
         Assert.Contains("ShowAllHistoryCommand", view);
         Assert.Contains("ClearHistoryFiltersCommand", view);
         Assert.Contains("HistoryNoMatchDetail", view);
-        Assert.Contains("这个系列还没有会议", File.ReadAllText(Path.Combine(Windows(), "src", "NextThought.Desktop", "AppState.HistoryOverview.cs")));
+        Assert.Contains("这个系列还没有会议", view);
         // content-search progress + read-issue notice hooks.
         Assert.Contains("HistoryContentSearchProgress", view);
         Assert.Contains("HasHistoryReadIssues", view);
