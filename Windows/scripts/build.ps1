@@ -34,7 +34,9 @@ try {
         }
         Invoke-Dotnet publish src/NextThought.Windows -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o $output --verbosity minimal
         Invoke-Dotnet publish src/NextThought.Cli -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o (Join-Path $output 'tools') --verbosity minimal
-        Copy-Item -LiteralPath P2_VALIDATION.md -Destination (Join-Path $output 'P2_VALIDATION.md')
+        # Task 0-8 archived the P1–P4 validation records under Windows/archive/; copy the
+        # historical one that still exists from there so a preview build does not fail on it.
+        if (Test-Path -LiteralPath 'archive\P2_VALIDATION.md') { Copy-Item -LiteralPath 'archive\P2_VALIDATION.md' -Destination (Join-Path $output 'P2_VALIDATION.md') }
         if (Test-Path -LiteralPath 'P3_VALIDATION.md') { Copy-Item -LiteralPath P3_VALIDATION.md -Destination (Join-Path $output 'P3_VALIDATION.md') }
         if (Test-Path -LiteralPath 'P4_VALIDATION.md') { Copy-Item -LiteralPath P4_VALIDATION.md -Destination (Join-Path $output 'P4_VALIDATION.md') }
         foreach ($document in @('FEATURE_PARITY.md', 'P4_SECOND_PC.md')) { if (Test-Path -LiteralPath $document) { Copy-Item -LiteralPath $document -Destination $output } }
