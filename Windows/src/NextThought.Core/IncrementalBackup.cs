@@ -66,6 +66,26 @@ public sealed class IncrementalBackupStore
         return path.Split('/').All(segment => segment.Length > 0 && segment is not ("." or ".."));
     }
 
+    /// <summary>
+    /// A16: Mac 3.4.0 writes restore-point keys with the first character of each walked directory
+    /// name dropped ("Sessions/essions/…", "Originals/riginals/…") when the directory URL kept a
+    /// trailing slash; the point itself is valid. Restoring must put those files under the real
+    /// directory, not under "essions/".
+    /// </summary>
+    public static string NormaliseLegacyPath(string path)
+    {
+        foreach (var (prefix, fixedPrefix) in new[]
+                 {
+                     ("Sessions/essions/", "Sessions/"),
+                     ("Originals/riginals/", "Originals/"),
+                     ("Materials/aterials/", "Materials/"),
+                     ("Migration/igration/", "Migration/")
+                 })
+            if (path.StartsWith(prefix, StringComparison.Ordinal))
+                return fixedPrefix + path[prefix.Length..];
+        return path;
+    }
+
     /// <summary>Stores every file and directory snapshot, then publishes a verified manifest.</summary>
     public string Create(
         IReadOnlyDictionary<string, byte[]> files,
@@ -139,8 +159,10 @@ public sealed class IncrementalBackupStore
         var point = JsonSerializer.Deserialize<RestorePoint>(File.ReadAllText(url), JsonOptions)
                     ?? throw new InvalidDataException("恢复点损坏。");
         Verify(point);
-        foreach (var (name, hash) in point.Files)
+        foreach (var (rawName, hash) in point.Files)
         {
+            // A16: older Mac points may carry the legacy S-less directory prefix.
+            var name = NormaliseLegacyPath(rawName);
             var file = Path.Combine(destination, name.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             File.WriteAllBytes(file, File.ReadAllBytes(Path.Combine(Objects, hash)));
