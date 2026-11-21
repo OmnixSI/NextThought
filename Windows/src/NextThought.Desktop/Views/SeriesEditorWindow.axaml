@@ -31,7 +31,7 @@
       <Setter Property="Background" Value="{DynamicResource Sunken}" />
     </Style>
     <Style Selector="ToggleSwitch.wide">
-      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="MinHeight" Value="{DynamicResource HitRow}" />
     </Style>
     <Style Selector="StackPanel.editorBar">
       <Setter Property="Background" Value="{DynamicResource Sunken}" />
@@ -90,7 +90,7 @@
     </Border>
 
     <!-- Draft action bar for basic/requirements (WorkspaceEditor.editActionsBar). -->
-    <Border x:Name="EditActionsBar" Grid.Row="2" IsVisible="False" CornerRadius="8"
+    <Border x:Name="EditActionsBar" Grid.Row="2" IsVisible="False" CornerRadius="{DynamicResource D4CornerRadius_8}"
             Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_12_4}">
       <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
         <TextBlock x:Name="EditActionsLabel" Grid.Column="0" Classes="caption" FontWeight="Medium"
@@ -112,7 +112,7 @@
               <DataTemplate x:DataType="local:RecentMeetingRow">
                 <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_6}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
-                    <Border Grid.Column="0" Width="7" Height="7" CornerRadius="4"
+                    <Border Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
                             Background="{Binding ModeTintBrush}" VerticalAlignment="Center" />
                     <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
                       <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" />
@@ -297,7 +297,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SeriesSkillRow">
                 <CheckBox Content="{Binding Name}" IsChecked="{Binding IsAttached, Mode=TwoWay}"
-                          MinHeight="36" Margin="{DynamicResource D4Margin_0_0_0_4}" />
+                          MinHeight="{DynamicResource HitRow}" Margin="{DynamicResource D4Margin_0_0_0_4}" />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
