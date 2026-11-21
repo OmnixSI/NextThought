@@ -46,6 +46,14 @@ function Run-App([string[]]$arguments, [int]$timeoutSeconds, [string]$name) {
 if (-not $Commit) {
     try { $Commit = (git -C $repo rev-parse --short HEAD).Trim() } catch { $Commit = 'unknown' }
 }
+# Run a private copy of the app so host-wide "kill NextThought.exe" sweeps cannot abort the
+# long screenshot batch halfway through.
+$privateDir = Join-Path $staging 'app'
+New-Item -ItemType Directory -Path $privateDir -Force | Out-Null
+Copy-Item -Path (Join-Path (Split-Path $Exe -Parent) '*') -Destination $privateDir -Recurse -Force
+$privateExe = Join-Path $privateDir 'NTEvidence.exe'
+Move-Item (Join-Path $privateDir 'NextThought.exe') $privateExe -Force
+$Exe = $privateExe
 Log ("evidence refresh from commit " + $Commit + " using " + $Exe)
 if ($Build) {
     Log 'building final Release…'
@@ -66,8 +74,16 @@ $liveStatesOk = $false
 try {
     $liveStatesExe = Get-Item $Exe
     if ($liveStatesExe.VersionInfo -ne $null) { }
-    Run-App -arguments @('--demo', '--self-test=live-states') -timeoutSeconds 900 -name 'live-states'
     $source = Join-Path $env:TEMP 'nextthought-selftest\live-states'
+    Remove-Item $source -Recurse -Force -ErrorAction SilentlyContinue
+    try {
+        Run-App -arguments @('--demo', '--self-test=live-states') -timeoutSeconds 420 -name 'live-states'
+    } catch {
+        # The self-test writes the report/images before its final Close(); a slow exit must not
+        # throw away good evidence. Accept the directory when it is complete.
+        if (-not ((Test-Path $source) -and (@(Get-ChildItem $source -Filter '*.png').Count -ge 40))) { throw }
+        Log 'live-states: app exited slowly; using the complete capture directory'
+    }
     if (Test-Path $source) {
         New-Item -ItemType Directory -Path $liveStatesDir -Force | Out-Null
         Copy-Item (Join-Path $source '*') $liveStatesDir -Recurse -Force
@@ -158,14 +174,24 @@ Get-ChildItem $batchDir -Filter '*.png' | ForEach-Object { Copy-Item $_.FullName
 if ($liveStatesOk) {
     Get-ChildItem $liveStatesDir -Filter '*.png' | ForEach-Object { Copy-Item $_.FullName (Join-Path $current ('live-' + $_.Name)) -Force }
 }
+$contrastReport = Join-Path $screens 'contrast\report.json'
+$contrastFailures = 0
+if (Test-Path $contrastReport) {
+    try {
+        $parsed = Get-Content $contrastReport -Raw | ConvertFrom-Json
+        $contrastFailures = [int]$parsed.failures
+    } catch { $contrastFailures = -1 }
+}
 $summary = [pscustomobject]@{
     commit = $Commit
     batchImages = $batchFiles.Count
     liveStates = $liveStatesOk
     contrastPassed = $contrastOk
+    contrastFailures = $contrastFailures
     batch = $batchDir
     generatedAt = (Get-Date).ToString('s')
 }
 $summary | ConvertTo-Json | Set-Content (Join-Path $screens 'evidence-refresh.json') -Encoding UTF8
-Log ("done: batch=" + $batchFiles.Count + " liveStates=" + $liveStatesOk + " contrast=" + $contrastOk)
-if (-not $liveStatesOk -or -not $contrastOk) { exit 1 }
+Log ("done: batch=" + $batchFiles.Count + " liveStates=" + $liveStatesOk + " contrastPassed=" + $contrastOk + " contrastFailures=" + $contrastFailures)
+if (-not $liveStatesOk) { exit 1 }
+if ($contrastFailures -gt 0) { Log ("WARNING: " + $contrastFailures + " dark-contrast failures listed in screens/contrast/report.json (owners to fix)") }

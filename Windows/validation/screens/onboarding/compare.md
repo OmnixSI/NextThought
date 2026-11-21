@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 首次引导 · Mac ↔ Windows 逐元素对照（§6.3 / §6.7 / E3）
 
 - Mac 基准：Mac 3.4.0 `Sources/NextThought/Onboarding.swift`（`OnboardingView` 四步：header / scenePage+sceneSheet / soundPage / answersPage+`AnswerEngineForm` / startPage+`CueIslandMock` / footer）、`OnboardingSampleMeeting.swift`、Core `OnboardingFlow.swift`、`LiveNotesEngine.swift`（场景即 lastScene）。

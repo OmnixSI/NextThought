@@ -1,0 +1,14 @@
+text	客户沟通
+text	小组作业
+text	小组讨论
+text	工作会议
+text	开始一场
+text	打开主窗口
+text	汇报 / 答辩
+text	点一个场景，立即开始。
+text	组会
+text	讲座 / 课程
+text	通用
+text	面试
+text	
+title	NextThought 提词岛

@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # §6.2/§6.5：会中窗口菜单 LiveWindowMenu（对照 LiveWindowController.swift）
 
 Mac 参照：`Sources/NextThought/LiveWindowController.swift:99` 的 `LiveWindowMenu`（菜单：会中窗口 inline picker 三个模式 + 分隔线 + 「按 … 在三者之间切换」；按钮是 28px glass 图标 `captions.bubble`，help「会中窗口 · 快捷键」）。

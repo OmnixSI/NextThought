@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 设置结构对照（E25）
 
 Mac 3.4.0 参考图：[scenes-light](../../mac-screens/settings-pages/scenes-light.png)、[general-light](../../mac-screens/settings-pages/general-light.png)、[answers-light](../../mac-screens/settings-pages/answers-light.png)。

@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 系列页（WorkspacesView.swift ↔ SeriesView.axaml）逐元素对照
 
 > 对照基准：Mac 3.4.0（`f015e8c6`）；参考图见 [series-light](../../mac-screens/series/series-light.png)、[series-dark](../../mac-screens/series/series-dark.png)。

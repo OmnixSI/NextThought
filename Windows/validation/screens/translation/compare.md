@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # E11 实时翻译界面：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/LiveTranslation.swift`（415 行全文：TranslationDirection.detect、LiveTranslation 状态机、turnOnForForeignSpeech、LiveTranslationToggle、LiveTranslationHosts、TranslationLaneHost）、`Sources/NextThought/LiveSessionView.swift` 的 LiveTranslationToggle/PartialLines/TranscriptLine 译文渲染、`Sources/NextThought/AppState+Live.swift` 的 provisionalTranslation 抄写到定稿行

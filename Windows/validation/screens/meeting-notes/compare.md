@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 会中笔记（MeetingUserNotes.swift ↔ Views/MeetingUserNotes.axaml）逐元素对照
 
 - Mac 标准：`Sources/NextThought/MeetingUserNotes.swift` 的 `MeetingUserNotes` 与 `AppState.toggleHighlight`；写入文件 `user-content.json`（A2 的 `SessionUserContent`）。

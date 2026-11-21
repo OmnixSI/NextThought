@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 讲稿与屏幕观察对照（E9）
 
 Mac 参照：`Sources/NextThought/AppState+Insights.swift`（startScreenWatch / screenRead / followSlide / followSpeech / prepareSlideNotes）、`LiveInsightsState.swift`（slideSource / slideIsManual / manualSlideAnchor / slideNotes / generatingNotes）、`PresenterMode.swift`、`SlideNotesCache.swift`、`SettingsPresenter.swift`、`InsightSettingsView.swift`、`ScreenContextService.swift`、`ScreenText`（NextThoughtCore/LiveInsights.swift）。

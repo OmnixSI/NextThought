@@ -1,0 +1,70 @@
+content	删除
+content	学术答辩应对
+content	开下一场
+content	所有记录
+content	把这场景加入
+content	数据目录
+content	新建系列
+content	移出
+content	系列
+content	系统设计答题框架
+content	编辑系列
+content	隐藏
+content	面试口语化
+content	首页
+placeholder	一句话经验，例如：先说结论，再说依据
+placeholder	新系列的名字
+text	0 场会议 · 2 份资料
+text	1 场会议
+text	1 场会议 · 3 条经验
+text	1 场会议 · 4 份资料 · 3 条经验
+text	11-20 15:37 · 6 条转写 · 2 条回答 · 有纪要
+text	11-21 10:00 · 4 条转写 · 有纪要
+text	3 个系列 · 2 场会议
+text	ACL 2026 口头报告
+text	一句话经验，例如：先说结论，再说依据
+text	一致性问题先画读写时序，再说兜底方案
+text	上下文
+text	会议
+text	共 1 场 · 44 分钟 · 提问 6 次 · 回答 2 次
+text	删除
+text	勾选的技能只加入这个系列的回答；全局技能仍然生效。
+text	反问环节准备 2 个关于团队技术栈的问题
+text	同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。
+text	后端二面：缓存一致性与项目经历
+text	周一产品例会
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	学术答辩应对
+text	开下一场
+text	待确认
+text	所有记录
+text	把这场景加入
+text	数据目录
+text	新建系列
+text	新系列的名字
+text	最近会议
+text	有纪要
+text	演示模式：内置样本数据，不会写入你的资料。
+text	移出
+text	系列
+text	系统设计答题框架
+text	经验 3
+text	编辑系列
+text	被问项目时先报规模和结果数字，再讲方案
+text	记下
+text	还没有会议
+text	附着技能
+text	隐藏
+text	面试口语化
+text	题库 3
+text	首页
+text	
+text	
+title	NextThought
+tooltip	关闭
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	显示侧栏
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

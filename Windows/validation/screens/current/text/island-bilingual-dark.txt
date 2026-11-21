@@ -1,0 +1,8 @@
+text	12:36
+text	In RQ2 the map is learned without labels. How do you know the learned prior is correct?
+text	RQ2 没有真实信道作标签，怎么确认学到的先验是对的？
+text	The prior is not guaranteed to be exactly correct without ground-truth labels.
+text	安装条件变了它仍然匹配，固定映射做不到。
+text	我用留出的服务导频评估，并和更简单的基线比较。
+text	没有真实标签，这个先验不能保证完全正确。
+title	NextThought 提词岛

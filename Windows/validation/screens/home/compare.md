@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 首页（HomeView.swift ↔ HomeView.axaml）逐元素对照
 
 - 对照基准：Mac 3.4.0（`f015e8c6`）。Mac 参考图：[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21，1120×820 pt @2x = 1600×1171 px）。

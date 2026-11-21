@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 屏幕与讲稿面板（InsightsPanel.swift ↔ InsightsPanel.axaml）逐元素对照 — §6.5/E7 重做版
 
 - 对照标准：Mac v3.4.0 `Sources/NextThought/InsightsPanel.swift` 全文（`InsightsPanel`、`ScreenWatchOffHint`、`SlideSection`、`ScreenSection`、`AnswerProgressStrip`）；嵌入位置对照 `Sources/NextThought/LiveSessionView.swift` 的 `TranscriptColumn`（`if state.insights.screenWatch && state.typeDefaults.followsSlides { InsightsPanel().frame(height: 240) }`）。

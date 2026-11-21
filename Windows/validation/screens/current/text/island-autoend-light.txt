@@ -1,0 +1,10 @@
+text	12:36
+text	好像没人说话了，42 秒后结束记录
+text	现在结束
+text	继续记录
+text	󰕄
+text	
+text	
+title	NextThought 提词岛
+tooltip	取消倒计时，继续记录这场会议
+tooltip	现在结束并整理纪要

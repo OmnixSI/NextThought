@@ -1,0 +1,182 @@
+content	Ctrl+Alt+1
+content	Ctrl+Alt+A
+content	Ctrl+Alt+E
+content	Ctrl+Alt+Enter
+content	Ctrl+Alt+Esc
+content	Ctrl+Alt+G
+content	Ctrl+Alt+K
+content	Ctrl+Alt+Left
+content	Ctrl+Alt+M
+content	Ctrl+Alt+O
+content	Ctrl+Alt+P
+content	Ctrl+Alt+R
+content	Ctrl+Alt+Right
+content	Ctrl+Alt+S
+content	Ctrl+Alt+Shift+,
+content	Ctrl+Alt+Shift+.
+content	Ctrl+Alt+Shift+S
+content	Ctrl+Alt+Y
+content	会中一直展开提词岛，不用把鼠标移上去
+content	共享可见性测试
+content	内置屏 / 主屏（自动）
+content	只看要点
+content	只记录
+content	右侧
+content	回答与资料
+content	场景
+content	完成
+content	客户沟通
+content	小组作业
+content	小组讨论
+content	尽力从屏幕共享中排除本应用窗口
+content	屏幕底部
+content	屏幕顶部居中
+content	工作会议
+content	开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口
+content	恢复默认快捷键
+content	所有记录
+content	提词与教练
+content	显示译文
+content	校准：看着摄像头 2 秒
+content	汇报 / 答辩
+content	清除
+content	留意眼神是否离开镜头（使用摄像头）
+content	简洁
+content	系列
+content	纪要
+content	组会 / 研究讨论
+content	自动回答
+content	记录时将完整句中英互译（使用当前回答服务）
+content	讲座 / 课程
+content	详细
+content	逐句
+content	通用
+content	隐藏背景，只保留文字、边框与按钮
+content	面试复盘
+content	首页
+content	高级
+content	默认
+placeholder	搜索设置
+text	Ctrl+Alt+1
+text	Ctrl+Alt+A
+text	Ctrl+Alt+E
+text	Ctrl+Alt+Enter
+text	Ctrl+Alt+Esc
+text	Ctrl+Alt+G
+text	Ctrl+Alt+K
+text	Ctrl+Alt+Left
+text	Ctrl+Alt+M
+text	Ctrl+Alt+O
+text	Ctrl+Alt+P
+text	Ctrl+Alt+R
+text	Ctrl+Alt+Right
+text	Ctrl+Alt+S
+text	Ctrl+Alt+Shift+,
+text	Ctrl+Alt+Shift+.
+text	Ctrl+Alt+Shift+S
+text	Ctrl+Alt+Y
+text	Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。
+text	上一条回答
+text	下一条回答
+text	临场教练
+text	以下全局快捷键被其他程序占用：Ctrl+Alt+P 暂停 / 恢复聆听、Ctrl+Alt+Shift+, 讲稿上一页；界面按钮仍可使用。
+text	会中
+text	会中一直展开提词岛，不用把鼠标移上去
+text	全局快捷键（Ctrl+Alt + 按键）
+text	共享可见性测试
+text	内置屏 / 主屏（自动）
+text	切换会中窗口（纪要 / 字幕条 / 隐藏）
+text	区域截图
+text	双屏演讲
+text	双屏演讲已关闭
+text	取消当前回答
+text	只影响悬浮字幕条；保存后立即生效。
+text	只看要点
+text	只记录
+text	右侧
+text	各场景开会时的设置
+text	同声传译
+text	回答
+text	回答与资料
+text	场景
+text	复制当前回答
+text	字号
+text	字幕条
+text	完成
+text	客户沟通
+text	宽度
+text	小组作业
+text	小组讨论
+text	尽力从屏幕共享中排除本应用窗口
+text	屏幕底部
+text	屏幕顶部居中
+text	工作会议
+text	工作布置
+text	幻灯片所在屏
+text	开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口
+text	开始 / 停止记录
+text	开始一场会时按这里的设置来；会中仍可随时切换。
+text	开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。已支持按讲话标题和截图 OCR 跟页；持续屏幕观察尚未移植。
+text	快捷键…
+text	恢复默认快捷键
+text	所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。
+text	所有记录
+text	把回答改短
+text	提示岛宽度
+text	提示岛所在屏
+text	提词
+text	提词与教练
+text	提词岛
+text	提词岛一直展开 / 恢复
+text	提词浮窗鼠标穿透
+text	搜索设置
+text	显示 / 隐藏提词
+text	显示方式
+text	显示译文
+text	暂停 / 恢复聆听
+text	标准
+text	校准：看着摄像头 2 秒
+text	汇报 / 答辩
+text	清除
+text	演示模式：内置样本数据，不会写入你的资料。
+text	灵敏度
+text	点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。
+text	画面只在这台电脑上分析成几个特征点，不保存、不上传。
+text	留意眼神是否离开镜头（使用摄像头）
+text	移到
+text	窗口截图
+text	立即回答最新转写
+text	简洁
+text	系列
+text	纪要
+text	纪要模板
+text	组会
+text	组会 / 研究讨论
+text	组会讨论
+text	自动回答
+text	自动（第一块外接屏）
+text	自定义
+text	记录时将完整句中英互译（使用当前回答服务）
+text	讲座 / 课程
+text	讲稿上一页
+text	讲稿下一页
+text	设置
+text	详细
+text	逐句
+text	通用
+text	重新生成上一题
+text	隐藏 / 恢复所有窗口
+text	隐藏背景，只保留文字、边框与按钮
+text	面试
+text	面试复盘
+text	首页
+text	高级
+text	默认
+text	
+text	
+title	NextThought
+tooltip	关闭
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

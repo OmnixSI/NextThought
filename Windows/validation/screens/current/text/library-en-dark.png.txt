@@ -1,0 +1,38 @@
+content	All records
+content	Home
+content	Open file location
+content	Review
+content	Series
+placeholder	Filter material names
+text	.md
+text	.pdf
+text	.pptx
+text	1
+text	6 materials, all parsed on this device, never uploaded.
+text	All records
+text	Choose a material to see the text parsed on this device.
+text	Demo mode: built-in sample data, nothing is written to your materials.
+text	Filter material names
+text	Home
+text	Import PDF, Word, PPT, Excel, Markdown and images; parsing is local and only relevant excerpts are sent to the answer service.
+text	Import materials
+text	Library
+text	Locate by the material's own page, slide or sheet
+text	Open file location
+text	Parse result
+text	Review
+text	Series
+text	paper-final.pdf
+text	segment
+text	slides-v3.pptx
+text	八股-缓存与数据库.md
+text	岗位JD-后端开发.md
+text	抖音电商-团队介绍.pdf
+text	简历-2026.pdf
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0

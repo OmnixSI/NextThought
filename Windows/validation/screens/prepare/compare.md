@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 会前准备页 · Mac ↔ Windows 逐元素对照（§6.3 / §6.7 / J2）
 
 - Mac 基准：Mac 3.4.0 `Sources/NextThought/PrepareView.swift`（含 3.4.0 的「这场用什么」`FeaturePicker`、`FeatureReset`、`SeriesCarryCard`、`MaterialsBlock`、`CheckCard`、`PreparationStartBar`）、`LiveNotesEngine.swift:144-178`（`meetingFeatures` 每系列沿用）。

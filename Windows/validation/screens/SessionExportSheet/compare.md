@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # E19 导出对话框：Mac ↔ Windows 逐元素对照
 
 对照代码：`Sources/NextThought/SessionExportUI.swift`（296 行全文）、`Sources/NextThought/SessionDocumentRenderer.swift`（787 行）、Core `SessionExport.swift`（Windows 已移植为 `SessionExport.cs`）

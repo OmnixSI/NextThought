@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 备份复核（E22 · §6.7）Mac 3.4.0 源码 ↔ Windows BackupRestoreReviewView 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/BackupRestoreReview.swift`

@@ -1,0 +1,81 @@
+content	先准备资料
+content	全部系列
+content	全部记录
+content	所有记录
+content	本月
+content	系列
+content	累计
+content	首页
+placeholder	给这场会起个名字，比如“字节二面”
+text	1 场 · 38 分钟 · 0 份资料
+text	1 场 · 44 分钟 · 4 份资料
+text	1 小时 22 分
+text	11月21日 星期六
+text	2
+text	6
+text	ACL 2026 口头报告
+text	Ctrl+Alt+N
+text	下午好。
+text	不挑场合，立即记录
+text	今天 上午10:00
+text	会后逐题复盘，存进题库
+text	先准备资料
+text	全部系列
+text	全部记录
+text	后端二面：缓存一致性与项目经历
+text	听到的提问
+text	听到问题自动给出回答
+text	周一产品例会
+text	周一客户例会 · 华东区
+text	场会议
+text	字节后端二面
+text	客户沟通
+text	小组作业
+text	小组讨论
+text	工作会议
+text	工作会议 · 38 分钟
+text	开始
+text	所有记录
+text	接下来是什么场合？
+text	提词贴着摄像头，不用低头
+text	时长按每场从开始记录到结束计算；暂停的时间也算在内。
+text	昨天 下午3:37
+text	最近记录
+text	本月
+text	汇报 / 答辩
+text	演示模式：内置样本数据，不会写入你的资料。
+text	用了多少
+text	系列
+text	累计
+text	组会
+text	给出的回答
+text	给这场会起个名字，比如“字节二面”
+text	继续一个系列
+text	被问到时，答案就在镜头旁
+text	记录时长
+text	讲座 / 课程
+text	还没开过 · 2 份资料
+text	通用
+text	面试
+text	面试 · 44 分钟
+text	首页
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：决定、待办、风险、下次会议
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：各方观点、结论与分歧、分工
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：定下的方案、分工、我的任务、下次碰头
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：总结、要点、决定、待办
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：要点、概念、例子、我的疑问
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：讨论的问题、没讨论透的地方、意见与要求、下一步
+tooltip	会中自动回答 · 回答简洁 · 纪要：逐题复盘（存进题库）、说得不好的地方、下一轮
+tooltip	会中自动回答 · 回答简洁 · 纪要：需求、顾虑与回应、我们答应的、下一步
+tooltip	会中自动回答，跟着讲稿 · 回答简洁 · 纪要：听众提问逐题复盘（存进题库）、要改的地方、答应的跟进
+tooltip	关闭
+tooltip	准备下一场
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

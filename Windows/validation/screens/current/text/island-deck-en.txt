@@ -1,0 +1,18 @@
+text	12:36
+text	Answer now
+text	Automatic answers
+text	End
+text	Interview
+text	Pause
+text	Switch to notes only
+text	Them
+text	如果删除缓存失败了怎么办
+text	字节后端二面
+text	󰕄
+text	
+text	
+text	
+title	NextThought Cue island
+tooltip	Answer now
+tooltip	End now and write notes
+tooltip	Pause or resume listening

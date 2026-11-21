@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # E16 纪要编辑器与证据侧栏：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/MeetingNotesEditor.swift`（189 行全文：MeetingNotesEditor、MeetingEvidenceSidebar）

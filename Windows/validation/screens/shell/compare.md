@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # Shell / 会中组件样板（E4 · §6.7）Mac 3.4.0 源码 ↔ Windows 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`ContentView.swift`（ErrorBanner / FocusModeView / LevelMeters）、`LiveWindowController.swift`（LiveWindowMenu）、`LiveSessionAcceptanceComponentSamples.swift`

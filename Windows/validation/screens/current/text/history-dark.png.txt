@@ -1,0 +1,53 @@
+content	周一客户例会 · 华东区
+content	字节后端二面
+content	所有记录
+content	数据目录
+content	系列
+content	隐藏
+content	首页
+content	
+placeholder	搜索全部转写、纪要、笔记
+text	1
+text	11-20 15:37 · 44:00 · interview · 字节后端二面 · 6 条转写 · 2 条回答 · 问题 6 个 · 纪要已整理
+text	11-20 15:37 · 6 条转写 · 2 条回答 · 有纪要
+text	11-21 10:00 · 4 条转写 · 有纪要
+text	2 场会议 · 2 个系列
+text	2 场会议 · 共 2 场
+text	上下文
+text	今天 上午10:00
+text	后端二面：缓存一致性与项目经历
+text	周一产品例会
+text	周一客户例会 · 华东区
+text	回答列表
+text	字节后端二面
+text	工作会议 · 38 分钟
+text	归档截图
+text	归档概览
+text	所有记录
+text	搜索全部转写、纪要、笔记
+text	数据目录
+text	昨天 下午3:37
+text	最近会议
+text	本机记录 · 当前匹配 2 场会议、2 个系列 · 系列按最近匹配会议排序
+text	演示模式：内置样本数据，不会写入你的资料。
+text	系列
+text	自动保存 · 不保存录音
+text	还没有归档截图。
+text	这场会议没有生成回答。
+text	隐藏
+text	面试 · 44 分钟
+text	首页
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	会议记录操作
+tooltip	关闭
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	显示侧栏
+tooltip	最大化
+tooltip	最小化
+tooltip	纪要已整理好
+tooltip	设置

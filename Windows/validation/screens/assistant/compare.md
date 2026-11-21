@@ -1,3 +1,7 @@
+> 截图来源：提交 `940a0280`（2026-11-21 17:24，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
+
 # 回答区模块（AssistantView / AssistantLayout / DetachedModules ↔ Windows 回答区）逐元素对照
 
 - Mac 标准：`Sources/NextThought/AssistantView.swift`（AnswerHistoryPanel / DetectionStrip / ConfidenceBar / ScreenshotCard / AnswerPanel / AnswerHeader / AnswerBody / WebLookupStrip / WebSourcesList / AnswerFooter / AnswerEvidenceDetails / ConversationPanel / TranscriptStatusLine / ConversationBubble / PartialBubbles / EmptyConversationHint）、`AssistantLayout.swift`（AssistantModule / AssistantLayout / Preset / 槽位操作）、`DetachedModules.swift`（DetachedModuleController / DetachedModuleView）。

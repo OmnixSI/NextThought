@@ -1,0 +1,62 @@
+content	复制纪要
+content	导出…
+content	所有记录
+content	按模板整理
+content	校对转写
+content	系列
+content	结束后自动整理
+content	编辑纪要
+content	详细信息
+content	重新整理
+content	首页
+text	11 月 20 日（周五） 15:37 · 44 分钟 · 线上 · 已校对 1 处识别错误
+text	2026-11-20 15:37 · 44 min · 线上
+text	·
+text	›
+text	一致性问题先画读写时序，再说兜底方案
+text	为什么选 Kafka 而不是 RabbitMQ？
+text	会中回答
+text	先更新数据库再删除缓存；删除失败进入重试队列，并用 Canal 订阅 binlog 再删一次；热点 key 做延迟双删。
+text	反问环节准备 2 个关于团队技术栈的问题
+text	后端二面：缓存一致性与项目经历
+text	吞吐和分区扩展性更好，订单事件需要按 key 有序且可回放。
+text	复制纪要
+text	复盘
+text	如果删除缓存失败了怎么办？
+text	导出…
+text	已确认经验
+text	我的笔记
+text	所有会议
+text	所有记录
+text	按模板整理
+text	提纲
+text	数据库和缓存同时更新时怎么保证一致性？
+text	整理这场会议
+text	文字纪要由模板整理；鱼骨图、大纲与观点对照是同一场会议的另一种看法。
+text	校对转写
+text	演示模式：内置样本数据，不会写入你的资料。
+text	系列
+text	结束后自动整理
+text	编辑纪要
+text	被问项目时先报规模和结果数字，再讲方案
+text	观点对照
+text	证据
+text	详细信息
+text	转写
+text	重新整理
+text	重试队列 + binlog 异步兜底，监控删除失败率并告警。
+text	面试复盘
+text	题库
+text	首页
+text	鱼骨图
+text	
+title	NextThought
+tooltip	会议信息
+tooltip	关闭
+tooltip	只更正名字与术语的识别错误，改动写入 corrections.json
+tooltip	对方 · 系统声音 0 · 我 · 麦克风 0
+tooltip	导出 Markdown
+tooltip	最大化
+tooltip	最小化
+tooltip	纪要模板：章节由模板决定，模型只填内容
+tooltip	设置
