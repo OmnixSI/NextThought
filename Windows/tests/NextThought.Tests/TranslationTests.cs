@@ -8,7 +8,7 @@ public sealed class TranslationTests
     private sealed class DeferredClient : IAnswerClient
     {
         public readonly Dictionary<string, TaskCompletionSource<string>> Requests = [];
-        public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90)
+        public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90, string? imagePath = null)
         {
             var reply = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             Requests[user] = reply; return await reply.Task.WaitAsync(ct);

@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "窗口选择器：列出其他应用的窗口并排除自身",
+      "passed": true,
+      "detail": "窗口 11 个；自身窗口句柄 1 个"
+    },
+    {
+      "step": "窗口选择器 UI",
+      "passed": true,
+      "detail": "列表 11 行"
+    },
+    {
+      "step": "区域选择 UI",
+      "passed": true,
+      "detail": "3000×2000"
+    },
+    {
+      "step": "区域选择：显示器选择器（系统友好名称 + 尺寸）",
+      "passed": true,
+      "detail": "Generic PnP Monitor · 3000×2000"
+    },
+    {
+      "step": "截图提问：Mac「拖动选择截图区域」标题与页脚原句",
+      "passed": true,
+      "detail": "拖动选择截图区域"
+    },
+    {
+      "step": "区域过小提示：Mac「屏幕选区无效，请重新框选。」",
+      "passed": true,
+      "detail": "屏幕选区无效，请重新框选。"
+    },
+    {
+      "step": "持续读取区域：Mac ScreenRegionSheet 标题与提示",
+      "passed": true,
+      "detail": "选择持续读取的区域"
+    },
+    {
+      "step": "截图中排除自身浮窗",
+      "passed": true,
+      "detail": "排除前亮度 18.9 → 排除后 18.9"
+    },
+    {
+      "step": "临时截图清理（只删旧文件）",
+      "passed": true,
+      "detail": "本次清理 1 个"
+    },
+    {
+      "step": "截图留到提问后删除（并作为模型图像输入待发）",
+      "passed": true,
+      "detail": "C:\\Users\\Thunderobot\\AppData\\Local\\Temp\\nextthought-shot-20261121-164829-selftest.png"
+    }
+  ]
+}

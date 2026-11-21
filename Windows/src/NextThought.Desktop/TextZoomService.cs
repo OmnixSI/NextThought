@@ -21,8 +21,9 @@ namespace NextThought.Desktop;
 /// The pages set their font sizes in styles and in per-control values, so the zoom cannot live in a
 /// single inherited property: each control that carries its own size keeps the size it was made
 /// with, and the setter writes the scaled size. Controls that inherit simply follow their ancestor.
-/// New content (a page switched in, a dialog opened) is picked up by a short timer while a zoom
-/// other than 1 is in effect.
+/// New content (a page switched in, a dialog opened, a transcript row appended) is scaled as soon
+/// as it attaches to the visual tree — 决议 §3.1 zoom 2 removed the old 600 ms catch-up timer, so
+/// content never paints at 100 % first.
 /// </summary>
 public static class TextZoomService
 {
@@ -36,20 +37,69 @@ public static class TextZoomService
     /// <summary>Buttons whose fixed hit height had to grow for the zoomed text (restored at 100%).</summary>
     private static readonly ConditionalWeakTable<Control, StrongBox<double>> BaseMinHeights = new();
     private static readonly List<WeakReference<Control>> BumpedMinHeights = [];
-    private static readonly DispatcherTimer Watcher = new() { Interval = TimeSpan.FromMilliseconds(600) };
+    private static readonly HashSet<Window> PendingApply = [];
+    private static readonly HashSet<Window> HookedWindows = [];
+    /// <summary>Last visual count/factor a window was rescaled for, so a layout caused by our own
+    /// font changes cannot queue another pass (the layout event would otherwise loop forever).</summary>
+    private static readonly ConditionalWeakTable<Window, StrongBox<(int Count, double Factor)>> Applied = new();
+    private static bool visualHooksInstalled;
     private static TextZoom zoom = new();
     private static string? dataRoot;
     private static Action<double>? saveCallback;
 
-    static TextZoomService()
+    /// <summary>
+    /// 决议 §3.1 zoom 2: new content renders at the zoom immediately; the old 600 ms catch-up timer
+    /// is gone. A window is scaled as soon as it joins the application's window list, and every
+    /// layout pass of a known window queues one rescale (coalesced to one dispatcher post per frame)
+    /// so rows, pages and dialogs that appear later are already at the zoom when they paint.
+    /// </summary>
+    private static void EnsureVisualHooks()
     {
-        Watcher.Tick += (_, _) =>
+        if (visualHooksInstalled) return;
+        visualHooksInstalled = true;
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+        if (desktop.Windows is System.Collections.Specialized.INotifyCollectionChanged changed)
+            changed.CollectionChanged += OnWindowsChanged;
+        foreach (var window in desktop.Windows) HookWindow(window);
+    }
+
+    private static void OnWindowsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is null) return;
+        foreach (var item in e.NewItems)
+            if (item is Window window) HookWindow(window);
+    }
+
+    private static void HookWindow(Window window)
+    {
+        if (!HookedWindows.Add(window)) return;
+        window.LayoutUpdated += (_, _) => QueueApply(window);
+        window.Closed += (_, _) =>
         {
-            // Only while a size other than the default is in effect: new rows/pages/dialogs are
-            // rescaled within a frame or two of appearing.
-            if (Math.Abs(zoom.Factor - 1) > 0.0001) ApplyAll();
-            else Watcher.Stop();
+            HookedWindows.Remove(window);
+            PendingApply.Remove(window);
         };
+        QueueApply(window);
+    }
+
+    private static int VisualCount(Window window) => window.GetVisualDescendants().Count();
+
+    private static void QueueApply(Window window)
+    {
+        if (Math.Abs(zoom.Factor - 1) <= 0.0001) return;
+        var count = VisualCount(window);
+        if (Applied.TryGetValue(window, out var applied)
+            && applied.Value.Count == count
+            && Math.Abs(applied.Value.Factor - zoom.Factor) < 1e-9) return;
+        if (!PendingApply.Add(window)) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            PendingApply.Remove(window);
+            if (Math.Abs(zoom.Factor - 1) <= 0.0001 || !window.IsVisible) return;
+            Apply(window);
+            FitZoomedText(window);
+            Applied.GetOrCreateValue(window).Value = (VisualCount(window), zoom.Factor);
+        }, DispatcherPriority.Loaded);
     }
 
     /// <summary>The current text size multiplier.</summary>
@@ -59,17 +109,15 @@ public static class TextZoomService
 
     public static bool CanShrink => zoom.CanShrink;
 
-    /// <summary>Loads the saved factor (Mac key <c>textZoom</c>) and starts watching for new content.</summary>
+    /// <summary>Loads the saved factor (Mac key <c>textZoom</c>) and scales every open window.</summary>
     public static void Configure(string root)
     {
+        EnsureVisualHooks();
         dataRoot = root;
         saveCallback = Save;
         zoom = new TextZoom(Load(root), saveCallback);
-        if (Math.Abs(zoom.Factor - 1) > 0.0001)
-        {
-            Watcher.Start();
-            ApplyAll();
-        }
+        RestoreMinHeights();
+        ApplyAll();
     }
 
     /// <summary>Ctrl +: one step larger (no-op at the top).</summary>
@@ -86,7 +134,6 @@ public static class TextZoomService
         var before = zoom.Factor;
         change();
         if (Math.Abs(before - zoom.Factor) < 0.0001) return;
-        if (Math.Abs(zoom.Factor - 1) > 0.0001) Watcher.Start();
         RestoreMinHeights();
         ApplyAll();
     }
@@ -115,14 +162,16 @@ public static class TextZoomService
             foreach (var window in desktop.Windows.ToArray())
             {
                 if (IsExcluded(window)) continue;
+                HookWindow(window);
                 Apply(window);
                 if (zoom.Factor > 1.001) FitZoomedText(window);
+                Applied.GetOrCreateValue(window).Value = (VisualCount(window), zoom.Factor);
             }
             if (zoom.Factor <= 1.001) RestoreMinHeights();
         }
         catch
         {
-            // A window closing mid-walk is harmless: the next tick picks up the rest.
+            // A window closing mid-walk is harmless: the attach/queued passes pick up the rest.
         }
     }
 
@@ -277,10 +326,9 @@ public static class TextZoomService
     /// <summary>Sets a factor without writing the preference (screenshot batch / self-check).</summary>
     public static void SetFactorForCheck(double factor)
     {
+        EnsureVisualHooks();
         zoom = new TextZoom(factor, null);
         RestoreMinHeights();
-        if (Math.Abs(factor - 1) > 0.0001) Watcher.Start();
-        else Watcher.Stop();
         ApplyAll();
     }
 
@@ -294,11 +342,10 @@ public static class TextZoomService
     public static void Reload()
     {
         if (dataRoot is not { } root) return;
+        EnsureVisualHooks();
         saveCallback = Save;
         zoom = new TextZoom(Load(root), saveCallback);
         RestoreMinHeights();
         ApplyAll();
-        Watcher.Stop();
-        if (Math.Abs(zoom.Factor - 1) > 0.0001) Watcher.Start();
     }
 }

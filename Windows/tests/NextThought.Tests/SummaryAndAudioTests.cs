@@ -86,7 +86,7 @@ public sealed class SummaryAndAudioTests : IDisposable
     }
     private sealed class FakeClient(Func<string, CancellationToken, Task<string>> respond) : IAnswerClient
     {
-        public Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90) => respond(user, ct);
+        public Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90, string? imagePath = null) => respond(user, ct);
     }
     [Fact]
     public async Task RecoverySkipsAnActiveLeaseAndRepairsATornAppendAfterRelease()

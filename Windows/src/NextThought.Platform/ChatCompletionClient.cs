@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using NextThought.Core;
 
 namespace NextThought.Platform;
@@ -48,19 +49,47 @@ public sealed class ChatCompletionClient(HttpClient? http = null) : IAnswerClien
             return ([], UiText.T(APIFailureExplainer.Message(APIFailure.CannotReachHost)));
         }
     }
-    public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90)
+    public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90, string? imagePath = null)
     {
         var uri = Endpoint(options.BaseUrl);
         if (string.IsNullOrWhiteSpace(options.Model)) throw new ArgumentException("请在设置中填写回答模型名称。");
         if (!uri.IsLoopback && string.IsNullOrWhiteSpace(options.ApiKey)) throw new ArgumentException("请在设置中填写 API Key。");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-        var body = new Dictionary<string, object> { ["model"] = options.Model.Trim(), ["stream"] = true,
-            ["messages"] = new[] { new { role = "system", content = system }, new { role = "user", content = user } } };
+        // E13: a screenshot question carries the picture itself (Mac AnswerRequest.imageURL ->
+        // ChatCompletionStreamParser.body imageJPEGBase64), not just its OCR text.
+        JsonNode content = user;
+        if (!string.IsNullOrEmpty(imagePath))
+        {
+            var bytes = await File.ReadAllBytesAsync(imagePath, deadline.Token).ConfigureAwait(false);
+            var mime = Path.GetExtension(imagePath).ToLowerInvariant() is ".jpg" or ".jpeg" ? "image/jpeg" : "image/png";
+            content = new JsonArray
+            {
+                new JsonObject { ["type"] = "text", ["text"] = user },
+                new JsonObject
+                {
+                    ["type"] = "image_url",
+                    ["image_url"] = new JsonObject { ["url"] = "data:" + mime + ";base64," + Convert.ToBase64String(bytes) }
+                }
+            };
+        }
+        var body = new JsonObject
+        {
+            ["model"] = options.Model.Trim(),
+            ["stream"] = true,
+            ["messages"] = new JsonArray
+            {
+                new JsonObject { ["role"] = "system", ["content"] = system },
+                new JsonObject { ["role"] = "user", ["content"] = content }
+            }
+        };
         if (options.ReasoningEffort.Length > 0) body["reasoning_effort"] = options.ReasoningEffort;
         if (options.MaxOutputTokens.HasValue) body["max_tokens"] = Math.Clamp(options.MaxOutputTokens.Value, 1, 32000);
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
-        request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        request.Content = new StringContent(body.ToJsonString(new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        }), Encoding.UTF8, "application/json");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         if (!string.IsNullOrWhiteSpace(options.ApiKey)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiKey.Trim());
         try

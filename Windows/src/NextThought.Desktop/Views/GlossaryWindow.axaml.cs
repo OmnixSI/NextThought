@@ -25,6 +25,9 @@ public partial class GlossaryWindow : Window
     {
         InitializeComponent();
         VariantTags.ItemsSource = variants;
+        ScopeSeg.ItemsSource = new[] { UiText.T("全局"), UiText.T("当前系列") };
+        KindSeg.ItemsSource = new[] { UiText.T("术语"), UiText.T("人名") };
+        PasteKindSeg.ItemsSource = new[] { UiText.T("术语"), UiText.T("人名") };
         commitTimer.Tick += (_, _) =>
         {
             commitTimer.Stop();
@@ -71,55 +74,49 @@ public partial class GlossaryWindow : Window
         SyncSegmented();
     }
 
-    /// <summary>The three segmented controls mirror the model.</summary>
+    /// <summary>The three InkSegmented controls mirror the model (their thumb slides).</summary>
     private void SyncSegmented()
     {
         if (state is null) return;
-        ScopeGlobalButton.Classes.Set("selected", !state.GlossarySeriesScope);
-        ScopeSeriesButton.Classes.Set("selected", state.GlossarySeriesScope);
-        KindTermButton.Classes.Set("selected", !state.GlossaryEditorIsPerson);
-        KindPersonButton.Classes.Set("selected", state.GlossaryEditorIsPerson);
-        PasteTermButton.Classes.Set("selected", !state.GlossaryPastePerson);
-        PastePersonButton.Classes.Set("selected", state.GlossaryPastePerson);
+        syncing = true;
+        try
+        {
+            ScopeSeg.SelectedIndex = state.GlossarySeriesScope ? 1 : 0;
+            KindSeg.SelectedIndex = state.GlossaryEditorIsPerson ? 1 : 0;
+            PasteKindSeg.SelectedIndex = state.GlossaryPastePerson ? 1 : 0;
+        }
+        finally { syncing = false; }
     }
 
-    private void ScopeGlobal_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void Scope_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        state?.UseGlobalGlossaryScopeCommand.Execute(null);
+        if (syncing || state is null) return;
+        if (ScopeSeg.SelectedIndex == 1) state.UseSeriesGlossaryScopeCommand.Execute(null);
+        else state.UseGlobalGlossaryScopeCommand.Execute(null);
         UpdateViewState();
     }
 
-    private void ScopeSeries_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void Kind_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        state?.UseSeriesGlossaryScopeCommand.Execute(null);
-        UpdateViewState();
-    }
-
-    private void KindTerm_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        state?.UseGlossaryTermKindCommand.Execute(null);
+        if (syncing || state is null) return;
+        if (KindSeg.SelectedIndex == 1) state.UseGlossaryPersonKindCommand.Execute(null);
+        else state.UseGlossaryTermKindCommand.Execute(null);
         QueueCommit();
         SyncSegmented();
     }
 
-    private void KindPerson_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void PasteKind_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        state?.UseGlossaryPersonKindCommand.Execute(null);
-        QueueCommit();
-        SyncSegmented();
+        if (syncing || state is null) return;
+        if (PasteKindSeg.SelectedIndex == 1) state.UsePastePersonKindCommand.Execute(null);
+        else state.UsePasteTermKindCommand.Execute(null);
     }
 
-    private void PasteTerm_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        state?.UsePasteTermKindCommand.Execute(null);
-        SyncSegmented();
-    }
 
-    private void PastePerson_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        state?.UsePastePersonKindCommand.Execute(null);
-        SyncSegmented();
-    }
+
+
+
+
 
     private void QueueCommit()
     {

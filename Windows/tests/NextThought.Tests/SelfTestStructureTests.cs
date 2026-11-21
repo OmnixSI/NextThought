@@ -653,10 +653,16 @@ public sealed class SelfTestStructureTests
     public void LivePageHasMeetingNotesAndHighlights()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("MeetingNoteDraft", xaml);
-        Assert.Contains("HighlightLine_Click", xaml);
+        // E19: the meeting notes are one control embedded in the page; the draft/highlight bindings
+        // live in that control after the auto-save rework.
+        Assert.Contains("<views:MeetingUserNotes", xaml);
+        var notes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MeetingUserNotes.axaml"));
+        Assert.Contains("{Binding MeetingNoteDraft}", notes);
+        Assert.Contains("Highlight_Click", notes);
+        Assert.Contains("{Binding MeetingHighlightRows}", notes);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.MeetingNotes.cs"));
         Assert.Contains("SessionUserContentStore.Save", state);
+        Assert.Contains("ScheduleMeetingNotesAutoSave", state);
     }
 
     [Fact]

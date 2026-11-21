@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1297;
+    public const int Count = 1289;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -125,7 +125,6 @@ internal static class UiTextWindowsEnglish
         ["会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：总结、要点、决定、待办"] = "Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: summary, key points, decisions, todos",
         ["会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：要点、概念、例子、我的疑问"] = "Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: key points, concepts, examples, my questions",
         ["会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：讨论的问题、没讨论透的地方、意见与要求、下一步"] = "Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: questions discussed, what stayed unresolved, comments and requests, next steps",
-        ["会中的回答和会后的纪要都由它来写。选一个服务商，粘贴 Key，点一下检查。"] = "It writes the in-meeting answers and the meeting notes. Pick a provider, paste a key and check.",
         ["会中笔记"] = "Meeting notes",
         ["会中笔记已保存。"] = "Meeting notes saved.",
         ["会中组件状态样板"] = "In-meeting component states",
@@ -239,7 +238,6 @@ internal static class UiTextWindowsEnglish
         ["删除会议和依赖内容"] = "Delete the meeting and its dependent content",
         ["删除会议，保留已确认的系列内容"] = "Delete the meeting and keep accepted series content",
         ["删除全部会议记录？"] = "Delete all meeting records?",
-        ["删除已录入的声音"] = "Delete the enrolled voice",
         ["删除当前筛选的 %lld 场会议？此操作会移除归档目录。"] = "Delete the %lld filtered meetings? Their archive folders will be removed.",
         ["删除筛选结果"] = "Delete filtered results",
         ["删除系列“%@”？系列及其会议记录将被永久删除，无法恢复。"] = "Delete series “%@”? The series and its meeting records will be permanently deleted and cannot be recovered.",
@@ -264,7 +262,6 @@ internal static class UiTextWindowsEnglish
         ["原生控件样板 · 所有文本与状态均为合成演示，不访问麦克风、ASR、模型、网络或归档。"] = "Native control samples · all text and states are synthetic; no microphone, ASR, model, network or archive access.",
         ["去准备"] = "Set up",
         ["参考回答"] = "Reference answer",
-        ["参考资料库"] = "Reference materials",
         ["参考资料库时使用语义与关键词混合检索"] = "Use hybrid semantic and keyword retrieval for materials",
         ["双击恢复控件"] = "Double-click to restore controls",
         ["双屏演讲"] = "Presenter mode",
@@ -394,7 +391,6 @@ internal static class UiTextWindowsEnglish
         ["屏幕上没有读到文字。"] = "No text was read from the screen.",
         ["屏幕与截图"] = "Screen and screenshots",
         ["屏幕感知已关闭。"] = "Screen awareness turned off.",
-        ["屏幕感知已开启。"] = "Screen awareness turned on.",
         ["工作会议模板纪要"] = "Meeting template notes",
         ["工作台"] = "Workbench",
         ["工作布置"] = "Work assignment",
@@ -776,7 +772,6 @@ internal static class UiTextWindowsEnglish
         ["正在记录。系统声音为所选输出设备混音。"] = "Recording. System audio is the chosen output mix.",
         ["正在记录所选应用及其子进程的声音。"] = "Recording the selected app and its child processes.",
         ["正在通过云端识别转写 WAV…"] = "Transcribing the WAV with cloud recognition…",
-        ["正确写法，例如 Kubernetes"] = "Correct form, e.g. Kubernetes",
         ["此数据目录已有 NextThought 窗口运行。"] = "A NextThought window is already using this data folder.",
         ["段"] = "segment",
         ["每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"] = "Every meeting stays on this device. Search by title, date or mode, and return to the exact words when details are unclear.",
@@ -988,7 +983,6 @@ internal static class UiTextWindowsEnglish
         ["课件"] = "Course slides",
         ["资料 %lld 份"] = "%lld materials",
         ["资料与 AI 都可稍后补充。"] = "Materials and an answer service can both be added later.",
-        ["资料与检索"] = "Materials and retrieval",
         ["资料复核"] = "Material review",
         ["资料复核备注已保存。"] = "Material review note saved.",
         ["资料库"] = "Library",
@@ -1025,7 +1019,6 @@ internal static class UiTextWindowsEnglish
         ["还没有系列。上面的输入框新建一个，再把会议放进来。"] = "No series yet. Create one above, then add meetings to it.",
         ["还没有经验。"] = "No lessons yet.",
         ["还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。"] = "No lessons yet. When notes are organized, sections such as Next time produce candidates; nothing is saved until you confirm, and you can also write one.",
-        ["还没有记录。从这个资料夹开始一场会议，记录和资料会保存在一起。"] = "No meetings yet. Start one from this series and its notes and materials stay together.",
         ["还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。"] = "No materials yet. Import PDF, Word, PPT, Excel, Markdown or images.",
         ["还没有资料。点「导入资料」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。"] = "No materials yet. Choose Import materials to add PDF, Word, PPT, Excel, Markdown or images to this series.",
         ["还没有资料；导入 PDF、Word、PPT、Excel、Markdown 或图片后，这里显示页数与段落数。"] = "No materials yet; once you import PDF, Word, PPT, Excel, Markdown or images, their page and paragraph counts appear here.",
@@ -1186,7 +1179,6 @@ internal static class UiTextWindowsEnglish
         ["还没有记录。从这个系列开始一场会议，记录会出现在这里。"] = "No records yet. Start a meeting in this series and it will appear here.",
         ["还没有资料。点「编辑系列」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。"] = "No materials yet. Open Edit series to add PDF, Word, PPT, Excel, Markdown or images to this series.",
         ["正在复用 %@…"] = "Reusing %@…",
-        ["第 %lld / %lld 页"] = "Page %lld of %lld",
         ["待保存队列已满，会议内容未能入队。"] = "The save queue is full; the meeting content could not be queued.",
         ["待保存队列已满；部分新写入没有入队。"] = "The save queue is full; some new writes were not queued.",
         ["PaddleOCR-VL 1.6 Q4（更省内存）"] = "PaddleOCR-VL 1.6 Q4 (uses less memory)",

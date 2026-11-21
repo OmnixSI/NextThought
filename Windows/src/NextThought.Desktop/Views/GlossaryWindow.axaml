@@ -89,14 +89,8 @@
 
     <!-- Toolbar: global/series scope, filter, status and the more menu. -->
     <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
-      <Border Grid.Column="0" Classes="segTrack">
-        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-          <Button x:Name="ScopeGlobalButton" Classes="segItem" Content="{Binding GlossaryScopeGlobalLabel}"
-                  Click="ScopeGlobal_Click" />
-          <Button x:Name="ScopeSeriesButton" Classes="segItem" Content="{Binding GlossaryScopeSeriesLabel}"
-                  Click="ScopeSeries_Click" />
-        </StackPanel>
-      </Border>
+      <controls:InkSegmented x:Name="ScopeSeg" Grid.Column="0" HorizontalAlignment="Left"
+                             VerticalAlignment="Center" SelectionChanged="Scope_Changed" />
       <Border Grid.Column="1" Classes="field" MaxWidth="200" MinWidth="140">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
           <TextBlock Text="{StaticResource IconMagnifyingglass}" FontFamily="{StaticResource IconFont}"
@@ -183,14 +177,7 @@
                          PlaceholderText="{loc:Tr 正确的写法，例如 Kubernetes}" TextChanged="Field_Changed" />
               </Border>
             </StackPanel>
-            <Border Classes="segTrack" HorizontalAlignment="Left">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-                <Button x:Name="KindTermButton" Classes="segItem" Content="{Binding GlossaryKindTermLabel}"
-                        Click="KindTerm_Click" />
-                <Button x:Name="KindPersonButton" Classes="segItem" Content="{Binding GlossaryKindPersonLabel}"
-                        Click="KindPerson_Click" />
-              </StackPanel>
-            </Border>
+            <controls:InkSegmented x:Name="KindSeg" HorizontalAlignment="Left" SelectionChanged="Kind_Changed" />
             <StackPanel Spacing="{DynamicResource D4Spacing_8}">
               <TextBlock Text="{loc:Tr 听错的写法}" Classes="overline" />
               <ItemsControl x:Name="VariantTags">
@@ -250,14 +237,8 @@
           <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
             <TextBlock Grid.Column="0" Text="{loc:Tr 没写类型的当作}" Classes="caption"
                        Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
-            <Border Grid.Column="1" Classes="segTrack">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-                <Button x:Name="PasteTermButton" Classes="segItem" Content="{Binding GlossaryKindTermLabel}"
-                        Click="PasteTerm_Click" />
-                <Button x:Name="PastePersonButton" Classes="segItem" Content="{Binding GlossaryKindPersonLabel}"
-                        Click="PastePerson_Click" />
-              </StackPanel>
-            </Border>
+            <controls:InkSegmented x:Name="PasteKindSeg" Grid.Column="1" VerticalAlignment="Center"
+                                   SelectionChanged="PasteKind_Changed" />
             <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 取消}" Click="CancelPaste_Click" />
             <Button Grid.Column="4" Classes="primary" Content="{loc:Tr 加入}"
                     IsEnabled="{Binding HasGlossaryPasteText}" Click="ImportPasted_Click" />

@@ -17,7 +17,7 @@
     </StackPanel>
     <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <TextBox x:Name="ContentBox" AcceptsReturn="True" TextWrapping="Wrap"
-               ScrollViewer.VerticalScrollBarVisibility="Auto" MinHeight="260" />
+               ScrollViewer.VerticalScrollBarVisibility="Auto" Height="260" />
       <TextBlock x:Name="LengthText" Classes="caption" FontSize="11" />
       <CheckBox x:Name="GlobalBox" Content="{loc:Tr 所有系列都使用这个技能}" />
     </StackPanel>

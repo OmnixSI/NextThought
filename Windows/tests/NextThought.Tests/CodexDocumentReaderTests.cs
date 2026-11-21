@@ -135,7 +135,7 @@ public sealed class CodexDocumentReaderTests
         public string SeenUser { get; private set; } = "";
 
         public Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null,
-            CancellationToken ct = default, int timeoutSeconds = 90)
+            CancellationToken ct = default, int timeoutSeconds = 90, string? imagePath = null)
         {
             SeenModel = options.Model;
             SeenEffort = options.ReasoningEffort;
@@ -148,7 +148,7 @@ public sealed class CodexDocumentReaderTests
     private sealed class ThrowingAnswerClient : IAnswerClient
     {
         public Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null,
-            CancellationToken ct = default, int timeoutSeconds = 90)
+            CancellationToken ct = default, int timeoutSeconds = 90, string? imagePath = null)
             => throw new IOException("quota exceeded");
     }
 

@@ -48,6 +48,21 @@ public sealed class TextZoomParityTests
     }
 
     [Fact]
+    public void NewContentIsScaledOnAttachWithoutTheOldPollingTimer()
+    {
+        var service = Read("TextZoomService.cs");
+        // 决议 §3.1 zoom 2: new content must render at the zoom immediately. The old 600 ms
+        // dispatcher timer that patched late rows after they had flashed at 100 % is gone; the
+        // scaling is driven by the window list plus each window's layout pass.
+        Assert.DoesNotContain("DispatcherTimer", service);
+        Assert.DoesNotContain("FromMilliseconds(600)", service);
+        Assert.DoesNotContain("Watcher", service);
+        Assert.Contains("EnsureVisualHooks", service);
+        Assert.Contains("INotifyCollectionChanged", service);
+        Assert.Contains("LayoutUpdated", service);
+    }
+
+    [Fact]
     public void TheMainWindowBindsControlPlusMinusAndZero()
     {
         var code = Read("Views", "MainWindow.axaml.cs");

@@ -1,3 +1,5 @@
+> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 # 截图提问 / 区域选择（E13 · §6.7 · decisions §3.3）Mac 3.4.0 源码 ↔ Windows 逐元素对照
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`：`ScreenshotService.swift`、`RegionScreenshotPicker.swift`、`ScreenRegionSheet.swift`、`ContentView.swift`（WindowPickerSheet）
@@ -5,7 +7,9 @@
 - Windows 截图（本目录，来自 `--self-test screenshot-context` 本轮构建）：`window-picker-{light,dark}.png`、`region-picker-{light,dark}.png`、`region-picker-continuous-light.png`、`region-picker-small-region-light.png`、`screenshot-context-check.json`
 - 对照方法：Mac 无这些窗口的截图，按 Swift 源码逐元素对照（decisions §2：不再列为差别）
 
-## 结论：逐条一致；另有 2 条已裁决的差别（1 接受 + 1 由图像输入 owner 收尾）
+## 结论：逐条一致；另有 2 条已裁决的差别（1 接受 + 1 已收尾）
+
+- **图像输入（task-81 / decisions §3.3）已收尾**：截图提问现在把图片本身作为模型输入发出——OpenAI 兼容服务收到 `image_url` 内容块（`ChatCompletionClient` 读临时截图 → `data:image/png;base64,…` 与文字同一 user content），Codex 路径按 Mac 用 `turn/start` 的 `localImage` 附件（`CodexAnswerServerProtocol.TurnStartParams`）。提示词 `hasScreenshot: true`、证据记录 `ScreenImageAttached`；临时截图保留到提问后由 `AnswerAsync` 删除（不再在分析阶段删除）。`--self-test screenshot-context` 全部步骤通过（含「截图留到提问后删除（并作为模型图像输入待发）」），客户端单测覆盖图片内容块与 Codex localImage。
 
 ## 窗口选择器 WindowPickerSheet
 

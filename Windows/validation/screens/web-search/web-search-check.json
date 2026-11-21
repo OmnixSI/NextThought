@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "未保存密钥时显示未配置",
+      "passed": true,
+      "detail": "联网未配置：先在设置里保存 Tavily 密钥。"
+    },
+    {
+      "step": "状态行回显到设置",
+      "passed": true,
+      "detail": "未填写"
+    },
+    {
+      "step": "保存密钥（当前用户加密）并解析 provider",
+      "passed": true,
+      "detail": "provider=tavily；Tavily 密钥已保存（当前 Windows 用户加密）。 · tavily"
+    },
+    {
+      "step": "查证缓存：命中/区分 provider/过期失效",
+      "passed": true,
+      "detail": "缓存 0 条；年龄=5 分钟前"
+    },
+    {
+      "step": "保存新密钥后缓存失效",
+      "passed": true,
+      "detail": "缓存 0 条"
+    },
+    {
+      "step": "手动清空查证缓存",
+      "passed": true,
+      "detail": "联网查证缓存已清空。"
+    },
+    {
+      "step": "清除密钥后回到未配置",
+      "passed": true,
+      "detail": "联网未配置：先在设置里保存 Tavily 密钥。"
+    },
+    {
+      "step": "真实联网未执行（自动化环境无有效密钥/网络）",
+      "passed": true,
+      "detail": "Tavily 调用需用户密钥，未在自检中发出请求"
+    }
+  ]
+}
