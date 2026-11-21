@@ -435,8 +435,10 @@
                   <Border IsVisible="{Binding IsQuestion}" HorizontalAlignment="Left" Padding="{DynamicResource D4Padding_7_2}"
                           CornerRadius="{DynamicResource LvCapsuleRadius}"
                           Background="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintSoftBrush}">
+                    <!-- §5 dark-contrast: scene pigment as text on its own 13% wash fails WCAG in dark
+                         (ratio 3.1); the capsule stays tinted but the label uses the themed ink token. -->
                     <TextBlock Text="{loc:Tr 问题}" FontSize="10" FontWeight="Medium" TextWrapping="NoWrap"
-                               Foreground="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintBrush}" />
+                               Foreground="{DynamicResource InkBrush}" />
                   </Border>
                 </StackPanel>
 
