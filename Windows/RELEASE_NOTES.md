@@ -12,7 +12,8 @@ Windows 10 2004+ / Windows 11 的 x64。
 - **回答**：回答服务（多预设、API Key 保护、Codex 账号）、资料读取与语义检索、技能（全局/按系列）、
   联网搜索（需 Tavily Key，回答先出快答再换联网版）。
 - **提词与教练**：提词岛、提词浮窗、字幕条、双屏演讲、屏幕共享排除本应用窗口、共享可见性测试、全局快捷键、
-  临场教练（语速/发言占比/看镜头提醒，看镜头默认关闭）。
+  临场教练（语速/发言占比，以及看镜头提醒：设置里开关默认关闭、灵敏度三档、2 秒校准；摄像头帧只在内存处理、
+  不保存不上传；模型许可证、转换脚本与数值对齐见 `Windows/licenses/` 和 `Windows/validation/e10/`）。
 - **纪要**：会议自动收尾、按类型自定义模板、导出 Markdown、系列与归档概览。
 - **手机伴侣**：局域网/中转的配对链接、问题/回答/状态/编号与电脑一致、同一动作只执行一次。
 - **数据**：本机数据目录、`.ntbackup` 导出/导入（可与 Mac 往返，密钥不入备份）、首次运行模型下载并 SHA-256 校验。
@@ -41,6 +42,9 @@ Windows 10 2004+ / Windows 11 的 x64。
 - K15 多屏与不同缩放比例（需第二块屏幕）。
 - K16 真实云端识别三家服务、真实联网搜索、真实回答服务账号（需账号）。
 - K11 干净 Windows 沙盒安装与引导、K12 音频设备切换/拔出/睡眠唤醒（本机无对应条件时留给人）。
+- 看镜头提醒：本机摄像头（BisonCam, NB Pro）可打开并采到帧，但摄像头前没有真人；「看镜头/移开」两态用录好的
+  正面像走同一条 FaceLandmarker + GazeEstimator 处理路径验证（移开为虹膜点按眼宽外移模拟），尚未用真人在真实
+  摄像头前实测。
 - 三个语音识别归档（约 128–130 MB/个）与 613 MB 语义模型在开发机上仅校验了下载地址与固定大小，
   未整包下载；安装时应用会做完整 SHA-256 校验（详见 `Windows/validation/models.md`）。
 
@@ -66,7 +70,10 @@ per-user build for Windows 10 2004+/Windows 11 x64 only.
   first and replaced by the web answer).
 - **Prompter and coach**: cue island, teleprompter window, subtitle bar, two-screen presenting,
   screen-share exclusion of the app's own windows, share-visibility test, global shortcuts, live
-  coach (pace, talk share, gaze reminder off by default).
+  coach (pace and talk share, plus the gaze reminder: off by default, three sensitivity levels, a
+  2-second calibration; camera frames stay in memory and are never saved or uploaded; model
+  licences, conversion script and numeric alignment are in `Windows/licenses/` and
+  `Windows/validation/e10/`).
 - **Notes**: automatic meeting wrap-up, per-type custom templates, Markdown export, series and
   archive overview.
 - **Phone companion**: LAN/relay pairing link, questions/answers/status/item numbers match the PC,
@@ -106,6 +113,10 @@ user data lives in `%LOCALAPPDATA%\NextThought` and is kept on uninstall.
   accounts).
 - K11 installation/first-run in a clean Windows sandbox, K12 audio-device switching/unplug/sleep
   (left to a person where this machine has no hardware).
+- The gaze reminder: the on-device camera (BisonCam, NB Pro) opens and delivers frames, but no
+  person stood in front of it; the "looking" and "looking away" states were verified with recorded
+  frontal images through the same FaceLandmarker + GazeEstimator path (looking away simulated by
+  moving the iris points outside 0.35× the eye width), not with a real person at a real camera.
 - The three speech-recognition archives (about 128–130 MB each) and the 613 MB semantic model were
   only reachability- and size-checked on the development machine, not fully downloaded; the app
   verifies the full SHA-256 at install time (see `Windows/validation/models.md`).

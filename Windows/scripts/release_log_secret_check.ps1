@@ -54,7 +54,9 @@ $flows = @(
 
 $violations = [Collections.Generic.List[object]]::new()
 $scanned = 0
+# The planted settings.json is the input, not a log: logs, self-test reports and derived files are scanned.
 foreach ($file in Get-ChildItem -LiteralPath $sandbox -Recurse -File -ErrorAction SilentlyContinue) {
+    if ($file.Name -eq 'settings.json') { continue }
     $scanned++
     $content = [IO.File]::ReadAllText($file.FullName, [Text.Encoding]::UTF8)
     foreach ($secret in $secrets) {
@@ -73,7 +75,7 @@ $report = [ordered]@{
     flows = $flows
     plantedSecretKinds = @('api key', 'github token', 'pairing code')
     violations = $violations
-    note = 'The fake secrets are planted in every secret-looking settings field; the self-test flows exercise the settings and startup paths, then the whole isolated data directory (Logs included) is searched for the planted values and for common token patterns.'
+    note = 'The fake secrets are planted in every secret-looking settings field; the self-test flows exercise the settings and startup paths, then every log and derived file in the isolated data directory (the planted settings input is excluded) is searched for the planted values and for common token patterns.'
 }
 $reportPath = Join-Path $outputRoot 'log-secret-check.json'
 [IO.File]::WriteAllText($reportPath, ($report | ConvertTo-Json -Depth 6), [Text.UTF8Encoding]::new($false))
