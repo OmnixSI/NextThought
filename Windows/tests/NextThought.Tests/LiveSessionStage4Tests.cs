@@ -205,7 +205,7 @@ public sealed class LiveSessionStage4Tests
         Assert.Contains("{Binding LiveNotesHintText}", live);
         Assert.Contains("{Binding LiveNotesButtonText}", live);
         Assert.Contains("EnableLiveNotes_Click", live);
-        var state = Read("AppState.LivePage.cs");
+        var state = Read("AppState.LiveNotes.cs");
         Assert.Contains("实时纪要没有开", state);
         Assert.Contains("还没有连接回答服务，写不了实时纪要", state);
         Assert.Contains("说上几句之后，这里会出现这场会的要点：在谈什么、定了什么、谁要做什么。", state);

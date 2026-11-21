@@ -108,6 +108,17 @@ public partial class MainWindow
                 "the speaker column carries no timestamp");
             Check(state.LiveNotesStatusText.Length > 0, "实时纪要 tab has the Mac status line");
             Check(state.LiveNotesHintText.Length > 0, "实时纪要 tab has the Mac empty state");
+            // J1: the Mac demo notes are installed and the column shows them.
+            state.InstallDemoLiveNotes();
+            Check(state.LiveNotesHasContent, "实时纪要 tab shows the meeting notes");
+            Check(state.LiveNotesTopicRows.Count == 2, "实时纪要 tab lists the topics");
+            Check(state.LiveNotesTopicRows.SelectMany(topic => topic.Points).Any(point => point.Fresh),
+                "new talking points carry the scene colour");
+            Check(state.LiveNotesDecisionRows.Count == 1 && state.HasLiveNotesDecisions, "定下来的 lists the decision");
+            Check(state.LiveNotesTodoRows.Count == 1 && state.LiveNotesTodoRows[0].OwnerText.Length > 0,
+                "要做的 lists the to-do with its owner");
+            Check(state.LiveNotesStatusText.Contains(UiText.T("更新于")), "实时纪要 status shows when it last updated");
+            Check(state.LiveNotesButtonText == UiText.T("现在更新"), "实时纪要 offers 现在更新 while on");
             var livePage = PageHost.Content as LiveView;
             Check(livePage is not null, "the live page is mounted");
             Check(livePage?.FindControl<RadioButton>("LiveNotesTab") is not null,

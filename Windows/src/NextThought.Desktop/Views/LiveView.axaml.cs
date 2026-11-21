@@ -94,6 +94,9 @@ public partial class LiveView : UserControl
             state.RaiseWebSearchModeUi();
             state.RaiseLiveNotesTabUi();
             state.ReloadLiveSpeakerStrip();
+            state.EnsureDemoLiveNotes();
+            if (state.Recording && state.LiveNotesEngineStatus == LiveNotesStatus.Off)
+                state.BeginLiveNotes(!state.AnswerModeIsAuto);
         }
     }
 
@@ -128,6 +131,10 @@ public partial class LiveView : UserControl
                 break;
             case nameof(AppState.Recording):
                 state?.RaiseLiveStatusCountersUi();
+                if (state is { Recording: true } && state.LiveNotesEngineStatus == LiveNotesStatus.Off)
+                    state.BeginLiveNotes(!state.AnswerModeIsAuto);
+                else if (state is { Recording: false })
+                    state.EndLiveNotes();
                 break;
             case nameof(AppState.SpeakerPeople):
                 state?.RefreshLiveSpeakerNames();
@@ -322,8 +329,8 @@ public partial class LiveView : UserControl
     private void EnableLiveNotes_Click(object? sender, RoutedEventArgs e)
     {
         if (state is null) return;
-        if (!state.LiveNotesEnabled) state.EnableLiveNotes();
-        else state.UpdateLiveNotesNow();
+        if (!state.LiveNotesEnabled) state.SetLiveNotesEnabled(true);
+        else _ = state.UpdateLiveNotesNowAsync();
         ShowRightTab(RightTab.LiveNotes);
     }
 

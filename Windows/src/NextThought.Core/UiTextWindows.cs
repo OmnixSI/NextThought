@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1205;
+    public const int Count = 1210;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1239,6 +1239,13 @@ internal static class UiTextWindowsEnglish
         ["先开始记录，再改这一句的说话人。"] = "Start recording before changing who said this line.",
         ["这一句改成了%@。"] = "This line now belongs to %@.",
         ["说话人修改失败："] = "Could not change the speaker: ",
+
+        ["正在更新…"] = "Updating…",
+        ["这次没更新成功，稍后会再试"] = "This update did not come back; it will try again shortly.",
+        ["更新于 %@ · 约每 45 秒一次"] = "Updated %@ · about every 45 seconds",
+        ["已关闭实时纪要。"] = "Live notes are off.",
+        ["定下来的"] = "Decided",
+        ["要做的"] = "To do",
 
     };
 }

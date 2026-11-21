@@ -132,11 +132,26 @@ Windows 截图批次（`validation/screens/current/live-*.png`）只直接覆盖
 8. 证据：演示回答显示「依据：资料 2 · 屏幕 · 联网 1 · 1 项限制」；详情列出资料引文、屏幕来源、联网来源、限制。
 9. E7：`LiveShowsInsightsPanel` 与 Mac 规则一致（screenWatch && Academic）；面板头部、立即识别、齿轮、幻灯片区、屏幕区、回答进度全部在页内（非独立窗口）。
 
+## 7.1 J1：实时纪要内容（Mac `LiveNotesColumn` + `LiveNotesEngine`，本轮接线）
+
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 7.1.1 | 状态行：实时纪要没有开 / 正在更新… / 这次没更新成功，稍后会再试 / 还没有连接回答服务，写不了实时纪要 / 更新于 h:mm · 约每 45 秒一次；更新中转圈 | `LiveNotesStatusText` + `LiveNotesIsUpdating` 进度条 + 失败/无服务时 caution 色（`LiveNotesStatusIsWarning`） | 一致 |
+| 7.1.2 | 右上 现在更新 Ghost（更新中或无回答服务时禁用；没开时是 开启实时纪要） | `LiveNotesButtonText` / `LiveNotesCanUpdate` / `EnableLiveNotes_Click` | 一致 |
+| 7.1.3 | 整场在谈什么：`Ink.sunken` 圆角块里的 summary | 同：Sunken + `D4CornerRadius_10` + padding 16 的 summary 块 | 一致 |
+| 7.1.4 | 议题 + 要点：last-update 新增的点用场景色 | `LiveNotesTopicRows`：标题 13 semibold，要点 15；`Fresh` 的点用 `LiveSceneTintBrush`，旧点 tertiary | 一致 |
+| 7.1.5 | 定下来的：overline + ✓；要做的：overline + □ +「（负责人）」 | `定下来的`/`要做的` overline + ✓/○ 行；todo 文案后接「（我）」（`LiveNotesTodoRow.DisplayText`） | 一致（方框图标用 circle，图标表无 square） |
+| 7.1.6 | 调度：45s；首 3 行；首更 20s；最近 2 个议题可改写；最多 12 个议题；失败保留原纪要 | `LiveNotesSchedule` 的常量与 `IsDue` 直接使用；`LiveNotesPrompt.User/Parse`；解析失败（`next is null`）不改 `notes`、状态 Failed | 一致 |
+| 7.1.7 | 结束后仍整理完整纪要 | 结束走既有会后纪要（`generateSummary`），本引擎 `EndLiveNotes` 只停 ticker | 一致 |
+| 7.1.8 | 演示数据（DemoMode installDemo） | `InstallDemoLiveNotes()`：与 Mac 演示逐字（summary/2 议题/决定/待办/fresh 两条）；`--self-test=live-ui` 安装后截 live-notes 浅/深，内容与 `mac-screens/live/live-notes-light.png` 一致 | 一致 |
+
+
+
 ## 8. 未解决差异（逐条，不能写成「逐条一致」）
 
 1. 暂停/继续按钮只有文字，缺 Mac 的 pause.fill / play.fill 图标：随包 Fluent 图标集里没有这两个字形（D7 图标对照表未含），需要补图标资源后加。
 2. 顶栏「自动回答/只记录」的 answerEngineReady 黄点未做（Windows 用更多菜单文字提示代替）。
-3. 实时纪要的生成引擎是 J1（Core `LiveNotes` 移植中）；本轮做到 Mac 的状态行/空态/按钮与页签顺序，真实「正在更新…/更新于…」内容未接入。
+3. 实时纪要引擎已接（J1）；演示数据下 `现在更新` 因没有回答服务而禁用（Mac 演示有服务），`更新于` 之外的真实增量更新需配置回答服务后实测（脚本化响应用 `LiveNotesPrompt`/`LiveNotesSchedule` 测试覆盖）。
 4. 「原回答 ↔ 联网版」两阶段切换未做（Windows 单次回答架构，E4 已记在案）。
 5. 回答卡片阴影用共享 `PaperCardShadow`（contact 0 1 2 + ambient 0 8 14），Mac 是 contact 0 1 1 + ambient 0 10 20；§5.7 的 float/contact/ambient 资源落地后替换。
 6. 立即回答按钮高度 36（`HitRow`）而 Mac 40（`Space.controlLarge`）；主题的命中 token 测试要求页面主按钮用 36，取 36 记录。
