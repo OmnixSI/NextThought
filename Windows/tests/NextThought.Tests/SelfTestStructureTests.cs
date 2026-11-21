@@ -42,8 +42,12 @@ public sealed class SelfTestStructureTests
     public void RecordingHidesNavigationForFocusMode()
     {
         var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        // §5.2: the capsule and the right-hand icon tools disappear while recording; the caption
+        // buttons stay (they are the system window controls).
         var marker = "IsVisible=\"{Binding !Recording}\"";
-        Assert.True(main.Split(marker).Length - 1 >= 3);
+        Assert.True(main.Split(marker).Length - 1 >= 2);
+        Assert.Contains("Classes=\"pillnav\"", main);
+        Assert.Contains("ShowsContextSidebarToggle", main);
     }
 
 
@@ -1295,13 +1299,16 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void TopNavigationCapsuleExists()
     {
+        // §5.2: Mac AppSection.primary = 首页 / 所有记录 / 系列 inside a sunken capsule, selection
+        // drawn as a white rounded block with the snappy transition.
         var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
-        Assert.Contains("GroupName=\"topnav\"", main);
-        Assert.Contains("CommandParameter=\"Home\"", main);
-        Assert.Contains("CommandParameter=\"Live\"", main);
-        Assert.Contains("CommandParameter=\"Library\"", main);
-        var controls = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
-        Assert.Contains("RadioButton.nav:checked", controls);
+        Assert.Contains("Classes=\"pillnav\"", main);
+        Assert.Contains("Content=\"{loc:Tr 首页}\"", main);
+        Assert.Contains("Content=\"{loc:Tr 所有记录}\"", main);
+        Assert.Contains("Content=\"{loc:Tr 系列}\"", main);
+        Assert.Contains("SectionNav_Click", main);
+        Assert.Contains("Button.pillnav.active", main);
+        Assert.Contains("BrushTransition Property=\"Background\"", main);
     }
 
     [Fact]
