@@ -29,8 +29,8 @@ public sealed class WindowParityTests
         var xaml = Read("Views", "SubtitleBarWindow.axaml");
         Assert.Contains("NextThought 字幕条", xaml);
         // Space.radiusLarge card with the shadow insets (16/20/28) and the shared badge.
-        Assert.Contains("CornerRadius=\"22\"", xaml);
-        Assert.Contains("Margin=\"20,16,20,28\"", xaml);
+        Assert.Contains("CornerRadius=\"{DynamicResource D4CornerRadius_22}\"", xaml);
+        Assert.Contains("Margin=\"{DynamicResource D4Margin_20_16_20_28}\"", xaml);
         Assert.Contains("对方可见", xaml);
         Assert.Contains("继续记录", xaml);
         Assert.Contains("MaxLines=\"2\"", xaml);
@@ -54,7 +54,7 @@ public sealed class WindowParityTests
         Assert.Contains("停止生成", xaml);
         Assert.Contains("立即回答", xaml);
         Assert.Contains("MarkdownText", xaml);
-        Assert.Contains("CornerRadius=\"22\"", xaml);
+        Assert.Contains("CornerRadius=\"{DynamicResource D4CornerRadius_22}\"", xaml);
         var code = Read("Views", "TeleprompterWindow.axaml.cs");
         Assert.Contains("正在听", code);
         // The three Mac placements: camera top centre, bottom, right.
@@ -93,7 +93,7 @@ public sealed class WindowParityTests
         Assert.Contains("相同记录", xaml);
         Assert.Contains("冲突记录", xaml);
         Assert.Contains("备份模板", xaml);
-        Assert.Contains("资料夹按修改时间合并", xaml);
+        Assert.Contains("系列按修改时间合并", xaml);
         Assert.Contains("自定义纪要模板", xaml);
         Assert.Contains("使用备份", xaml);
         Assert.Contains("同时导入偏好设置", xaml);
