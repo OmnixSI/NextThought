@@ -15,11 +15,6 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class HistoryView : UserControl
 {
-    public HistoryView()
-{
-    InitializeComponent();
-    Loaded += (_, _) => SyncEmbeddedMeeting();
-}
 
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
     private static Window? OwnerOf(Control control) => TopLevel.GetTopLevel(control) as Window;
@@ -31,7 +26,6 @@ public partial class HistoryView : UserControl
             if (sender is not Button { Tag: RecentMeetingRow row } || StateOf(sender) is not { } state) return;
             await state.SelectHistoryAsync(row.Meta);
             state.RefreshHistoryHitsForSelection();
-            if (state.HasHistoryHits) state.OpenHistoryHitInMeeting(state.HistoryHits[state.HistoryHitIndex].Hit);
         }
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
@@ -167,19 +161,18 @@ public partial class HistoryView : UserControl
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
-    /// <summary>MeetingMenuItems: 录音中/任务中的条目不能删除或重新整理（MenuItem 置灰）。</summary>
+    /// <summary>MeetingMenuItems: 录音中/任务中的条目不能删除或重新整理（MenuItem 置灰 + help 原因）。</summary>
     private void RowMenu_Opening(object? sender, EventArgs e)
     {
         if (sender is not ContextMenu menu || DataContext is not AppState state) return;
         foreach (var item in menu.Items.OfType<MenuItem>())
         {
             var header = item.Header as string ?? "";
-            if (header == UiText.T("删除这场会议") || header == UiText.T("重新整理")
-                || header == UiText.T("以此为上一场，准备下一场"))
-                item.IsEnabled = state.CanManageSessions;
+            if (header == UiText.T("删除这场会议")) item.IsEnabled = state.CanManageSessions;
+            else if (header == UiText.T("重新整理")) item.IsEnabled = state.CanManageSessions;
+            else if (header == UiText.T("以此为上一场，准备下一场")) item.IsEnabled = state.CanManageSessions;
         }
     }
-
     private void SeriesCheckBox_Click(object? sender, RoutedEventArgs e)
     {
         try
@@ -360,6 +353,12 @@ public partial class HistoryView : UserControl
         await dialog.ShowDialog(owner);
     }
     private NotesView? embeddedMeeting;
+
+    public HistoryView()
+    {
+        InitializeComponent();
+        Loaded += (_, _) => SyncEmbeddedMeeting();
+    }
 
     protected override void OnDataContextChanged(EventArgs e)
     {
