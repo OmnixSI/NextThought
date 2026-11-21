@@ -184,6 +184,13 @@ public partial class MainWindow
 
     private void RestoreMainWindow()
     {
+        // J7/PresenterMode.pageModeChosen(.notes): once the user brings the page back during a
+        // meeting it stays for the rest of the meeting, even when the displays settle again.
+        if (presenterActive)
+        {
+            presenterPageWanted = true;
+            ExitPresenterMode("双屏演讲：主窗口已由你叫回，本场会议不再自动隐藏。");
+        }
         Show();
         WindowState = WindowState.Normal;
         Activate();
@@ -585,6 +592,10 @@ public partial class MainWindow
     // ---- 双屏演讲（PresenterMode.swift） ----
 
     private bool presenterActive;
+    /// <summary>J7: the page was brought back during this meeting; a later display change must not hide it again.</summary>
+    private bool presenterPageWanted;
+    /// <summary>J7: a display change is acted on once the layout has been stable for 1.5 s (Mac displaysChanged).</summary>
+    private DispatcherTimer? presenterSettle;
 
     /// <summary>The displays as PresenterLayout sees them (primary = the one with the camera).</summary>
     public IReadOnlyList<DisplayInfo> BuildDisplays()
@@ -603,6 +614,45 @@ public partial class MainWindow
         catch
         {
             return [];
+        }
+    }
+
+    /// <summary>
+    /// J7: a display change is acted on only once the layout has been stable for 1.5 s. A
+    /// reconfiguration passes through states with one display, or none, on its way.
+    /// </summary>
+    private void QueuePresenterDisplayChange()
+    {
+        presenterSettle?.Stop();
+        presenterSettle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1_500) };
+        presenterSettle.Tick += (_, _) =>
+        {
+            presenterSettle?.Stop();
+            presenterSettle = null;
+            RefreshDisplays();
+            SettlePresenterChange();
+        };
+        presenterSettle.Start();
+    }
+
+    /// <summary>What to do once the display layout stopped changing (Mac PresenterMode.displaysChanged).</summary>
+    private void SettlePresenterChange()
+    {
+        if (state.Recording)
+        {
+            if (!state.SettingsSnapshot.PresenterMode) return;
+            var plan = CurrentPresenterPlan();
+            if (!plan.CanActivate)
+            {
+                if (presenterActive) ExitPresenterMode("外接屏已断开，双屏演讲已退出，主窗口已恢复。");
+                return;
+            }
+            if (!presenterActive) ApplyPresenterModeForRecording();
+            else if (!presenterPageWanted) Hide();
+        }
+        else if (presenterActive)
+        {
+            ExitPresenterMode();
         }
     }
 
@@ -652,7 +702,8 @@ public partial class MainWindow
             }
             island.Show();
         }
-        Hide();
+        // J7/PresenterMode.begin: only step aside when the user has not brought the page back.
+        if (!presenterPageWanted) Hide();
         state.SetStatus(UiText.Format("双屏演讲：%@；Ctrl+Alt+N 唤回主窗口。", plan.Summary));
     }
 
