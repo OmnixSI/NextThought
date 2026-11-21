@@ -101,12 +101,14 @@ public partial class AppState
     private void BeginMyVoiceSetup()
     {
         if (Recording) { SetStatus("会议进行中不能录入。"); return; }
-        if (!MyVoiceModelAvailable) { MyVoiceMessage = "先准备声纹组件（约 26 MB），再录入我的声音。"; return; }
+        // Mac opens the four-sentence panel even when the voiceprint model is not installed;
+        // the record button is what stays disabled until the component is ready.
         myVoiceTakes.Clear();
-        MyVoiceMessage = "";
+        MyVoiceMessage = MyVoiceModelAvailable ? "" : "先准备声纹组件（约 26 MB），再录入我的声音。";
         MyVoiceSetupVisible = true;
         MyVoiceProgress = 0;
         MyVoicePrompt = VoicePrompts[0];
+        OnPropertyChanged(nameof(HasMyVoiceMessage));
     }
 
     [RelayCommand]

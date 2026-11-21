@@ -60,3 +60,11 @@ Windows 截图：`Windows/validation/screens/speakers/`（自检 `speakers` 生�
 4. 说话人保存为同步写 meta.json，无 Mac 的异步保存回执/失败重试提示链；旧 `speakers.json` 仅作只读回退与批量应用时的兼容副本。
 5. 未做逐显示器/颜色之外的更多 Mark 视觉（Mac 用 SF Symbols 图标；Windows 用几何字符）。
 6. 无 Mac 对应截图；`speakers` 自检与截图待树恢复后补跑。
+
+## 7. task-62 阶段 4 §6.3 复核（2026-11-21）
+
+- 对照：`SpeakerViews.swift`（SpeakerLayout/SpeakerMark/SpeakerStrip/SpeakerEditor/MeEditor/SpeakerSettingsSection/MyVoiceSettings）、`MyVoiceViews.swift`（MyVoiceSetupPanel/OnboardingVoicePage）、`MyVoice.swift`；Mac 无对应截图，按源码逐元素对照。
+- Windows：`Views/SpeakerEditorWindow.axaml(.cs)`、`Views/MyVoiceWindow.axaml(.cs)`、`Views/NotesView.axaml` 转写标签说话人条、`AppState.Speakers.cs`、`AppState.MyVoice.cs`。
+- 截图：`Windows/validation/screens/current/` 暂无 speakers 产物；自检 `--self-test=speakers` 生成 `speaker-strip-light.png` / `my-voice-light.png` 到 `%TEMP%/nextthought-selftest/speakers/`，本轮共享树多次被并行构建打断（“No precompiled XAML”），待构建稳定后拷入本目录并补浅/深两版。
+- 本轮修复（E12）：Mac 在没有安装声纹组件时也打开四句录入面板（只是禁用“开始”按钮并提示先准备组件）；Windows 之前直接 return 不显示面板，导致 `speakers` 自检的「我的声音：录入流程可打开」失败。已改为始终打开面板，`MyVoiceCanStart` 仍要求 `MyVoiceModelAvailable`。
+- 待复核/未解决：自检在共享树稳定后需重跑确认 `speakers-check: passed`；说话人条在实时页的呈现属 live-parity；Mac popover vs Windows 独立窗口为平台差异；shallow/deep 截图待补。
