@@ -40,6 +40,9 @@ public sealed class GazeCamera : IAsyncDisposable
     /// <summary>True when the OS/device refused the camera (Windows privacy setting or missing device).</summary>
     public bool PermissionDenied { get; private set; }
 
+    /// <summary>Why the last StartAsync failed (diagnostics for the self-check).</summary>
+    public string? StartError { get; private set; }
+
     public bool IsRunning => running;
     public bool IsCalibrated => estimator.IsCalibrated;
     public GazeSignature Baseline => estimator.Baseline;
@@ -63,13 +66,16 @@ public sealed class GazeCamera : IAsyncDisposable
     public async Task<bool> StartAsync()
     {
         if (running) return true;
+        StartError = null;
         try
         {
             capture = new MediaCapture();
+            // Exclusive like the Mac's AVCaptureSession; SharedReadOnly is rejected by several
+            // built-in laptop cameras with a file-in-use COMException.
             await capture.InitializeAsync(new MediaCaptureInitializationSettings
             {
                 StreamingCaptureMode = StreamingCaptureMode.Video,
-                SharingMode = MediaCaptureSharingMode.SharedReadOnly,
+                SharingMode = MediaCaptureSharingMode.ExclusiveControl,
                 MemoryPreference = MediaCaptureMemoryPreference.Cpu
             });
             var source = capture.FrameSources.Values.FirstOrDefault(item => item.Info.SourceKind == MediaFrameSourceKind.Color);
@@ -94,13 +100,15 @@ public sealed class GazeCamera : IAsyncDisposable
             RunningChanged?.Invoke(running);
             return running;
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException error)
         {
             PermissionDenied = true;
+            StartError = "unauthorized: " + error.Message;
             return false;
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            StartError = error.GetType().Name + ": " + error.Message;
             await StopAsync();
             return false;
         }

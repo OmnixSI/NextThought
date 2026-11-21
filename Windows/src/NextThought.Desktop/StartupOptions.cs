@@ -1,6 +1,9 @@
 namespace NextThought.Desktop;
 
-/// <summary>Production startup switches: demo, screenshot batch and a named self-test.</summary>
+/// <summary>
+/// Production startup switches: demo, screenshot batch and a named self-test. The walkthrough-only
+/// data switches follow the Mac and are environment variables, never command-line arguments.
+/// </summary>
 public static class StartupOptions
 {
     public static bool Demo { get; private set; }
@@ -8,14 +11,11 @@ public static class StartupOptions
     public static string? SelfTest { get; private set; }
     public static bool Onboarding { get; private set; }
 
-    /// <summary>D1: Mac NEXTTHOUGHT_DEMO_VOICES=1 — the demo's weekly meeting held in a room.</summary>
-    public static bool DemoVoices { get; private set; }
+    /// <summary>Mac NEXTTHOUGHT_DEMO_VOICES=1: the demo holds its weekly meeting in a room.</summary>
+    public static bool DemoVoices => Environment.GetEnvironmentVariable("NEXTTHOUGHT_DEMO_VOICES") == "1";
 
-    /// <summary>
-    /// D1/J8: Mac NEXTTHOUGHT_DEMO_CHURN=&lt;file&gt; — the walkthrough copy measures how often the
-    /// live page is rebuilt and writes the measurement there. Demo-only, like the Mac switch.
-    /// </summary>
-    public static string? DemoChurn { get; private set; }
+    /// <summary>Mac NEXTTHOUGHT_DEMO_CHURN=&lt;file&gt;: the walkthrough writes live-page render counts there.</summary>
+    public static string? DemoChurn => Environment.GetEnvironmentVariable("NEXTTHOUGHT_DEMO_CHURN") is { Length: > 0 } path ? path : null;
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -23,9 +23,6 @@ public static class StartupOptions
         {
             var argument = args[index];
             if (argument is "--demo" or "-d") Demo = true;
-            else if (argument is "--demo-voices" or "--voices") DemoVoices = true;
-            else if (argument.StartsWith("--demo-churn=", StringComparison.OrdinalIgnoreCase)) DemoChurn = argument["--demo-churn=".Length..];
-            else if (argument == "--demo-churn" && index + 1 < args.Count) DemoChurn = args[++index];
             else if (argument.StartsWith("--screenshots=", StringComparison.OrdinalIgnoreCase)) Screenshots = argument["--screenshots=".Length..];
             else if (argument == "--screenshots" && index + 1 < args.Count) Screenshots = args[++index];
             else if (argument.StartsWith("--self-test=", StringComparison.OrdinalIgnoreCase)) SelfTest = argument["--self-test=".Length..];

@@ -194,6 +194,11 @@ Set-ExecutionPolicy -Scope Process Bypass -Force
 Windows/scripts/realmachine/k1-capture-hide.ps1 -Exe %TEMP%\nt-home-artifacts\bin\NextThought.Desktop\release_win-x64\NextThought.exe
 ```
 
+正式包的启动参数只有 `--demo`、`--screenshots`、`--self-test`（任务书 §2.5）。演示/走查用的两个
+Mac 同名开关是**环境变量**，不占用命令行：`NEXTTHOUGHT_DEMO_VOICES=1`（线下多人演示会议）、
+`NEXTTHOUGHT_DEMO_CHURN=<file>`（`--demo` 走查时把会中页渲染计数写进文件，配合
+`--self-test=live-churn` 的自检版）。
+
 其余各项的实机操作步骤（结果记到 `Windows/validation/realmachine/<编号>/`；标「人」的项不阻塞发布，
 但发布说明的「尚未实机验证」要列出）：
 

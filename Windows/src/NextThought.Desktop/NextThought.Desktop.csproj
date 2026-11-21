@@ -37,5 +37,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <Content Include="../../THIRD_PARTY_NOTICES.txt" Link="THIRD_PARTY_NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- E10: the eye-contact coach loads these ONNX models from assets/face-landmarker next to the app. -->
+    <Content Include="../../assets/face-landmarker/*.onnx" Link="assets/face-landmarker/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../assets/face-landmarker/SHA256SUMS" Link="assets/face-landmarker/SHA256SUMS" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

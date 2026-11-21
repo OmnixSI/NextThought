@@ -79,6 +79,9 @@ public sealed class FaceLandmarker : IDisposable
         var roi = FaceGeometry.Roi(detection);
         var crop = WarpRoi(rgb, width, height, roi);
         var (cropLandmarks, presence) = RunLandmarks(crop);
+        // MediaPipe FaceLandmarker treats the presence score as a gate (face_landmarker_graph.cc);
+        // without it a random crop would still produce 478 numbers.
+        if (presence < 0.5) return null;
         var imageLandmarks = FaceGeometry.ProjectLandmarks(cropLandmarks, roi);
         var gaze = FaceGeometry.GazeFrame(imageLandmarks, time);
         return new FaceAnalysis(detection, imageLandmarks, gaze, presence);
@@ -139,9 +142,11 @@ public sealed class FaceLandmarker : IDisposable
             var clampedX = Math.Clamp(sourceX, 0, width - 1);
             var clampedY = Math.Clamp(sourceY, 0, height - 1);
             var offset = ((int)Math.Round(clampedY) * width + (int)Math.Round(clampedX)) * 3;
-            tensor[0, 0, y, x] = rgb[offset] / 255f;
-            tensor[0, 1, y, x] = rgb[offset + 1] / 255f;
-            tensor[0, 2, y, x] = rgb[offset + 2] / 255f;
+            // MediaPipe's FaceMesh ImageToTensor keeps the 0..255 pixel scale (the detector uses
+            // 0..1); a 0..1 crop collapses the landmark model's presence score to zero.
+            tensor[0, 0, y, x] = rgb[offset];
+            tensor[0, 1, y, x] = rgb[offset + 1];
+            tensor[0, 2, y, x] = rgb[offset + 2];
         }
         return tensor.ToArray();
     }
@@ -153,8 +158,14 @@ public sealed class FaceLandmarker : IDisposable
         var raw = results.First().AsEnumerable<float>().ToArray();
         var presence = 1.0 / (1.0 + Math.Exp(-Math.Clamp(results.First(item => item.Name.Contains("Identity_1")).AsEnumerable<float>().First(), -100, 100)));
         var output = new FaceLandmark[FaceGeometry.LandmarkCount];
+        // MediaPipe's FaceMesh V2 outputs x/y/z in the 256-pixel input frame, not in [0,1];
+        // divide so FaceGeometry.ProjectLandmarks can treat the crop coordinates as normalized.
+        var scale = 1.0 / FaceGeometry.LandmarkInputSize;
         for (var index = 0; index < output.Length; index++)
-            output[index] = new FaceLandmark(raw[index * 3], raw[index * 3 + 1], raw[index * 3 + 2]);
+            output[index] = new FaceLandmark(
+                raw[index * 3] * scale,
+                raw[index * 3 + 1] * scale,
+                raw[index * 3 + 2] * scale);
         return (output, presence);
     }
 

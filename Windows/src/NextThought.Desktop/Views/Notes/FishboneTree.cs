@@ -173,5 +173,5 @@ public class FishboneTree : UserControl
     private static FontFamily IconFont() =>
         Application.Current?.TryFindResource("IconFont", out var value) == true && value is FontFamily font
             ? font
-            : new FontFamily("Segoe Fluent Icons");
+            : FontFamily.Default;
 }

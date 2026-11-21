@@ -65,13 +65,13 @@ randomization 影响）。连续两次从同一 `.task` 重生成，两个 ONNX 
 `max_rel` 大是因为输出里存在接近 0 的分量，绝对误差 0.39 相对 275k 量级仍是 1.4e-6）。完整机器可读
 结果：`Windows/validation/e10/numeric-alignment.json`（含源/子模型/产物 SHA 与补丁统计）。
 
-## 5. 运行时接口（给下一步实现）
+## 5. 运行时接口与预处理（已接线）
 
-- `face_detector.onnx`：输入 `input` NCHW `[1,3,128,128]` float32（0…255 像素尺度）；输出
-  `regressors [1,896,16]`、`classificators [1,896,1]`。
-- `face_landmarks_detector.onnx`：输入 `input_12` NCHW `[1,3,256,256]`；输出 `Identity [1,1434,1,1]`
-  （478 点 × x,y,z，flatten 顺序与 TFLite 一致）、`Identity_1 [1,1,1,1]` presence、
-  `Identity_2 [1,1]` tongue-out。
-
-未做/下一步：native ONNX Runtime 包、MediaPipe geometry pipeline 的 C# 重写、640×480 内存帧采集、
-GazeEstimator 接线、设置/校准 UI、三态自测证据——将在后续 `E10:` 提交完成。
+- `face_detector.onnx`：输入 `input` NCHW `[1,3,128,128]` float32，**0…1**（MediaPipe
+  ImageToTensor）；输出 `regressors [1,896,16]`、`classificators [1,896,1]`（sigmoid 后 0.5 门限）。
+- `face_landmarks_detector.onnx`：输入 `input_12` NCHW `[1,3,256,256]` float32，**0…255**
+  （FaceMesh 不做 0…1 归一化；喂 0…1 时 presence 会塌到 0，实测 presence logit 从 101.9 变成 -29.8）；
+  输出 `Identity [1,1434,1,1]`（478 点 × x,y,z，**以 256 像素输入帧为单位**，C# 侧除以 256）、
+  `Identity_1 [1,1,1,1]` presence logit（sigmoid 后 0.5 门限）、`Identity_2 [1,1]` tongue-out。
+- 运行时证据：`Windows/validation/e10/coach-gaze.md`（真实摄像头路径 + 录好的正面像三态）；桌面接线见
+  `Platform/Gaze/*`、`AppState.Coach.cs` 与 `SettingsView.axaml` 的「临场教练」卡。
