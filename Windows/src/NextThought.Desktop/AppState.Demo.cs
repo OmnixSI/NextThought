@@ -126,6 +126,9 @@ public partial class AppState
             recordingStartedAt = demo.Live.StartedAt;
         Recording = plan.IsRunning;
         Settings.AutomaticAnswers = plan.AutomaticAnswers;
+        // Mac 3.4.0 DemoMode NEXTTHOUGHT_DEMO_LIVE_NOTES=1: the live-notes stage shows notes that
+        // are being kept, so the 实时纪要 tab can be compared with live-notes-*.png.
+        if (plan.Name == DemoStages.LiveNotes) EnsureDemoLiveNotes();
         if (plan.PopulatesDraft)
         {
             // Mac populateDemoDraft: the next interview's draft, with the series' documents as baseline.
