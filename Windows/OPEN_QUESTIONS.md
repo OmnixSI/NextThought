@@ -71,4 +71,5 @@
 
 - 不做逐像素对比，做逐元素并排对照：每个页面把 Mac 截图里的元素、顺序、文案、分组、间距资源、颜色资源、圆角/字号级别列成清单，逐条在 Windows 截图核对；结论写 `Windows/validation/screens/<视图名>/compare.md`。
 - Mac 截图由人补拍浅/深两套到 `Windows/validation/mac-screens/`；到位前用 `docs/screenshots/v3/` 和 Swift 视图源码做标准。
+- 2026-11-21：浅/深两套已放进 `Windows/validation/mac-screens/`（93 张，目录说明见其中 README.md），来自 3.4.0 演示模式。
 - 本机可做的实机检查自己做并留记录（日期、版本、步骤、结果、证据），可写「已验证」；需要其他设备的只写步骤。
