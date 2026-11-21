@@ -49,29 +49,40 @@ public sealed class MacFixtureParityTests
             Assert.Contains(sentence, readme);
     }
 
+    // H7: the key-name-only MacCodecCheck tool was removed; the fixture comparison now runs as
+    // the localization Core suites that read every family with the production types.
     [Fact]
-    public void TheCodecCheckCoversEveryFixtureFamily()
+    public void TheFixtureTestsCoverEveryFixtureFamily()
     {
-        var program = File.ReadAllText(Path.Combine(Root(), "Windows", "tools", "MacCodecCheck", "Program.cs"));
+        var coreTests = Path.Combine(Root(), "Windows", "tests", "NextThought.Core.Tests");
+        string ReadSuite(params string[] names)
+        {
+            var files = names.Select(name => Path.Combine(coreTests, name)).Where(File.Exists).ToList();
+            Assert.True(files.Count > 0, "missing fixture comparison suite: " + string.Join(" / ", names));
+            return string.Join("\n", files.Select(File.ReadAllText));
+        }
+        var codec = ReadSuite("MacFixtureRoundTripTests.cs", "MacFixtureCodecTests.cs");
+        var revisions = ReadSuite("MacRevisionParityTests.cs", "MacFixtureRevisionTests.cs");
         foreach (var name in new[]
                  {
-                     "session-meta.json", "summary.json", "user-content.json", "workspace.json", "backup-manifest.json",
-                     "revisions.json", "transcript.jsonl", "translations.jsonl", "questions.jsonl", "skills.json",
-                     "templates.json", "glossary.json"
+                     "session-meta.json", "summary.json", "user-content.json", "workspace.json",
+                     "transcript.jsonl", "translations.jsonl", "questions.jsonl", "skills.json",
+                     "templates.json", "glossary.json", "structured-notes.json"
                  })
-            Assert.Contains(name, program);
-        // The old-emit differences are asserted by the tool as well.
-        Assert.Contains("sessionIds", program);
-        Assert.Contains("workspaceCount", program);
-        Assert.Contains("score", program);
+            Assert.Contains(name, codec);
+        Assert.Contains("revisions.json", revisions);
+        // The removed tool must not come back as a key-name-only check.
+        Assert.False(Directory.Exists(Path.Combine(Root(), "Windows", "tools", "MacCodecCheck")));
     }
 
     [Fact]
-    public void VerifyRunsTheCodecCheckOnEveryVerify()
+    public void VerifyRunsTheFixtureTestsOnEveryVerify()
     {
         var verify = File.ReadAllText(Path.Combine(Root(), "Windows", "verify.ps1"));
-        Assert.Contains("MacCodecCheck", verify);
-        Assert.Contains("Fixtures", verify);
+        Assert.Contains("MacFixtureRoundTripTests", verify);
+        Assert.Contains("MacRevisionParityTests", verify);
+        Assert.Contains("NextThought.Core.Tests", verify);
+        Assert.DoesNotContain("MacCodecCheck", verify);
     }
 
     [Fact]

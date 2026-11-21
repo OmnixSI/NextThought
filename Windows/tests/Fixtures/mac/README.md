@@ -44,7 +44,7 @@
 - `Glossary` 编码为 `{"entries": [...]}`，读取时也接受裸数组。
 - `.jsonl` 每行一个紧凑 JSON 对象。
 
-`Windows/tools/MacCodecCheck` 的键名已按上面改过；在这台 Mac 上用 .NET 8 跑过一份把目标框架改成 net8.0 的副本，结果通过。
+Windows 侧不再有只查键名的 `MacCodecCheck`：A15 的比对改由 Core 测试完成，`Windows/tests/NextThought.Core.Tests/MacFixtureCodecTests.cs` 用程序真实类型逐家族读入、写出并逐键比较（六处旧版差异），`MacFixtureRevisionTests.cs` 用 `revisions.json` 逐值复算修订号；`Windows/verify.ps1` 显式跑这两个过滤。
 
 ## 环境
 

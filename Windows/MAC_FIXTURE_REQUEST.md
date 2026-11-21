@@ -92,7 +92,8 @@ swift run --package-path Windows/tools/MacCodecMac MacCodec emit --output Window
 把这些文件提交到 `windows/parity` 分支的 `Windows/tests/Fixtures/mac/`，并注明 Mac 型号、macOS 版本、NextThought 版本/build。Windows 侧只运行：
 
 ```powershell
-Windows\.tools\dotnet\dotnet.exe run --project Windows/tools/MacCodecCheck/MacCodecCheck.csproj -- --fixtures Windows/tests/Fixtures/mac
+Windows\.tools\dotnet\dotnet.exe test Windows/tests/NextThought.Core.Tests -c Release `
+    --filter "FullyQualifiedName~MacFixtureCodecTests|FullyQualifiedName~MacFixtureRevisionTests"
 ```
 
-依赖 7 个 CryptoKit 文件和 4 个平台文件的类型不在 Windows check 范围内，工具会逐项打印跳过原因。
+`MacFixtureCodecTests` 用程序真实类型逐家族读入、写出并逐键比较，`MacFixtureRevisionTests` 按 `revisions.json` 逐值复算修订号（原 `MacCodecCheck` 只查键名，已删除）。依赖 7 个 CryptoKit 文件和 4 个平台文件的类型不在 Windows 解码范围内，README 中逐项写明跳过原因。
