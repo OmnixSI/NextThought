@@ -45,6 +45,10 @@ public partial class AppState
 
     private static Guid? SeriesGuid(string id) => Guid.TryParse(id, out var parsed) ? parsed : null;
 
+    /// <summary>A7: meta files spell ids in canonical case, series files may use the folder spelling.</summary>
+    private static bool SameSessionId(Guid metaId, string seriesId) =>
+        Guid.TryParse(seriesId, out var parsed) ? metaId == parsed : metaId.ToString() == seriesId;
+
     private void RefreshSeriesStats()
     {
         OnPropertyChanged(nameof(SelectedSeriesStatsLine));
@@ -199,7 +203,7 @@ public partial class AppState
         foreach (var series in workspace.Series.OrderByDescending(series => series.CreatedAt))
         {
             var last = series.SessionIds
-                .Select(id => History.FirstOrDefault(row => row.Meta.Id.ToString() == id)?.Meta)
+                .Select(id => History.FirstOrDefault(row => SameSessionId(row.Meta.Id, id))?.Meta)
                 .Where(meta => meta is not null)
                 .OrderByDescending(meta => meta!.StartedAt)
                 .FirstOrDefault();
@@ -222,7 +226,7 @@ public partial class AppState
         {
             foreach (var id in series.SessionIds)
             {
-                var meeting = History.FirstOrDefault(item => item.Meta.Id.ToString() == id);
+                var meeting = History.FirstOrDefault(item => SameSessionId(item.Meta.Id, id));
                 if (meeting is not null) { SeriesMeetings.Add(meeting); SeriesRecords.Add(meeting); }
             }
         }

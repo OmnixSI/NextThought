@@ -28,3 +28,18 @@ License text: licenses/WeSpeaker-CC-BY-4.0.txt. Model downloaded separately.
 QRCoder 1.7.0: MIT, https://github.com/Shane32/QRCoder/tree/v1.7.0; licenses/QRCoder-LICENSE.txt.
 Companion page adapted from the same private upstream snapshot (Mac labels changed to Windows; unavailable history controls hidden).
 Bundled noble packages: MIT, see licenses/Companion-LICENSES.txt.
+
+MediaPipe Face Landmarker (E10 看镜头提醒): Apache-2.0, Google LLC / MediaPipe contributors.
+Model bundle: https://huggingface.co/litert-community/MediaPipe-FaceLandmarker
+revision cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1, face_landmarker.task 3,758,596 B,
+SHA-256 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff.
+The bundle (BlazeFace short-range detector, FaceMesh V2 landmarks, blendshape network and the
+landmark geometry metadata) is Apache-2.0; the upstream Google model cards are included verbatim:
+licenses/MediaPipe-BlazeFace-Model-Card.pdf, licenses/MediaPipe-FaceMesh-V2-Model-Card.pdf,
+licenses/MediaPipe-Blendshape-V2-Model-Card.pdf; license text:
+licenses/MediaPipe-Face-Landmarker-LICENSE.txt.
+Windows converts the detector and landmark sub-models to ONNX with
+scripts/convert_face_landmarker.py (tflite2onnx 0.4.1 with a documented layout patch) and ships
+the two converted files under assets/face-landmarker/ with their SHA-256 in SHA256SUMS; the
+conversion is numerically checked against the TFLite originals (see
+validation/e10/numeric-alignment.json).

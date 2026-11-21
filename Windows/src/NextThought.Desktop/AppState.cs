@@ -197,7 +197,7 @@ public partial class AppState : ObservableObject
 
     /// <summary>G8: bumped on a language switch so views can rebuild code-generated rows.</summary>
     [ObservableProperty] private int languageGeneration;
-    [ObservableProperty] private string versionText = "WINDOWS  " + typeof(AppState).Assembly.GetName().Version!.ToString(3);
+    [ObservableProperty] private string versionText = typeof(AppState).Assembly.GetName().Version!.ToString(3);
     [ObservableProperty] private bool working;
     [ObservableProperty] private bool recording;
     [ObservableProperty] private bool listeningPaused;

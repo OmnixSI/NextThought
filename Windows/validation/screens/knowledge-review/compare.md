@@ -100,3 +100,9 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
 - 自检：`--self-test=knowledge-review` 仍 **passed 12/12**；新测试 `SeriesKnowledgeStage4Tests` **2/2**（按钮标签/命令接线、两张候选卡 AiSoft）。
 - 截图：`material-review-{light,dark}.png` 与 `knowledge-review-check.json` 本轮重拍/更新（1120 窗口位图，自检 passed 12/12）。系列页「变更/知识候选」两张标签截图**待补**：详情列高于 820 视口，直接截 TabControl 得到 1×1 图；已改为滚动到标签后截整窗，但本轮共享树重建后应用未能启动，下一轮重跑自检补这两张（不影响 ②③ 的代码验收）。
 - 结论：② 收集按钮与 ③ AISoft 卡片已**逐条一致**；① 结构化纪要逐条编辑 +「我已核实」仍在做（见 notes/compare.md 的 E15/E16 段，完成后另提交）。
+
+### task-62 / E18 修复：sessionIds 改存 Windows sidecar（A7/A6，2026-11-21）
+
+- 回归修复：`WorkspaceSeries.SessionIds` 是 Windows 分组状态，**不能写进任何 Mac 共享文件**（`Workspaces/*.json`、旧 `Workspace/workspace.json`），否则破坏 A7 迁移语义（`WorkspaceMembershipTests.OldSessionIdListsMigrateIntoMetaOnce`）。现改为写入 `WindowsState/workspace-sessions.json`（与 workspace-documents.json 同级，不进 Mac 文件/备份），`Load()` 在读完 Mac 文件与 meta 迁移后合并回来；`WorkspaceSessionRoundTripTests` 改为断言 sidecar 往返且两个 Mac 文件都不含 `sessionIds`。
+- 同轮修复：`SyncSessionMeta` 迁移时使用 meta.json 的 `id`（规范小写）而不是磁盘目录名（大写），并让系列页记录匹配按 Guid 比较，避免大小写不一致导致「记录」标签为空。
+- 验证：Core 全量 **1777/1777 通过**（含 `WorkspaceMembershipTests`）；Desktop 0 errors；`--self-test=knowledge-review` **passed 12/12**；`material-review-{light,dark}.png` 与 check JSON 更新。系列页两个标签的截图仍待补（标签内容在 820 视口下继续截不到，已记录，不影响验收结论）。

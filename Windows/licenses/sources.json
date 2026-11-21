@@ -44,5 +44,27 @@
     "file": "QRCoder-LICENSE.txt",
     "source": "https://raw.githubusercontent.com/Shane32/QRCoder/v1.7.0/LICENSE.txt",
     "sha256": "22e4c25e35c416b15f655a62378d964597c15c6c27fe2ff123444491eec0649b"
+  },
+  {
+    "file": "MediaPipe-Face-Landmarker-LICENSE.txt",
+    "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+    "modelLicense": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker",
+    "modelRevision": "cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "file": "MediaPipe-BlazeFace-Model-Card.pdf",
+    "source": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker/resolve/cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1/MediaPipe%20BlazeFace%20Model%20Card%20%28Short%20Range%29.pdf",
+    "sha256": "cd335c06fc0de7807cd815a0777a697932598bcdb28fa98adaaabf847485f758"
+  },
+  {
+    "file": "MediaPipe-FaceMesh-V2-Model-Card.pdf",
+    "source": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker/resolve/cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf",
+    "sha256": "c6add060f4ebfb37b2690136b6c711c7e5fcb7038baa2649ae3338b83979565a"
+  },
+  {
+    "file": "MediaPipe-Blendshape-V2-Model-Card.pdf",
+    "source": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker/resolve/cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1/Model%20Card%20Blendshape%20V2.pdf",
+    "sha256": "c8e9cf60a39998f4b341740623917590e050d1c97004e2de4568d84e026445ae"
   }
 ]

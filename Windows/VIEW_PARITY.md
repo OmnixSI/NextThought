@@ -6,14 +6,14 @@
 
 | Swift 文件 | 视图名 | 任务编号 | Windows 对应文件 | 状态 | 截图路径 |
 |---|---|---|---|---|---|
-| `Sources/NextThought/CueIsland.swift` | `Chip` | C1 | Views/CueIslandWindow.axaml | 未做 | — |
+| `Sources/NextThought/CueIsland.swift` | `Chip` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/island/` |
 | `Sources/NextThought/CueIsland.swift` | `CueIslandView` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/CueIslandWindow/` |
-| `Sources/NextThought/CueIsland.swift` | `CueRow` | C1 | Views/CueIslandWindow.axaml | 未做 | — |
-| `Sources/NextThought/CueIsland.swift` | `IslandAction` | C1 | Views/CueIslandWindow.axaml | 未做 | — |
-| `Sources/NextThought/CueIsland.swift` | `IslandButton` | C1 | Views/CueIslandWindow.axaml | 未做 | — |
-| `Sources/NextThought/CueIsland.swift` | `ThinkingDots` | C1 | Views/CueIslandWindow.axaml | 未做 | — |
-| `Sources/NextThought/SubtitleBarSettingsView.swift` | `SubtitleBarSettingsSection` | C12 | — | 未做 | — |
-| `Sources/NextThought/SubtitleBarView.swift` | `SubtitleBarView` | C12 | — | 未做 | — |
+| `Sources/NextThought/CueIsland.swift` | `CueRow` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/island/` |
+| `Sources/NextThought/CueIsland.swift` | `IslandAction` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/island/` |
+| `Sources/NextThought/CueIsland.swift` | `IslandButton` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/island/` |
+| `Sources/NextThought/CueIsland.swift` | `ThinkingDots` | C1 | Views/CueIslandWindow.axaml | 已实现、未验证 | `Windows/validation/screens/island/` |
+| `Sources/NextThought/SubtitleBarSettingsView.swift` | `SubtitleBarSettingsSection` | C12 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/SubtitleBarView.swift` | `SubtitleBarView` | C12 | Views/SubtitleBarWindow.axaml | 已实现、未验证 | `Windows/validation/screens/subtitle-bar/` |
 | `Sources/NextThought/TeleprompterController.swift` | `TeleprompterView` | C14 | Views/TeleprompterWindow.axaml | 已实现、未验证 | `Windows/validation/screens/TeleprompterWindow/` |
 | `Sources/NextThought/ControlComponents.swift` | `BusyActionLabel` | C9 | — | 未做 | — |
 | `Sources/NextThought/ControlComponents.swift` | `ControlButtonBody` | C9 | — | 未做 | — |
@@ -59,18 +59,18 @@
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerSettingsSection` | E12 | — | 未做 | — |
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerStrip` | E12 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/speakers/` |
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerTag` | E12 | — | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `ContentView` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `ContentView` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `ErrorBanner` | E13 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/ContentView.swift` | `FocusModeView` | E13 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/ContentView.swift` | `LevelMeters` | E13 | Views/MainWindow.axaml | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `MainShell` | E13 | Views/MainWindow.axaml | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `PulseDot` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `MainShell` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
+| `Sources/NextThought/ContentView.swift` | `PulseDot` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `QRCodeView` | E13 | Views/MainWindow.axaml | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `SectionStack` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `SectionStack` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `ShareTestSheet` | E13 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/ContentView.swift` | `WindowPickerSheet` | E13 | Views/WindowPickerWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-context/` |
-| `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionScreenshotPicker` | E13 | Views/RegionCaptureWindow.axaml | 未做 | — |
-| `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionSelectionCanvas` | E13 | Views/RegionCaptureWindow.axaml | 未做 | — |
+| `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionScreenshotPicker` | E13 | Views/RegionCaptureWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-question/` |
+| `Sources/NextThought/RegionScreenshotPicker.swift` | `RegionSelectionCanvas` | E13 | Views/RegionCaptureWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-question/` |
 | `Sources/NextThought/ScreenRegionSheet.swift` | `ScreenRegionSheet` | E13 | Views/RegionCaptureWindow.axaml | 已实现、未验证 | `Windows/validation/screens/screenshot-context/` |
 | `Sources/NextThought/AnswerServiceViews.swift` | `APIConnectView` | E14 | — | 未做 | — |
 | `Sources/NextThought/AnswerServiceViews.swift` | `APIEffortRow` | E14 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
@@ -116,7 +116,7 @@
 | `Sources/NextThought/HistoryView.swift` | `SessionRow` | E18 | Views/HistoryView.axaml | 已实现、未验证 | `Windows/validation/screens/history/` |
 | `Sources/NextThought/MeetingActionsMenu.swift` | `MeetingMenuItems` | E18 | — | 未做 | — |
 | `Sources/NextThought/MeetingActionsMenu.swift` | `MeetingMoreMenu` | E18 | — | 未做 | — |
-| `Sources/NextThought/SessionExportUI.swift` | `SessionExportSheet` | E19 | Views/SessionExportSheet.axaml | 已实现、未验证 | `Windows/validation/screens/SessionExportSheet/` |
+| `Sources/NextThought/SessionExportUI.swift` | `SessionExportSheet` | E19 | Views/SessionExportSheet.axaml | 已实现、未验证 | `Windows/validation/screens/export/` |
 | `Sources/NextThought/PrepareView.swift` | `AnswerCheckRow` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `AudioCheckRow` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `AudioSourceMenu` | E2 | — | 未做 | — |
@@ -222,7 +222,7 @@
 | `Sources/NextThought/Onboarding.swift` | `SetupRow` | E3 | Views/OnboardingView.axaml | 已实现、未验证 | `Windows/validation/screens/onboarding/` |
 | `Sources/NextThought/OnboardingSampleMeeting.swift` | `OnboardingSampleMeeting` | E3 | — | 未做 | — |
 | `Sources/NextThought/OnboardingSampleMeeting.swift` | `SampleTag` | E3 | — | 未做 | — |
-| `Sources/NextThought/BackupRestoreReview.swift` | `BackupRestoreReviewView` | E30 | Views/BackupRestoreReviewView.axaml | 已实现、未验证 | `Windows/validation/screens/backup/` |
+| `Sources/NextThought/BackupRestoreReview.swift` | `BackupRestoreReviewView` | E30 | Views/BackupRestoreReviewView.axaml | 已实现、未验证 | `Windows/validation/screens/backup-review/` |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `AppNavigationBar` | E4 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `AppNavigationSidebar` | E4 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `TopButtonBody` | E4 | Views/MainWindow.axaml | 未做 | — |
@@ -288,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | — | 未做 | — |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**281** 个视图；已有 Windows 页面 **150** 个，其余 **131** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **163** 个，其余 **118** 个待做。

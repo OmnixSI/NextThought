@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.5.0",
+    [string]$Version = "",
     [string]$Configuration = "Release",
     [switch]$SkipInstaller,
     [switch]$SkipZip,
@@ -16,6 +16,12 @@ $distRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '..\..\..\dist'))
 $payload = Join-Path $distRoot ("NextThought-$Version-win-x64")
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
+
+if (-not $Version) {
+    [xml]$appProject = Get-Content -LiteralPath (Join-Path $projectRoot 'src\NextThought.Desktop\NextThought.Desktop.csproj')
+    $Version = [string]($appProject.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1)
+    if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'NextThought.Desktop.csproj has no valid Version.' }
+}
 
 function Invoke-Dotnet {
     & $dotnet @args

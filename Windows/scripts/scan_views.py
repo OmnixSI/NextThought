@@ -210,7 +210,22 @@ IMPLEMENTED = {
     ("AssistantView.swift", "ConversationPanel"): ("Views/Assistant/ConversationPanel.axaml", "assistant"),
     ("AssistantView.swift", "ConversationBubble"): ("Views/Assistant/ConversationBubble.axaml", "assistant"),
     ("AssistantView.swift", "EmptyConversationHint"): ("Views/Assistant/EmptyConversationHint.axaml", "assistant"),
-    ("AssistantView.swift", "PartialBubbles"): ("Views/Assistant/PartialBubbles.axaml", "assistant"),
+    ("AssistantView.swift", "PartialBubbles"): ("Views/Assistant/PartialBubbles.axaml", "assistant"),    ("CueIsland.swift", "Chip"): ("Views/CueIslandWindow.axaml", "island"),
+    ("CueIsland.swift", "CueRow"): ("Views/CueIslandWindow.axaml", "island"),
+    ("CueIsland.swift", "IslandAction"): ("Views/CueIslandWindow.axaml", "island"),
+    ("CueIsland.swift", "IslandButton"): ("Views/CueIslandWindow.axaml", "island"),
+    ("CueIsland.swift", "ThinkingDots"): ("Views/CueIslandWindow.axaml", "island"),
+    ("SubtitleBarView.swift", "SubtitleBarView"): ("Views/SubtitleBarWindow.axaml", "subtitle-bar"),
+    ("SubtitleBarSettingsView.swift", "SubtitleBarSettingsSection"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("RegionScreenshotPicker.swift", "RegionScreenshotPicker"): ("Views/RegionCaptureWindow.axaml", "screenshot-question"),
+    ("RegionScreenshotPicker.swift", "RegionSelectionCanvas"): ("Views/RegionCaptureWindow.axaml", "screenshot-question"),
+    ("ContentView.swift", "ContentView"): ("Views/MainWindow.axaml", "final-shell"),
+    ("ContentView.swift", "MainShell"): ("Views/MainWindow.axaml", "final-shell"),
+    ("ContentView.swift", "SectionStack"): ("Views/MainWindow.axaml", "final-shell"),
+    ("ContentView.swift", "PulseDot"): ("Views/MainWindow.axaml", "final-shell"),
+    ("SessionExportUI.swift", "SessionExportSheet"): ("Views/SessionExportSheet.axaml", "export"),
+    ("BackupRestoreReview.swift", "BackupRestoreReviewView"): ("Views/BackupRestoreReviewView.axaml", "backup-review"),
+
 }
 
 def task_map() -> dict[str, str]:

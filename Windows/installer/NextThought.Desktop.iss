@@ -1,6 +1,6 @@
 ﻿; NextThought for Windows — per-user installer for the Avalonia desktop build.
 ; Compile with the pinned Inno Setup compiler prepared by scripts/bootstrap_installer.ps1:
-;   ISCC.exe /DAppVersion=0.5.0 /DPayload=<publish dir> /DOutputDirectory=<dir> /DOutputName=NextThought-0.5.0-windows-x64-setup NextThought.Desktop.iss
+;   ISCC.exe /DAppVersion=0.9.0 /DPayload=<publish dir> /DOutputDirectory=<dir> /DOutputName=NextThought-0.9.0-windows-x64-setup NextThought.Desktop.iss
 #ifndef AppVersion
   #error AppVersion is required
 #endif
@@ -88,9 +88,33 @@ begin
   Result := (not WizardSilent) or (ExpandConstant('{param:LAUNCH|0}') = '1');
 end;
 
+// R1: the old WPF preview used AppId NextThought.Windows.Preview but installed into the same
+// %LOCALAPPDATA%\Programs\NextThought folder. Refuse a mixed installation and ask the user to
+// uninstall the old build first; uninstalling only removes that build's program files, the data
+// directory %LOCALAPPDATA%\NextThought (meetings, settings, models) is kept.
+function LegacyPreviewInstalled(): Boolean;
+var
+  Names: TArrayOfString;
+  Index: Integer;
+begin
+  Result := False;
+  if RegGetSubkeyNames(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall', Names) then
+    for Index := 0 to GetArrayLength(Names) - 1 do
+      if Pos('NextThought.Windows.Preview', Names[Index]) = 1 then
+      begin
+        Result := True;
+        Exit;
+      end;
+end;
+
 function InitializeSetup(): Boolean;
 begin
-  Result := True;
+  Result := not LegacyPreviewInstalled();
+  if not Result then
+    MsgBox('An old NextThought preview (NextThought.Windows.Preview) is still installed in the same folder.'
+           + #13#10 + #13#10 +
+           'Please uninstall it first - your meetings, settings and models are kept - then run this installer again.',
+           mbError, MB_OK);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
