@@ -33,6 +33,8 @@ public partial class AppState
         SelectedMode = MeetingMode.Interview;
         OnPropertyChanged(nameof(SelectedScene));
         // Series: three Mac workspaces, newest-first as the home page lists them.
+        // D1: with `--demo-voices` (Mac NEXTTHOUGHT_DEMO_VOICES=1, StartupOptions.DemoVoices) the
+        // weekly meeting is the in-room three-voice version, so the 发言人 surfaces have a demo.
         workspace = new WorkspaceData(demo.Series);
         History.Clear();
         HomeRecent.Clear();

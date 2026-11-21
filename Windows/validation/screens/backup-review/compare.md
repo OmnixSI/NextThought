@@ -11,7 +11,7 @@
 | 2 | 布局 | padding 24、spacing 16、paper 底 | 同（DockPanel Margin 24、Spacing 16、Paper 底） | 一致 |
 | 3 | 标题/说明 | 「导入与恢复预览」section；body 次要色「新增内容会导入；相同内容会跳过…」 | 同 | 一致 |
 | 4 | 统计行 | 新增记录/相同记录/冲突记录/备份模板：大数字 section + caption 标签，间距 16 | 同（`NewCount/IdenticalCount/ConflictCount/TemplateCount`） | 一致 |
-| 5 | 说明行 | caption 次要色「资料夹按修改时间合并；应用前会先创建本机恢复点…」 | 同（已改为 Mac 原文；旧 Windows 写「系列」） | 一致 |
+| 5 | 说明行 | caption 次要色「系列按修改时间合并；应用前会先创建本机恢复点…」 | 同（已改为 Mac 原文；旧 Windows 写「系列」） | 一致 |
 | 6 | 记录行 | 标题（可选中）+ 状态行（冲突 caution，否则次要色）；冲突右侧「使用备份」勾选；行 padding 12、12 间距、sunken 底、圆角 8 | 同 | 一致 |
 | 7 | 模板段 | 「自定义纪要模板」+ 行（模板行无状态）；无内容时「此备份没有会议记录或自定义模板…」 | 同（`HasTemplates`/`IsEmpty`） | 一致 |
 | 8 | 偏好开关 | 「同时导入偏好设置」 | 同 | 一致 |

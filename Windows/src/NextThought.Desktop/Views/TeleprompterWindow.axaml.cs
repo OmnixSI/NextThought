@@ -109,8 +109,8 @@ public partial class TeleprompterWindow : Window
         }
         else
         {
-            Surface.Background = (IBrush?)this.FindResource("SurfaceRaised") ?? Brush.Parse("#F2F0EB");
-            Surface.BorderBrush = (IBrush?)this.FindResource("Hairline") ?? Brush.Parse("#331C1B19");
+            Surface.Background = this.FindResource("SurfaceRaised") as IBrush ?? Brush.Parse("#F2F0EB");
+            Surface.BorderBrush = this.FindResource("Hairline") as IBrush ?? Brush.Parse("#331C1B19");
             Surface.BorderThickness = new Thickness(0.5);
             HiddenBackgroundBorder.IsVisible = false;
             Opacity = Math.Clamp(state.SettingsSnapshot.TeleprompterOpacity, 0.35, 1);
@@ -145,7 +145,7 @@ public partial class TeleprompterWindow : Window
     {
         if (previewing) return;
         var live = state.Recording && !state.ListeningPaused;
-        StatusDot.Background = (IBrush?)this.FindResource(live ? "Seal" : "Tertiary") ?? Brushes.Gray;
+        StatusDot.Background = this.FindResource(live ? "Seal" : "Tertiary") as IBrush ?? Brushes.Gray;
         StatusText.Text = !state.Recording ? UiText.T("未在听")
             : state.ListeningPaused ? UiText.T("已暂停")
             : UiText.T("正在听");
@@ -162,8 +162,8 @@ public partial class TeleprompterWindow : Window
         HistoryPosition.IsVisible = position.Length > 0;
         HistoryPosition.Text = position;
         ThroughIcon.Text = through
-            ? (string?)this.FindResource("IconIslandCursorOff") ?? ""
-            : (string?)this.FindResource("IconIslandCursor") ?? "";
+            ? this.FindResource("IconIslandCursorOff") as string ?? ""
+            : this.FindResource("IconIslandCursor") as string ?? "";
         Footer.IsVisible = !through;
 
         var answer = state.DisplayedAnswerText;
@@ -373,13 +373,13 @@ public partial class TeleprompterWindow : Window
         EmptyHint.IsVisible = answer.Length == 0;
         EmptyHint.Text = answering ? UiText.T("正在生成…")
             : UiText.Format("回答会显示在这里。你也可以按 %@ 手动请求回答。", state.ForceAnswerShortcut);
-        StatusDot.Background = (IBrush?)this.FindResource("Seal") ?? Brushes.Gray;
+        StatusDot.Background = this.FindResource("Seal") as IBrush ?? Brushes.Gray;
         StatusText.Text = UiText.T("正在听");
         QuestionText.Text = question;
         QuestionText.IsVisible = question.Length > 0;
         AnsweringProgress.IsVisible = answering;
         Footer.IsVisible = !clickThrough;
-        ThroughIcon.Text = (string?)this.FindResource(clickThrough ? "IconIslandCursorOff" : "IconIslandCursor") ?? "";
+        ThroughIcon.Text = this.FindResource(clickThrough ? "IconIslandCursorOff" : "IconIslandCursor") as string ?? "";
         Opacity = state.Settings.TeleprompterHideBackground ? 1 : Math.Clamp(state.SettingsSnapshot.TeleprompterOpacity, 0.35, 1);
     }
 

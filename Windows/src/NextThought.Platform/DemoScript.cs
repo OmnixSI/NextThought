@@ -483,7 +483,7 @@ public static class DemoScript
             BuildReviewNotes(started), summary);
     }
 
-    private static DemoSession BuildWeekly(DateTimeOffset now, WorkspaceSeries business)
+    private static DemoSession BuildWeekly(DateTimeOffset now, WorkspaceSeries business, bool voices = false)
     {
         var localToday = now.ToLocalTime().Date;
         var started = new DateTimeOffset(DateTime.SpecifyKind(localToday.AddHours(10), DateTimeKind.Unspecified),
@@ -505,6 +505,30 @@ public static class DemoScript
             Line(750, "remote", "设计稿周四之前，或者周五也行，到时候再看。"),
             Line(1_268, "remote", "客户要的导出功能，目前还没人认领。")
         };
+        // NEXTTHOUGHT_DEMO_VOICES=1: the same meeting held in a room, its voices told apart, one of
+        // them named and nobody recognised as the user yet (Mac DemoMode.demoWeeklyMeeting).
+        if (voices)
+        {
+            var said = new (int Voice, string Text)[]
+            {
+                (1, "这个版本下周三之前必须上线，客户那边已经在催了。"), (1, "支付那两个问题今天之内要修掉。"),
+                (2, "回归测试我来排，周二下午给结果。"), (1, "设计稿周四之前，或者周五也行，到时候再看。"),
+                (2, "导出功能我这周排不进去，需要再找一个人。"), (1, "那导出功能先放到下一个版本的计划里。"),
+                (3, "我可以接导出功能，但要先看一下接口文档。"), (2, "接口文档在共享盘里，我会后发你链接。"),
+                (1, "好，那就这么定，周三上线的范围不变。"), (2, "上线前一天我再把回归结果同步到群里。"),
+                (1, "还有一件事，客户要求周五之前给一份说明。"), (2, "说明文档我来起草，周四给你过目。"),
+            };
+            lines = said.Select((item, index) => new TranscriptLine
+            {
+                Id = Guid.NewGuid(),
+                Date = started.AddSeconds(190 + index * 95),
+                StartedAt = started.AddSeconds(190 + index * 95),
+                EndedAt = started.AddSeconds(194 + index * 95),
+                Speaker = "room",
+                Text = item.Text,
+                Voice = item.Voice
+            }).ToList();
+        }
         var meta = new SessionMeta
         {
             Id = WeeklySessionId,
@@ -522,6 +546,13 @@ public static class DemoScript
             WorkspaceId = business.Id,
             WorkspaceName = business.Name
         };
+        if (voices)
+        {
+            meta.InPerson = true;
+            meta.AudioSource = "线下 · 麦克风";
+            meta.VoiceNames = new Dictionary<string, string> { ["1"] = "老师" };
+            meta.TranscriptCount = lines.Count;
+        }
         var template = NotesTemplate.BuiltIn(NotesTemplateKind.Work);
         NotesSectionResult Section(string id, params NotesItem[] items)
         {
@@ -594,14 +625,14 @@ public static class DemoScript
     }
 
     /// <summary>Builds the whole demo data set for one instant (Mac: <c>Date()</c> inside populateDemo).</summary>
-    public static DemoDataset Create(DateTimeOffset now)
+    public static DemoDataset Create(DateTimeOffset now, bool voices = false)
     {
         var reviewStarted = now.AddSeconds(-86_400);
         var series = BuildSeries(now);
         var interview = series.First(item => item.Id == InterviewSeriesId.ToString("D"));
         var business = series.First(item => item.Id == BusinessSeriesId.ToString("D"));
         var review = BuildReview(reviewStarted, interview);
-        var weekly = BuildWeekly(now, business);
+        var weekly = BuildWeekly(now, business, voices);
         var linkedSeries = series
             .Select(item => item.Id == interview.Id ? item.WithSession(review.Meta.Id.ToString("D"))
                 : item.Id == business.Id ? item.WithSession(weekly.Meta.Id.ToString("D"))

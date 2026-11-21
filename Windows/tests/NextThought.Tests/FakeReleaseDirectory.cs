@@ -6,7 +6,8 @@ namespace NextThought.Tests;
 /// <summary>
 /// A local directory shaped like one published GitHub release: releases.json plus update.json,
 /// the Windows zip, a setup .exe and its .sha256. The update flow reads it through the same
-/// UpdateFeedPolicy paths the QA switch uses, so no network is involved.
+/// UpdateFeedPolicy paths the QA switch uses, so no network is involved. <paramref name="useAssetField"/>
+/// writes the Windows-style update.json (installer name in "asset") instead of the Mac-style "zip" row.
 /// </summary>
 internal sealed class FakeReleaseDirectory
 {
@@ -17,7 +18,8 @@ internal sealed class FakeReleaseDirectory
     public string ZipName { get; } = "NextThought-1.0.0-windows-x64.zip";
     public string Feed { get; }
 
-    public FakeReleaseDirectory(string? manifestTag = null, int build = 41, string tag = "main-latest")
+    public FakeReleaseDirectory(string? manifestTag = null, int build = 41, string tag = "main-latest",
+                                bool useAssetField = false, bool includeZip = true)
     {
         Root = Path.Combine(Path.GetTempPath(), "nt-fake-release-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Root);
@@ -25,21 +27,25 @@ internal sealed class FakeReleaseDirectory
         File.WriteAllBytes(Path.Combine(Root, SetupName), Setup);
         ExpectedSha = Convert.ToHexString(SHA256.HashData(Setup)).ToLowerInvariant();
         File.WriteAllText(Path.Combine(Root, SetupName + ".sha256"), ExpectedSha + "  " + SetupName + "\n");
-        File.WriteAllBytes(Path.Combine(Root, ZipName), [1, 2, 3]);
+        if (includeZip) File.WriteAllBytes(Path.Combine(Root, ZipName), [1, 2, 3]);
 
+        var payloadField = useAssetField
+            ? "\"asset\":\"" + SetupName + "\""
+            : "\"zip\":\"" + ZipName + "\"";
         File.WriteAllText(Path.Combine(Root, "update.json"),
             $"{{\"tag\":\"{manifestTag ?? tag}\",\"version\":\"1.0.0\",\"build\":{build}," +
-            $"\"zip\":\"{ZipName}\",\"sha256\":\"{new string('a', 64)}\",\"commit\":\"deadbeef\"}}");
+            payloadField + $",\"sha256\":\"{new string('a', 64)}\",\"commit\":\"deadbeef\"}}");
 
         string Asset(long id, string name) =>
             $"{{\"id\":{id},\"name\":\"{name}\",\"size\":1,\"url\":\"u{id}\"," +
             $"\"browser_download_url\":{System.Text.Json.JsonSerializer.Serialize(Path.Combine(Root, name))}}}";
         Feed = Path.Combine(Root, "releases.json");
+        var assets = includeZip
+            ? string.Join(',', Asset(1, "update.json"), Asset(2, ZipName), Asset(3, SetupName), Asset(4, SetupName + ".sha256"))
+            : string.Join(',', Asset(1, "update.json"), Asset(3, SetupName), Asset(4, SetupName + ".sha256"));
         File.WriteAllText(Feed,
             "[{\"tag_name\":\"" + tag + "\",\"name\":\"rolling\",\"draft\":false,\"prerelease\":true," +
-            "\"published_at\":\"2026-11-20T10:00:00Z\",\"assets\":[" +
-            string.Join(',', Asset(1, "update.json"), Asset(2, ZipName), Asset(3, SetupName), Asset(4, SetupName + ".sha256")) +
-            "]}]");
+            "\"published_at\":\"2026-11-20T10:00:00Z\",\"assets\":[" + assets + "]}]");
     }
 
     public void Delete()

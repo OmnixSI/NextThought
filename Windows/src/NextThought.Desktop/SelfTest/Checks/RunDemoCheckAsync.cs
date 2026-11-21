@@ -5,6 +5,10 @@ public partial class MainWindow
     private async Task RunDemoCheckAsync(string path)
     {
         await Task.Delay(300);
+        // `--demo` alone no longer seeds the demo (the data lives only while a demo capture runs), so
+        // the self-check loads it itself like the screenshot batch does.
+        state.LoadDemo();
+        await Task.Delay(150);
         var sessionFiles = Directory.Exists(state.Paths.Sessions)
             ? Directory.EnumerateFiles(state.Paths.Sessions, "*", SearchOption.AllDirectories).Count() : 0;
         var passed = state.CurrentSession is not null && state.CurrentLines.Count >= 10

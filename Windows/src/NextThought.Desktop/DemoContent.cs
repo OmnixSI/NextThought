@@ -18,7 +18,7 @@ public static class DemoContent
     /// <summary>The Chinese line under the bilingual island answer (Mac snapshotIsland).</summary>
     public const string IslandTranslation = DemoScript.IslandBilingualTranslation;
 
-    public static DemoDataset Create() => DemoScript.Create(DateTimeOffset.Now);
+    public static DemoDataset Create() => DemoScript.Create(DateTimeOffset.Now, StartupOptions.DemoVoices);
 
     /// <summary>The first-run guide's sample interview, in the interface language (Mac localized).</summary>
     public static DemoOnboardingSample Onboarding() => ScriptOnboarding();
