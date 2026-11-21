@@ -77,10 +77,10 @@
 | `Sources/NextThought/AnswerServiceViews.swift` | `APIPresetManager` | E14 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/AnswerServiceViews.swift` | `AnswerEngineForm` | E14 | Views/OnboardingView.axaml | 已实现、未验证 | `Windows/validation/screens/onboarding/` |
 | `Sources/NextThought/AnswerServiceViews.swift` | `CodexEngineSection` | E14 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/FishboneView.swift` | `FishboneDiagram` | E15 | — | 未做 | — |
-| `Sources/NextThought/FishboneView.swift` | `FishboneTree` | E15 | — | 未做 | — |
-| `Sources/NextThought/FishboneView.swift` | `FishboneView` | E15 | — | 未做 | — |
-| `Sources/NextThought/NotesFormatBar.swift` | `NotesFormatBar` | E15 | — | 未做 | — |
+| `Sources/NextThought/FishboneView.swift` | `FishboneDiagram` | E15 | Views/FishboneView.cs | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/FishboneView.swift` | `FishboneTree` | E15 | Views/Notes/FishboneTree.cs | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/FishboneView.swift` | `FishboneView` | E15 | Views/FishboneView.cs | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/NotesFormatBar.swift` | `NotesFormatBar` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `AIHeadingText` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `ConfirmBadge` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `CorrectedTranscript` | E15 | Views/CorrectedTranscriptView.axaml | 已实现、未验证 | `Windows/validation/screens/CorrectedTranscript/` |
@@ -94,17 +94,17 @@
 | `Sources/NextThought/NotesPageView.swift` | `TemplateMenu` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `TimeLink` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `VerdictBadge` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
-| `Sources/NextThought/NotesSettingsView.swift` | `NotesAdvanced` | E15 | — | 未做 | — |
-| `Sources/NextThought/NotesSettingsView.swift` | `NotesSettingsView` | E15 | — | 未做 | — |
-| `Sources/NextThought/NotesSettingsView.swift` | `NotesTemplateEditor` | E15 | — | 未做 | — |
-| `Sources/NextThought/NotesSettingsView.swift` | `SectionEditor` | E15 | — | 未做 | — |
+| `Sources/NextThought/NotesSettingsView.swift` | `NotesAdvanced` | E15 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/NotesSettingsView.swift` | `NotesSettingsView` | E15 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/NotesSettingsView.swift` | `NotesTemplateEditor` | E15 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
+| `Sources/NextThought/NotesSettingsView.swift` | `SectionEditor` | E15 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/OutlineView.swift` | `OutlineView` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/SessionInfoView.swift` | `SessionInfoView` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
-| `Sources/NextThought/StructuredNotesView.swift` | `StructuredFormatPane` | E15 | — | 未做 | — |
-| `Sources/NextThought/StructuredNotesView.swift` | `StructuredNotesContent` | E15 | — | 未做 | — |
-| `Sources/NextThought/StructuredNotesView.swift` | `StructuredNotesPane` | E15 | — | 未做 | — |
-| `Sources/NextThought/StructuredNotesView.swift` | `StructuredTimeLink` | E15 | — | 未做 | — |
-| `Sources/NextThought/ViewpointMatrixView.swift` | `ViewpointMatrixView` | E15 | — | 未做 | — |
+| `Sources/NextThought/StructuredNotesView.swift` | `StructuredFormatPane` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/StructuredNotesView.swift` | `StructuredNotesContent` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/StructuredNotesView.swift` | `StructuredNotesPane` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/StructuredNotesView.swift` | `StructuredTimeLink` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
+| `Sources/NextThought/ViewpointMatrixView.swift` | `ViewpointMatrixView` | E15 | Views/ViewpointMatrixView.cs | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/MeetingNotesEditor.swift` | `MeetingEvidenceSidebar` | E16 | Views/NotesEditorWindow.axaml | 已实现、未验证 | `Windows/validation/screens/MeetingNotesEditor/` |
 | `Sources/NextThought/MeetingNotesEditor.swift` | `MeetingNotesEditor` | E16 | Views/NotesEditorWindow.axaml | 已实现、未验证 | `Windows/validation/screens/MeetingNotesEditor/` |
 | `Sources/NextThought/HistoryView.swift` | `ArchivedScreenshot` | E18 | Views/HistoryView.axaml | 已实现、未验证 | `Windows/validation/screens/history/` |
@@ -288,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**281** 个视图；已有 Windows 页面 **259** 个，其余 **22** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **272** 个，其余 **9** 个待做。

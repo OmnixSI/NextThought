@@ -321,6 +321,19 @@ IMPLEMENTED = {
     ("AppNavigationSidebar.swift", "AppNavigationBar"): ("Views/MainWindow.axaml", "final-shell"),
     ("AppNavigationSidebar.swift", "AppNavigationSidebar"): ("Views/MainWindow.axaml", "final-shell"),
     ("AppNavigationSidebar.swift", "TopButtonBody"): ("Views/MainWindow.axaml", "final-shell"),
+    ("FishboneView.swift", "FishboneView"): ("Views/FishboneView.cs", "notes"),
+    ("FishboneView.swift", "FishboneDiagram"): ("Views/FishboneView.cs", "notes"),
+    ("FishboneView.swift", "FishboneTree"): ("Views/Notes/FishboneTree.cs", "notes"),
+    ("ViewpointMatrixView.swift", "ViewpointMatrixView"): ("Views/ViewpointMatrixView.cs", "notes"),
+    ("StructuredNotesView.swift", "StructuredNotesContent"): ("Views/NotesView.axaml", "notes"),
+    ("StructuredNotesView.swift", "StructuredNotesPane"): ("Views/NotesView.axaml", "notes"),
+    ("StructuredNotesView.swift", "StructuredFormatPane"): ("Views/NotesView.axaml", "notes"),
+    ("StructuredNotesView.swift", "StructuredTimeLink"): ("Views/NotesView.axaml", "notes"),
+    ("NotesFormatBar.swift", "NotesFormatBar"): ("Views/NotesView.axaml", "notes"),
+    ("NotesSettingsView.swift", "NotesSettingsView"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("NotesSettingsView.swift", "NotesAdvanced"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("NotesSettingsView.swift", "NotesTemplateEditor"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("NotesSettingsView.swift", "SectionEditor"): ("Views/SettingsView.axaml", "settings-pages"),
 }
 
 SKIPPED = {
