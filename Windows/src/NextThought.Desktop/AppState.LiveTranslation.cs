@@ -38,6 +38,12 @@ public partial class AppState
     partial void OnLiveTranslationEnabledChanged(bool value)
     {
         OnPropertyChanged(nameof(LiveTranslationButtonLabel));
+        // §3.3 translation 2: Mac setEnabled(false) clears both partial lanes immediately.
+        if (!value)
+        {
+            SystemPartialTranslation = "";
+            MicrophonePartialTranslation = "";
+        }
         UpdateLiveTranslationStatus();
     }
 
@@ -58,7 +64,8 @@ public partial class AppState
 
     private void UpdateLiveTranslationStatus()
     {
-        LiveTranslationStatus = LiveTranslationEnabled ? UiText.T("同声传译") + " · " + UiText.T("译文") : "";
+        // §3.3 translation 3: the Mac status sentence, verbatim.
+        LiveTranslationStatus = LiveTranslationEnabled ? UiText.T("自动识别 · 中英互译") : "";
         OnPropertyChanged(nameof(HasLiveTranslationStatus));
     }
 
@@ -76,11 +83,11 @@ public partial class AppState
     {
         if (!Recording) return;
         // Mac asks the system for installed language packs; a configured translator is the Windows
-        // equivalent of "the packs are ready" (no download sheet during a meeting).
+        // equivalent of "the packs are ready" (no download sheet during a meeting). Mac turns the
+        // switch on silently: there is no extra "auto opened" notice (§3.3 translation 3).
         if (!liveTranslationAutoOpen.ShouldTurnOn(systemText, LiveTranslationEnabled,
                 !UiText.EnglishUi, packsInstalled: translator is not null)) return;
         LiveTranslationEnabled = true;
-        LiveTranslationAutoNotice = UiText.T("听到外语自动翻译") + " · " + UiText.T("同声传译");
         EnsureLiveTranslator();
     }
 

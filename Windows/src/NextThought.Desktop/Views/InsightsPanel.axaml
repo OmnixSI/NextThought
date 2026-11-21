@@ -63,8 +63,9 @@
           <TextBlock Text="{Binding ScreenStatusLine}" Classes="caption" FontSize="11" TextWrapping="Wrap"
                      IsVisible="{Binding ScreenWatchRunning}" />
 
-          <!-- SlideSection: the page, its talking points, the transition and the audience questions. -->
-          <Border IsVisible="{Binding HasSlide}" Background="{DynamicResource Sunken}"
+          <!-- SlideSection: the page, its talking points, the transition and the audience questions.
+               Mac: Brand.accent.opacity(0.06) — the scene's pigment at 6%, not a neutral sunken fill. -->
+          <Border IsVisible="{Binding HasSlide}" Background="{Binding LiveSceneTintWashBrush}"
                   CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}">
             <StackPanel Spacing="{DynamicResource D4Spacing_8}">
               <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}">

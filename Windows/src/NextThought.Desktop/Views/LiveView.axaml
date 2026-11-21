@@ -4,6 +4,7 @@
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:components="using:NextThought.Desktop.Controls"
              xmlns:views="using:NextThought.Desktop.Views"
              xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
              x:Class="NextThought.Desktop.Views.LiveView"
@@ -41,6 +42,18 @@
       <!-- Small chip heights: Mac LiveChipStyle minHeight 24/26 for the secondary actions. -->
       <x:Double x:Key="LvMinHeight_24">24</x:Double>
       <x:Double x:Key="LvMinHeight_26">26</x:Double>
+      <!-- §3.3 live 2: the answerEngineReady dot sits on the segmented control's top-right corner. -->
+      <Thickness x:Key="LvDotMargin">0,-2,2,0</Thickness>
+      <!-- §3.3 live 5: Mac AnswerColumn's raised sheet — contactShadow radius 1 / y 1 and
+           ambientShadow radius 20 / y 10 (light and dark values from Theme.swift). -->
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <BoxShadows x:Key="LvAnswerCardShadow">0 1 1 0 #121C1B19, 0 10 20 0 #0F1C1B19</BoxShadows>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <BoxShadows x:Key="LvAnswerCardShadow">0 1 1 0 #66000000, 0 10 20 0 #52000000</BoxShadows>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </UserControl.Resources>
   <UserControl.Styles>
@@ -164,15 +177,22 @@
         <!-- Right: mode segmented · 回答浮窗 · more tools · 暂停 · 结束 (Mac expandedControls). -->
         <StackPanel x:Name="LiveTopBarActions" Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                     VerticalAlignment="Center">
-          <!-- 自动回答 / 只记录 (Mac answerModePicker). -->
-          <Border x:Name="LiveModeSegmented" Classes="seg-container" Margin="{DynamicResource LvMargin_0_0_8_0}">
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-              <RadioButton x:Name="LiveAutoModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 自动回答}"
-                           IsChecked="{Binding AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeAuto_Click" />
-              <RadioButton x:Name="LiveRecordModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 只记录}"
-                           IsChecked="{Binding !AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeRecord_Click" />
-            </StackPanel>
-          </Border>
+          <!-- 自动回答 / 只记录 (Mac answerModePicker). The 6 pt caution dot marks "no answer
+               service connected yet" (§3.3 live 2, Mac answerEngineReady overlay). -->
+          <Panel Margin="{DynamicResource LvMargin_0_0_8_0}">
+            <Border x:Name="LiveModeSegmented" Classes="seg-container">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                <RadioButton x:Name="LiveAutoModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 自动回答}"
+                             IsChecked="{Binding AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeAuto_Click" />
+                <RadioButton x:Name="LiveRecordModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 只记录}"
+                             IsChecked="{Binding !AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeRecord_Click" />
+              </StackPanel>
+            </Border>
+            <Ellipse x:Name="LiveAnswerEngineDot" Width="6" Height="6" Fill="{DynamicResource Caution}"
+                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LvDotMargin}"
+                     IsVisible="{Binding !AnswerEngineReady}" IsHitTestVisible="False"
+                     ToolTip.Tip="{loc:Tr 还没有连接回答服务，听到问题也不会自动回答}" />
+          </Panel>
 
           <!-- 回答浮窗 (Mac teleprompterButton). -->
           <Button x:Name="LiveTeleprompterButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
@@ -214,14 +234,16 @@
                   <!-- 回答设置 (Mac AnswerSettingsMenu): model · fast · web · answer length. -->
                   <TextBlock Text="{loc:Tr 回答设置}" Classes="overline" />
                   <TextBlock Text="{loc:Tr 模型}" Classes="caption" FontSize="11" />
-                  <ComboBox x:Name="LiveModelBox" ItemsSource="{Binding LiveModelChoices}" SelectionChanged="LiveModel_SelectionChanged"
-                            HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
+                  <!-- §3.3 live 11: the Mac AnswerSettingsMenu model picker is the design system's
+                       MenuPicker (a ComboBox-shaped control with the Mac menu look). -->
+                  <components:MenuPicker x:Name="LiveModelBox" ItemsSource="{Binding LiveModelChoices}"
+                                         SelectionChanged="LiveModel_SelectionChanged" HorizontalAlignment="Stretch">
+                    <components:MenuPicker.ItemTemplate>
                       <DataTemplate>
                         <TextBlock Text="{Binding}" FontSize="12" />
                       </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
+                    </components:MenuPicker.ItemTemplate>
+                  </components:MenuPicker>
                   <CheckBox Content="{Binding LiveFastModeLabel}" IsChecked="{Binding LiveFastMode, Mode=TwoWay}"
                             IsVisible="{Binding LiveFastModeAvailable}" FontSize="12" />
                   <TextBlock Text="{loc:Tr 联网}" Classes="caption" FontSize="11" />
@@ -280,9 +302,18 @@
             </Button.Flyout>
           </Button>
 
-          <!-- Bordered pause / end (Mac SecondaryButtonStyle). -->
-          <Button x:Name="LivePauseButton" Content="{Binding LivePauseButtonText}" Command="{Binding TogglePauseListeningCommand}"
-                  ToolTip.Tip="{Binding LivePauseButtonLabel}" IsVisible="{Binding Recording}" />
+          <!-- Bordered pause / end (Mac SecondaryButtonStyle; the pause label carries pause.fill /
+               play.fill, §3.3 live 1). -->
+          <Button x:Name="LivePauseButton" Command="{Binding TogglePauseListeningCommand}"
+                  ToolTip.Tip="{Binding LivePauseButtonLabel}" IsVisible="{Binding Recording}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{StaticResource IconPause}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         VerticalAlignment="Center" IsVisible="{Binding !ListeningPaused}" />
+              <TextBlock Text="{StaticResource IconPlay}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         VerticalAlignment="Center" IsVisible="{Binding ListeningPaused}" />
+              <TextBlock Text="{Binding LivePauseButtonText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button x:Name="LiveEndButton" Content="{loc:Tr 结束}" Command="{Binding StopRecordingCommand}"
                   ToolTip.Tip="{loc:Tr 现在结束并整理纪要}" IsVisible="{Binding Recording}" />
           <Button x:Name="LiveStartButton" Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartRecordingCommand}"
@@ -335,7 +366,7 @@
                              Margin="{DynamicResource LvMargin_16_12_16_0}"
                              IsVisible="{Binding LiveShowsInsightsPanel}" />
 
-        <!-- J6/Mac SpeakerStrip: one capsule per recognised person, "我是哪个？" until one is the
+          <!-- J6/Mac SpeakerStrip: one capsule per recognised person, "我是哪个？" until one is the
              user, and the hint. Tapping a capsule opens the speaker editor. -->
         <StackPanel x:Name="LiveSpeakerStrip" Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                     Margin="{DynamicResource LvMargin_24_8_24_0}" IsVisible="{Binding LiveSpeakerStripVisible}">
@@ -357,10 +388,15 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <Button x:Name="LiveWhoAmIButton" Classes="pill" MinHeight="{DynamicResource LvMinHeight_24}"
-                  Click="WhoAmI_Click" IsVisible="{Binding LiveAsksForMe}"
+          <!-- §3.3 live 16: Mac asksForMe capsule is drawn with a dashed hairline. -->
+          <Button x:Name="LiveWhoAmIButton" Classes="quiet" MinHeight="{DynamicResource LvMinHeight_24}"
+                  Padding="{DynamicResource D4Padding_12_8}" Click="WhoAmI_Click" IsVisible="{Binding LiveAsksForMe}"
                   ToolTip.Tip="{loc:Tr 还没认出你的声音：点一下，选出哪个是你}">
-            <TextBlock Text="{loc:Tr 我是哪个？}" FontSize="12" Foreground="{DynamicResource Secondary}" />
+            <Grid>
+              <controls:DashedCapsule Stroke="{DynamicResource Secondary}" StrokeThickness="1" />
+              <TextBlock Text="{loc:Tr 我是哪个？}" FontSize="12" Foreground="{DynamicResource Secondary}"
+                         VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Grid>
           </Button>
           <TextBlock Text="{Binding LiveSpeakerStripHint}" Classes="caption" FontSize="11" VerticalAlignment="Center"
                      TextWrapping="NoWrap" />
@@ -386,7 +422,12 @@
                 <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
                   <!-- Normal line: the utterance and its translation. -->
                   <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding !IsEcho}">
-                    <SelectableTextBlock Text="{Binding Text}" FontSize="15" LineHeight="24" TextWrapping="Wrap" />
+                    <!-- §3.3 live 8: Avalonia 12's SelectableTextBlock has no SelectionChanged event;
+                         a mouse or keyboard selection is noticed on the pointer/key events and pauses
+                         the scroll follow in the handler. -->
+                    <SelectableTextBlock Text="{Binding Text}" FontSize="15" LineHeight="24" TextWrapping="Wrap"
+                                         PointerReleased="TranscriptText_PointerReleased"
+                                         KeyUp="TranscriptText_KeyUp" />
                     <TextBlock Text="{Binding Translation}" FontSize="12" Foreground="{DynamicResource Ai}" TextWrapping="Wrap"
                                IsVisible="{Binding HasTranslation}" />
                   </StackPanel>
@@ -633,9 +674,9 @@
                          TextWrapping="Wrap" IsVisible="{Binding HasBilingualQuestion}" />
             </StackPanel>
 
-            <!-- The raised answer sheet: white, radius 22, contact + ambient shadow (Mac AnswerColumn). -->
+            <!-- The raised answer sheet: white, radius 22, Mac contact + ambient shadow (§3.3 live 5). -->
             <Border x:Name="AnswerCard" Grid.Row="3" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}"
-                    BorderThickness="0.5" CornerRadius="{DynamicResource RadiusLarge}" BoxShadow="{DynamicResource PaperCardShadow}"
+                    BorderThickness="0.5" CornerRadius="{DynamicResource RadiusLarge}" BoxShadow="{DynamicResource LvAnswerCardShadow}"
                     Margin="{DynamicResource LvMargin_24_12_24_16}">
               <Grid RowDefinitions="*,Auto,Auto">
                 <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
@@ -810,7 +851,7 @@
             </Button>
           </Grid>
         </Border>
-        <Button Grid.Column="1" Classes="primary" Command="{Binding ForceAnswerCommand}" MinHeight="{DynamicResource HitRow}"
+        <Button Grid.Column="1" Classes="primary" Command="{Binding ForceAnswerCommand}" MinHeight="{DynamicResource ControlLarge}"
                 IsVisible="{Binding AnswerModeIsAuto}" ToolTip.Tip="{loc:Tr 回答最新的问题或转写，不等自动判断}">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBlock Text="{StaticResource IconBoltFill}" FontFamily="{StaticResource IconFont}" FontSize="11"

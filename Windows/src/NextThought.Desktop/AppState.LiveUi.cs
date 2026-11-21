@@ -30,6 +30,9 @@ public partial class AppState
 
     public IBrush LiveSceneTintSoftBrush => new SolidColorBrush(Color.Parse(LiveSceneTint()), 0.13);
 
+    /// <summary>Mac Brand.accent.opacity(0.06): the slide section's wash (InsightsPanel SlideSection).</summary>
+    public IBrush LiveSceneTintWashBrush => new SolidColorBrush(Color.Parse(LiveSceneTint()), 0.06);
+
     private string LiveSceneTint()
     {
         var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
@@ -40,6 +43,7 @@ public partial class AppState
     {
         OnPropertyChanged(nameof(LiveSceneTintBrush));
         OnPropertyChanged(nameof(LiveSceneTintSoftBrush));
+        OnPropertyChanged(nameof(LiveSceneTintWashBrush));
     }
 
 
