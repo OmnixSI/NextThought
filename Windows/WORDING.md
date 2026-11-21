@@ -1220,6 +1220,32 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 | 1170 | 资料文件 (*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg)\|*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg | Material files (*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg)\|*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:100 |
 | 1171 | 每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。 | One action=key per line; saving re-registers immediately. Modifiers may include Ctrl/Alt/Shift/Win, and keys may be A–Z, 0–9, F1–F24, Left/Right/Up/Down/PageUp/PageDown/Space/Backslash. | — |  |
 
+
+## 2.1 J3/J4 新增文案（首页统计、系列命名与开下一场）
+
+| 中文 | 英文 | Mac 原文 | 位置 |
+|---|---|---|---|
+| 用了多少 | How much you've recorded | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 本月 | This month | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 累计 | All time | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 场会议 | meetings | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 记录时长 | recorded time | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 听到的提问 | questions heard | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 给出的回答 | answers given | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 时长按每场从开始记录到结束计算；暂停的时间也算在内。 | Recording time runs from the start to the end of each meeting; pauses count too. | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| %lld 小时 %lld 分 | %lld h %lld min | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 不到 1 分钟 | Under a minute | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 0 分钟 | 0 min | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 共 %lld 场 · %@ · 提问 %lld 次 · 回答 %lld 次 | %lld meetings · %@ · %lld questions · %lld answers | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| %lld 场 · %@ · %lld 份资料 | %lld meetings · %@ · %lld files | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 还没开过 · %lld 份资料 | Not started yet · %lld files | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 继续一个系列 | Continue a series | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 还没有记录。从这个系列开始一场会议，记录和资料会保存在一起。 | No meetings yet. Start one from this series and its notes and materials stay together. | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 系列按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。 | Series are merged by modification time. A local restore point is created before anything is applied. Templates and personal notes are data and are always restored. | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 技能可用于所有系列，或在系列中按系列选择。 | Skills can apply to all series, or be chosen per series. | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。 | A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab. | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+| 开下一场 | Start next meeting | — | Windows 首页统计 / 系列改名（task-57 J3/J4） |
+
 ## 3. 英文模式逐页扫描
 
 扫描对象：`--demo --screenshots=<dir>` 生成的英文模式页面文字清单（`text/*-en*.txt`，

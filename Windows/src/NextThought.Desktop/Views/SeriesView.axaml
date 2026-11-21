@@ -60,8 +60,11 @@
               <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
                          FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" />
               <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
+              <TextBlock Text="{Binding SelectedSeriesStatsLine}" Classes="caption" FontSize="11"
+                         Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasSelectedSeriesStats}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+              <Button Content="{loc:Tr 开下一场}" Command="{Binding OpenNextMeetingInSeriesCommand}" />
               <Button Content="{loc:Tr 编辑系列}" Click="EditSeries_Click" />
               <Button Content="{loc:Tr 把这场景加入}" Command="{Binding AssignCurrentToSeriesCommand}" />
               <Button Content="{loc:Tr 移出}" Command="{Binding RemoveCurrentFromSeriesCommand}" />

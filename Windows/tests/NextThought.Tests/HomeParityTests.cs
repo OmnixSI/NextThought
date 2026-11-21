@@ -100,10 +100,11 @@ public sealed class HomeParityTests
         Assert.Contains("Standing != true", state);
         Assert.Contains("OrderByDescending(item => item.Last?.StartedAt ?? item.Series.CreatedAt)", state);
         Assert.Contains("ThenByDescending(item => item.Series.CreatedAt)", state);
-        Assert.Contains("UiText.Format(\"%lld 场记录 · %lld 份资料\"", state);
+        Assert.Contains("UiText.Format(\"%lld 场 · %@ · %lld 份资料\"", state);
+        Assert.Contains("还没开过 · %lld 份资料", state);
         var view = Read("Views", "Home", "ContinueSeries.axaml");
-        Assert.Contains("{loc:Tr 接着上一场}", view);
-        Assert.Contains("{loc:Tr 全部资料夹}", view);
+        Assert.Contains("{loc:Tr 继续一个系列}", view);
+        Assert.Contains("{loc:Tr 全部系列}", view);
         Assert.Contains("{Binding Name}", view);
         Assert.Contains("{Binding Counts}", view);
         Assert.Contains("IconArrowRight", view);

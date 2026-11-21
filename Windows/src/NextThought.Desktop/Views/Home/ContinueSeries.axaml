@@ -11,8 +11,8 @@
   </UserControl.Resources>
   <StackPanel Spacing="{DynamicResource D4Spacing_0}">
     <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
-      <TextBlock Text="{loc:Tr 接着上一场}" Classes="overline" />
-      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部资料夹}" FontSize="12" VerticalAlignment="Center"
+      <TextBlock Text="{loc:Tr 继续一个系列}" Classes="overline" />
+      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部系列}" FontSize="12" VerticalAlignment="Center"
               Command="{Binding NavigateCommand}" CommandParameter="Series" />
     </Grid>
     <Border Height="0.5" Background="{DynamicResource Hairline}" />

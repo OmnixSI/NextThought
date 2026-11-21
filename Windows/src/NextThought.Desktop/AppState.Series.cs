@@ -34,6 +34,27 @@ public partial class AppState
         : $"{UiText.Meetings(row.Count)} · {UiText.Lessons(row.LessonCount)}" + (SeriesCandidates.Count > 0 ? $" · {UiText.Pending(SeriesCandidates.Count)}" : "");
 
 
+    /// <summary>J3: the Mac SeriesStatsLine under the selected series' name.</summary>
+    public string SelectedSeriesStatsLine => SelectedSeries is { } row
+        ? MeetingStatsText.SeriesLine(MeetingStats.Of(History.Select(item => item.Meta), series: SeriesGuid(row.Id)))
+        : "";
+
+    public bool HasSelectedSeriesStats => SelectedSeriesStatsLine.Length > 0;
+
+    private static Guid? SeriesGuid(string id) => Guid.TryParse(id, out var parsed) ? parsed : null;
+
+    private void RefreshSeriesStats()
+    {
+        OnPropertyChanged(nameof(SelectedSeriesStatsLine));
+        OnPropertyChanged(nameof(HasSelectedSeriesStats));
+    }
+
+    [RelayCommand]
+    private void OpenNextMeetingInSeries()
+    {
+        if (SelectedSeries is { } row) PrepareNextMeetingInSeries(row.Id);
+    }
+
     public NextThought.Core.SeriesBriefing? SelectedSeriesBriefing => SelectedSeries is { } row && workspace.Find(row.Id) is { } series
         ? NextThought.Core.SeriesBriefingBuilder.Build(series, History.Select(item => item.Meta).ToList())
         : null;
@@ -116,6 +137,7 @@ public partial class AppState
         OnPropertyChanged(nameof(SelectedSeriesTitle));
         OnPropertyChanged(nameof(SelectedSeriesMeta));
         OnPropertyChanged(nameof(SelectedSeriesBriefing));
+        RefreshSeriesStats();
         RefreshSeriesMeetings();
         RefreshSeriesLessons();
         RefreshSeriesSkills();
@@ -209,7 +231,7 @@ public partial class AppState
     /// <summary>WorkspaceRecordsTab: this series' meetings, newest first.</summary>
     public System.Collections.ObjectModel.ObservableCollection<RecentMeetingRow> SeriesRecords { get; } = [];
     public bool HasSeriesRecords => SeriesRecords.Count > 0;
-    public string SeriesRecordsEmptyText => UiText.T("还没有记录。从这个资料夹开始一场会议，记录和资料会保存在一起。");
+    public string SeriesRecordsEmptyText => UiText.T("还没有记录。从这个系列开始一场会议，记录和资料会保存在一起。");
 
     /// <summary>Opens one record in the meeting page (Mac WorkspaceRecordsTab row action).</summary>
     public async Task OpenSeriesRecordAsync(RecentMeetingRow row)

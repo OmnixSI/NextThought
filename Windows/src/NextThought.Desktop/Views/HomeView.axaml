@@ -35,6 +35,7 @@
         <home:ContinueSeries Margin="{DynamicResource D4Margin_0_48_0_0}" />
         <home:HomeScreenshotCard Margin="{DynamicResource D4Margin_0_24_0_0}" />
         <home:RecentMeetings Margin="{DynamicResource D4Margin_0_40_0_0}" />
+        <home:HomeStats Margin="{DynamicResource D4Margin_0_40_0_0}" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

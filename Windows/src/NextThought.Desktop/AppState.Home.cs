@@ -112,25 +112,83 @@ public partial class AppState
         foreach (var item in rows)
         {
             var mode = item.Series.EffectiveMode;
-            HomeSeriesRows.Add(new HomeSeriesRow(item.Series.Id, item.Series.Name,
-                ModeTitle(mode),
-                UiText.Format("%lld 场记录 · %lld 份资料", item.Series.SessionIds.Count, item.Series.Documents.Count),
-                mode));
+            var stats = MeetingStats.Of(sessions, series: Guid.TryParse(item.Series.Id, out var seriesGuid) ? seriesGuid : null);
+            var counts = stats.Meetings > 0
+                ? UiText.Format("%lld 场 · %@ · %lld 份资料", stats.Meetings, MeetingStatsText.Duration(stats), item.Series.Documents.Count)
+                : UiText.Format("还没开过 · %lld 份资料", item.Series.Documents.Count);
+            HomeSeriesRows.Add(new HomeSeriesRow(item.Series.Id, item.Series.Name, ModeTitle(mode), counts, mode));
         }
         OnPropertyChanged(nameof(HasHomeSeries));
     }
 
-    /// <summary>E1: clicking a series starts the next meeting in it (Mac ContinueSeries.prepareNext).</summary>
+    /// <summary>
+    /// E1/J4: clicking a series starts the next meeting in it (Mac ContinueSeries.prepareNext):
+    /// with a previous meeting the transcript is carried like 「以此上一场」; a fresh series opens
+    /// the preparation draft with its materials, lessons and preferences attached.
+    /// </summary>
     public void PrepareNextMeetingInSeries(string seriesId)
     {
+        if (Recording || Working) { SetStatus(UiText.T("先停止当前任务，再准备下一场。"), true); return; }
         var series = workspace.Find(seriesId);
+        if (series is null) return;
         SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == seriesId);
-        if (series is not null)
+        SelectedMode = series.EffectiveMode;
+        ApplySceneDefaults(series.EffectiveMode);
+        var previous = History
+            .Where(row => series.SessionIds.Contains(row.Meta.Id.ToString("D"), StringComparer.OrdinalIgnoreCase)
+                          || series.SessionIds.Contains(row.Meta.Id.ToString("D").ToUpperInvariant(), StringComparer.Ordinal))
+            .OrderByDescending(row => row.Meta.StartedAt)
+            .FirstOrDefault();
+        if (previous is not null)
         {
-            SelectedMode = series.EffectiveMode;
-            ApplySceneDefaults(series.EffectiveMode);
+            PrepareNextMeetingAfter(previous);
+            return;
         }
+        EnsureDraft(series.EffectiveMode);
         Section = AppSection.Prepare;
+    }
+
+    // ---- J3: 用了多少 (MeetingStatsViews.swift HomeStats) ---------------------------
+
+    [ObservableProperty] private bool homeStatsAllTime;
+
+    partial void OnHomeStatsAllTimeChanged(bool value) => RefreshHomeStats();
+
+    public bool HomeHasStats => History.Count > 0;
+
+    public MeetingStats CurrentHomeStats => MeetingStats.Of(History.Select(row => row.Meta),
+        HomeStatsAllTime ? null : MeetingStats.Month(DateTimeOffset.Now));
+
+    public string HomeStatsMeetings => CurrentHomeStats.Meetings.ToString();
+    public string HomeStatsDuration => MeetingStatsText.Duration(CurrentHomeStats);
+    public string HomeStatsQuestions => CurrentHomeStats.Questions.ToString();
+    public string HomeStatsAnswers => CurrentHomeStats.Answers.ToString();
+    public bool HomeStatsIsMonth => !HomeStatsAllTime;
+    public bool HomeStatsIsAll => HomeStatsAllTime;
+
+    [RelayCommand]
+    private void ShowHomeStatsMonth()
+    {
+        HomeStatsAllTime = false;
+        RefreshHomeStats();
+    }
+
+    [RelayCommand]
+    private void ShowHomeStatsAllTime()
+    {
+        HomeStatsAllTime = true;
+        RefreshHomeStats();
+    }
+
+    public void RefreshHomeStats()
+    {
+        foreach (var name in new[]
+                 {
+                     nameof(HomeHasStats), nameof(HomeStatsMeetings), nameof(HomeStatsDuration),
+                     nameof(HomeStatsQuestions), nameof(HomeStatsAnswers), nameof(HomeStatsIsMonth),
+                     nameof(HomeStatsIsAll)
+                 })
+            OnPropertyChanged(name);
     }
 
     // ---- recent meetings (HomeView.swift RecentMeetings) ----------------------------

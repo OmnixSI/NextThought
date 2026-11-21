@@ -43,7 +43,7 @@
           <TextBlock Text="{loc:Tr 备份模板}" Classes="caption" />
         </StackPanel>
       </StackPanel>
-      <TextBlock Text="{loc:Tr 资料夹按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。}"
+      <TextBlock Text="{loc:Tr 系列按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。}"
                  Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
     </StackPanel>
     <ScrollViewer>

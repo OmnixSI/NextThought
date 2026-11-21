@@ -425,7 +425,8 @@
 
   <!-- Scene chip on the home page: a quiet pill that hovers like a card. -->
   <Style Selector="Button.scene">
-    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <!-- Mac: only the selected scene gets the pigment wash; the others are plain text. -->
+    <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="12,5" />
