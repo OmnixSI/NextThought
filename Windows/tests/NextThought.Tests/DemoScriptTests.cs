@@ -115,7 +115,9 @@ public sealed class DemoScriptTests
         Assert.Equal("系统设计题按 需求澄清、容量估算、核心架构、关键取舍 四步回答。", demo.Skills[1].Content);
         Assert.Equal("承认局限、给出补充实验", demo.Skills[2].Summary);
         Assert.Equal("被质疑时先承认问题，再说明已有证据和计划中的补充实验。", demo.Skills[2].Content);
-        Assert.All(demo.Skills, skill => Assert.True(skill.Global));
+        // E28: the Mac demo library installs 面试口语化 as a global skill; the other two are
+        // per-series (SkillLibrary.installDemo in Sources/NextThought/SkillLibrary.swift).
+        Assert.Equal(new[] { true, false, false }, demo.Skills.Select(skill => skill.Global).ToArray());
     }
 
     [Fact]
@@ -192,7 +194,7 @@ public sealed class DemoScriptTests
     {
         var review = Demo().Review;
         Assert.Equal(DemoScript.ReviewSummaryMarkdown, review.SummaryMarkdown);
-        var lines = DemoScript.ReviewSummaryMarkdown.Split('\n');
+        var lines = Norm(DemoScript.ReviewSummaryMarkdown).Split('\n');
         Assert.Equal("# 标题", lines[0]);
         Assert.Equal("后端二面：缓存一致性与项目经历", lines[1]);
         Assert.Contains("面试官围绕订单服务缓存层展开，重点考察缓存与数据库的一致性、失败兜底和高并发下的取舍。整体回答完整，延迟双删与 binlog 兜底讲得清楚。",
@@ -350,15 +352,19 @@ public sealed class DemoScriptTests
     [Fact]
     public void LiveAnswerIsTheMacMarkdownReply()
     {
-        Assert.Equal("""
+        Assert.Equal(Norm("""
             我们采用**先更新数据库、再删除缓存**，并用 binlog 订阅兜底，保证最终一致。
 
             - **Cache Aside**：写库成功后删除缓存，读请求未命中时回源并回填，避免并发写导致脏数据。
             - **删除失败兜底**：删除失败的 key 进入重试队列；同时用 **Canal 订阅 binlog** 异步再删一次。
             - **并发读写窗口**：对热点 key 做**延迟双删**（约 500 ms），把旧值被回填的概率降到很低。
             - **取舍**：这是最终一致方案，对强一致场景（如余额）直接读库或加分布式锁。
-            """, DemoScript.LiveAnswer);
+            """), Norm(DemoScript.LiveAnswer));
     }
+
+    /// <summary>The demo copy is compared as content: the checkout's line endings (CRLF on Windows)
+    /// are a platform artifact, the Mac source strings use LF.</summary>
+    private static string Norm(string value) => value.Replace("\r\n", "\n");
 
     // ---- prepare draft ----------------------------------------------------------------
 
