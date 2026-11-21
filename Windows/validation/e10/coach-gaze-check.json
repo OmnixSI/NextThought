@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "看到镜头模型资产",
+      "passed": true,
+      "detail": "D:\\NextThought开发\\src\\NextThought\\Windows\\src\\NextThought.Desktop\\bin\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\assets\\face-landmarker"
+    },
+    {
+      "step": "摄像头打开并在内存里分析帧",
+      "passed": true,
+      "detail": "started=True permissionDenied=False frames=7 onCamera=0 away=0 noFace=7"
+    },
+    {
+      "step": "录好的正面像检测到人脸",
+      "passed": true,
+      "detail": "landmarks=478 presence=1.000 rightEyeWidth=54.9px"
+    },
+    {
+      "step": "看镜头：判定 OnCamera",
+      "passed": true,
+      "detail": "calibrated=True state=OnCamera deviation=0.00"
+    },
+    {
+      "step": "移开视线：判定 Away",
+      "passed": true,
+      "detail": "state=Away deviation=2.92"
+    },
+    {
+      "step": "没有人脸：判定 NoFace",
+      "passed": true,
+      "detail": "detected=False state=NoFace"
+    }
+  ]
+}

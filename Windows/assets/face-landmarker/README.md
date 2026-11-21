@@ -26,15 +26,18 @@ The upstream model cards and license text are committed under `Windows/licenses/
 
 `face_landmarks_detector.onnx`:
 
-- input `input_12`: float32 NCHW `[1, 3, 256, 256]`
-- output `Identity`: float32 `[1, 1434, 1, 1]` — 478 landmarks × (x, y, z), the same flatten order
-  as the TFLite output `[1, 1, 1, 1434]`
-- output `Identity_1`: float32 `[1, 1, 1, 1]` — face presence score
+- input `input_12`: float32 NCHW `[1, 3, 256, 256]`，像素标度 **0…255**（FaceMesh 的 MediaPipe
+  ImageToTensor 不做 0…1 归一化；喂 0…1 会让 presence 分数塌到 0；检测模型才用 0…1）
+- output `Identity`: float32 `[1, 1434, 1, 1]` — 478 landmarks × (x, y, z)，**以 256 像素输入帧为单位**
+  （C# 侧除以 256 后再投影回相机画面；flatten 顺序与 TFLite `[1, 1, 1, 1434]` 一致）
+- output `Identity_1`: float32 `[1, 1, 1, 1]` — face presence logit；`FaceLandmarker` 按 MediaPipe
+  的做法取 sigmoid 并以 0.5 作为门限（低于门限视为没有人脸）
 - output `Identity_2`: float32 `[1, 1]` — tongue-out score
 
-The landmark coordinates are the FaceMesh V2 normalised model outputs; the MediaPipe geometry
-pipeline (detection → ROI → rotation/normalisation → landmark back-projection) is reimplemented in
-C# and is covered by its own tests, so these files only carry the two neural networks.
+The landmark coordinates are the FaceMesh V2 model outputs in the 256-pixel crop frame; the
+MediaPipe geometry pipeline (detection → ROI → rotation/normalisation → landmark back-projection)
+is reimplemented in C# and covered by its own tests, so these files only carry the neural networks.
+Runtime evidence: `Windows/validation/e10/coach-gaze.md`.
 
 ## Regenerate / verify
 
