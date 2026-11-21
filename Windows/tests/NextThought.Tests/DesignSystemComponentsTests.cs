@@ -16,7 +16,7 @@ public sealed class DesignSystemComponentsTests
         "ControlButtonBody", "BusyActionLabel", "AIHeading", "InkSegmented", "InteractiveRowBody",
         "ShortcutHint", "StatusDot", "InkSwitch", "WideToggleRow", "AppBackdrop", "GlassGroup",
         "MenuPicker", "PillTabs", "ProminentFill", "ScrollEdgeFade", "OperationFeedback",
-        "PaperFieldBody", "Lift", "VoiceWave", "MarkdownText", "MetricPill", "RefinementBar",
+        "PaperFieldBody", "Lift", "VoiceWave", "MetricPill", "RefinementBar",
         "UnderlineTabs"
     ];
 
@@ -39,6 +39,8 @@ public sealed class DesignSystemComponentsTests
         var code = Read("Controls", "DesignSystemComponents.cs");
         foreach (var component in Components)
             Assert.Contains("class " + component, code);
+        // MarkdownText already existed as the reusable renderer; §6.1 only requires it to render emphasis.
+        Assert.Contains("class MarkdownText", Read("Views", "MarkdownText.cs"));
         // No page implementation may own a component: they live in Controls/ only.
         Assert.Contains("namespace NextThought.Desktop.Controls", code);
     }
@@ -73,11 +75,11 @@ public sealed class DesignSystemComponentsTests
     [Fact]
     public void MarkdownTextRendersBoldBulletsAndInlineCode()
     {
-        var code = Read("Controls", "DesignSystemComponents.cs");
-        Assert.Contains("MarkdownReader.Inline", code);
-        Assert.Contains("MarkdownReader.Blocks", code);
+        var code = Read("Views", "MarkdownText.cs");
         Assert.Contains("FontWeight", code);
         Assert.Contains("FontStyle", code);
+        Assert.Contains("Run(", code);
+        Assert.Contains("MarkdownReader", code + File.ReadAllText(Path.Combine(Root(), "src", "NextThought.Core", "MarkdownReader.cs")));
     }
 
     // ---- MarkdownReader (Core): the actual parsing behaviour behind MarkdownText --------

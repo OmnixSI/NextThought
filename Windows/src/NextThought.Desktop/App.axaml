@@ -1,4 +1,4 @@
-﻿<Application xmlns="https://github.com/avaloniaui"
+<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="NextThought.Desktop.App"
              RequestedThemeVariant="Light">
@@ -21,5 +21,6 @@
     <FluentTheme />
     <StyleInclude Source="avares://NextThought/Styles/Theme.axaml" />
     <StyleInclude Source="avares://NextThought/Styles/Controls.axaml" />
+    <StyleInclude Source="avares://NextThought/Styles/DesignSystem.axaml" />
   </Application.Styles>
 </Application>
