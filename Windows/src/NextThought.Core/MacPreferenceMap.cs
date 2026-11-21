@@ -76,7 +76,7 @@ public static class MacPreferenceMap
         "recordSessions" => settings.RecordSessions,
         "automaticUpdateChecks" => settings.AutoCheckUpdates,
         "answerBackend" => settings.UseCodex ? "codexAppServer" : "openAICompatible",
-        "webSearchMode" => settings.WebSearch ? "auto" : "off",
+        "webSearchMode" => settings.WebSearchMode,
         "semanticRetrievalEnabled" => settings.UseSemanticRetrieval,
         "codexModelID" => settings.CodexModel,
         "answerGloss" => settings.AnswerGloss,
@@ -154,8 +154,21 @@ public static class MacPreferenceMap
                 settings.UseCodex = normalized is string backend && backend is "codexAppServer" or "codexExec";
                 break;
             case "webSearchMode":
-                settings.WebSearch = normalized is not "off";
+            {
+                // 决议 §3.3: the Mac three-state value (off / auto / always), not a Windows bool.
+                // Old settings files stored the bool mapping; accept it once and migrate. Read the
+                // raw value: Normalize would turn the legacy bool into the string preference's
+                // default before this switch sees it.
+                var mode = value switch
+                {
+                    bool enabled => enabled ? "auto" : "off",
+                    string text when text is "off" or "auto" or "always" => text,
+                    _ => MacPreferences.Normalize(key, value) as string ?? settings.WebSearchMode
+                };
+                settings.WebSearchMode = mode;
+                settings.WebSearch = mode != "off";
                 break;
+            }
             case "semanticRetrievalEnabled":
                 settings.UseSemanticRetrieval = normalized is bool semantic ? semantic : settings.UseSemanticRetrieval;
                 break;
