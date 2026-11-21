@@ -2,7 +2,7 @@
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/TeleprompterController.swift`（TeleprompterView）
 - Windows 代码：`Windows/src/NextThought.Desktop/Views/TeleprompterWindow.axaml(.cs)`
-- Windows 截图（本目录）：`teleprompter-camera-light.png`、`teleprompter-bottom-light.png`、`teleprompter-right-light.png`、`teleprompter-camera-dark.png`
+- Windows 截图（本目录）：`teleprompter-camera-light.png`、`teleprompter-camera-dark.png`（窗口自身内容；三位置的屏幕坐标由自检数值断言：camera=800,12 / bottom=800,954 / right=1576,495 @1440p）
 - 证据生成：`--self-test windows`
 
 | # | Mac 元素 | 值 | Windows 现状 | 结论 |

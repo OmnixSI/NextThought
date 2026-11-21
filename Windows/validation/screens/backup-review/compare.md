@@ -2,7 +2,7 @@
 
 - Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/BackupRestoreReview.swift`
 - Windows 代码：`Windows/src/NextThought.Desktop/Views/BackupRestoreReviewView.axaml(.cs)`、宿主 `BackupSettingsSection`/`RunBackupUiCheck`
-- Windows 截图（本目录）：`backup-review-light.png` / `backup-review-dark.png`
+- Windows 截图：**待补**（初版实现逐条对照已完成；`--self-test backup-ui` 与 `--self-test windows` 的取图步骤在本次会话末尾崩溃，需另跑一次补浅/深两张）
 - 证据生成：`--self-test windows`（真实恢复点 → `PrepareBackupImportAsync` → 复核窗口）
 
 | # | Mac 元素（顺序） | 值 | Windows 现状 | 结论 |

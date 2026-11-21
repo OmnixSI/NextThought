@@ -1,5 +1,7 @@
 # 设置结构对照（E25）
 
+Mac 3.4.0 参考图：[scenes-light](../../mac-screens/settings-pages/scenes-light.png)、[general-light](../../mac-screens/settings-pages/general-light.png)、[answers-light](../../mac-screens/settings-pages/answers-light.png)。
+
 Mac 参照：`Sources/NextThought/SettingsView.swift` 的 `SettingsPage` / `SettingsPageView`（第 287–300 行 switch 六页）、`SettingsGeneralData.swift` 的 `GeneralSettings`、`SettingsPresenter.swift` 的 `PresenterSettings`、`SettingsPages.swift` 的 `SceneSettingsPage` / `AnswerSettings`、`SettingsSearch.swift` 的 `SettingsSearchItem`；Windows 参照 `Windows/src/NextThought.Desktop/Views/SettingsView.axaml(.cs)`。
 
 ## 六页归属
