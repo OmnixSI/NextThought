@@ -3,7 +3,7 @@
         x:Class="NextThought.Desktop.Views.TypographySampleWindow"
         Width="900" Height="1020"
         Background="{DynamicResource Paper}"
-        Title="字体样张 · Type specimen">
+        Title="{loc:Tr 字体样张}">
   <ScrollViewer Padding="40,32,40,40">
     <StackPanel Spacing="22">
       <StackPanel Spacing="4">
