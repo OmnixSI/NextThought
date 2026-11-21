@@ -43,6 +43,41 @@ public sealed class WindowParityTests
     }
 
     [Fact]
+    public void E22TheGlossarySheetPrefillsAndShowsTheSeriesScope()
+    {
+        var sheet = Read("Views", "AddToGlossarySheet.axaml");
+        // glossary 3: 只要有任意系列就显示「只用于当前系列」.
+        Assert.Contains("IsVisible=\"{Binding HasSeries}\"", sheet);
+        var code = Read("Views", "AddToGlossarySheet.axaml.cs");
+        // glossary 2: 打开时读剪贴板预填（Avalonia 剪贴板接口）.
+        Assert.Contains("GetTextAsync", code);
+        Assert.Contains("GlossaryDraftHeard", code);
+        // glossary 1: Mac 的 24/16 间距.
+        Assert.Contains("D4Spacing_16", sheet);
+        Assert.Contains("D4Margin_24", sheet);
+    }
+
+    [Fact]
+    public void E29TheAnswerWindowOffersClarifyAndFollowUps()
+    {
+        var xaml = Read("Views", "TeleprompterWindow.axaml");
+        Assert.Contains("MoreClarifyItem", xaml);
+        Assert.Contains("澄清问题", xaml);
+        Assert.Contains("MoreFollowUpsItem", xaml);
+        Assert.Contains("我可以反问", xaml);
+    }
+
+    [Fact]
+    public void E4TheShellHasNoBottomStatusBar()
+    {
+        var shell = Read("Views", "MainWindow.axaml");
+        // decisions §3.1: 去掉窗口底部常驻文字条（含演示模式/快捷键冲突）.
+        Assert.DoesNotContain("取消当前任务", shell);
+        var demo = Read("AppState.Demo.cs");
+        Assert.DoesNotContain("演示模式", demo);
+    }
+
+    [Fact]
     public void E29TheAnswerWindowHasTheMacHeaderBodyAndFooter()
     {
         var xaml = Read("Views", "TeleprompterWindow.axaml");

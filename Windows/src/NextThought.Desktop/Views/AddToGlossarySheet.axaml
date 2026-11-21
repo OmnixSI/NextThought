@@ -26,7 +26,7 @@
       <RadioButton GroupName="draftkind" Content="{Binding GlossaryKindPersonLabel}"
                    Command="{Binding UseGlossaryPersonKindCommand}" />
       <CheckBox Content="{loc:Tr 只用于当前系列}" IsChecked="{Binding GlossaryDraftSeriesOnly, Mode=TwoWay}"
-                IsVisible="{Binding HasSelectedSeries}" />
+                IsVisible="{Binding HasSeries}" />
     </StackPanel>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
       <Button Classes="quiet" Content="{loc:Tr 取消}" Click="Cancel_Click" />
