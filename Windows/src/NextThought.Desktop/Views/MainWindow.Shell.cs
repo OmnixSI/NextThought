@@ -322,7 +322,7 @@ public partial class MainWindow
             await Task.Delay(360);
             var capture = ScreenCapture.VirtualScreen();
             RestoreWindow(wasVisible);
-            var picker = new RegionCaptureWindow(capture);
+            var picker = new RegionCaptureWindow(capture, RegionCaptureMode.ContinuousReading);
             await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
             RestoreOwnWindowCapture();
             if (picker.SelectedScreenRect is { } rect)

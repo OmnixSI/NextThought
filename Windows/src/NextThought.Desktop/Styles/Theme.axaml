@@ -10,6 +10,16 @@
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="Paper" Color="#F7F5F0" />
+    <LinearGradientBrush x:Key="ScrollFadeToTop" StartPoint="50%,100%" EndPoint="50%,0%">
+      <GradientStop Color="#F7F5F0" Offset="0" />
+      <GradientStop Color="#D9F7F5F0" Offset="0.5" />
+      <GradientStop Color="#00F7F5F0" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ScrollFadeToBottom" StartPoint="50%,0%" EndPoint="50%,100%">
+      <GradientStop Color="#F7F5F0" Offset="0" />
+      <GradientStop Color="#D9F7F5F0" Offset="0.5" />
+      <GradientStop Color="#00F7F5F0" Offset="1" />
+    </LinearGradientBrush>
           <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
           <SolidColorBrush x:Key="SurfaceRaised" Color="#FFFFFF" />
           <SolidColorBrush x:Key="Sunken" Color="#0A1C1B19" />
@@ -39,6 +49,16 @@
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="Paper" Color="#121110" />
+    <LinearGradientBrush x:Key="ScrollFadeToTop" StartPoint="50%,100%" EndPoint="50%,0%">
+      <GradientStop Color="#121110" Offset="0" />
+      <GradientStop Color="#D9121110" Offset="0.5" />
+      <GradientStop Color="#00121110" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ScrollFadeToBottom" StartPoint="50%,0%" EndPoint="50%,100%">
+      <GradientStop Color="#121110" Offset="0" />
+      <GradientStop Color="#D9121110" Offset="0.5" />
+      <GradientStop Color="#00121110" Offset="1" />
+    </LinearGradientBrush>
           <SolidColorBrush x:Key="Surface" Color="#1B1B19" />
           <SolidColorBrush x:Key="SurfaceRaised" Color="#242422" />
           <SolidColorBrush x:Key="Sunken" Color="#0DECEBE8" />

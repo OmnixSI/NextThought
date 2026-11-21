@@ -162,6 +162,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
                                    ?? DocumentProviderChoices[0];
         documentProviderWasSelected = settings.DocumentProviderWasSelected;
         DocumentFallbackToVision = settings.OcrFallbackToVision;
+        LocalOcrModelId = settings.LocalOcrModelId;
+        SelectedLocalOcrModel = LocalOcrModelChoices.FirstOrDefault(choice => choice.Id == LocalOcrModelId) ?? LocalOcrModelChoices[0];
         CodexOcrModel = settings.CodexOcrModel;
         CodexOcrEffort = settings.CodexOcrEffort;
         CodexOcrTimeout = settings.CodexOcrTimeout.ToString("0");
@@ -665,6 +667,24 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     public bool ShowTavilyKey => SelectedWebSearchProvider?.Value == "tavily";
 
+    /// <summary>§3.5 document-settings: Mac ModelCatalog.localOCRChoices (paddleOCR / paddleOCRQ4).</summary>
+    public sealed record LocalOcrModelChoice(string Id, string Title);
+
+    public IReadOnlyList<LocalOcrModelChoice> LocalOcrModelChoices =>
+    [
+        new("paddleocr-vl-1-6-mlx-8bit", "PaddleOCR-VL 1.6"),
+        new("paddleocr-vl-1-6-q4", "PaddleOCR-VL 1.6 Q4（更省内存）")
+    ];
+
+    [ObservableProperty] private LocalOcrModelChoice? selectedLocalOcrModel;
+
+    partial void OnSelectedLocalOcrModelChanged(LocalOcrModelChoice? value)
+    {
+        if (value is not null) LocalOcrModelId = value.Id;
+    }
+
+    [ObservableProperty] private string localOcrModelId = "paddleocr-vl-1-6-mlx-8bit";
+
     partial void OnSelectedWebSearchProviderChanged(WebSearchProviderChoice? value) =>
         OnPropertyChanged(nameof(ShowTavilyKey));
 
@@ -963,6 +983,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         // E23: how documents are read (Mac DocumentModelSettings keys).
         DocumentOcrProvider = SelectedDocumentProvider?.Value ?? "system",
         DocumentProviderWasSelected = documentProviderWasSelected,
+        LocalOcrModelId = SelectedLocalOcrModel?.Id ?? "paddleocr-vl-1-6-mlx-8bit",
         OcrFallbackToVision = DocumentFallbackToVision,
         CodexOcrModel = CodexOcrModel.Trim().Length == 0 ? "gpt-6-luna" : CodexOcrModel.Trim(),
         CodexOcrEffort = CodexOcrEffort is "low" or "medium" or "high" or "xhigh" ? CodexOcrEffort : "medium",

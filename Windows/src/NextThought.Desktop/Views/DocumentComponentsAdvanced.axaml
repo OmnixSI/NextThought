@@ -6,6 +6,9 @@
              x:DataType="local:AppState">
   <StackPanel Spacing="{DynamicResource D4Spacing_10}">
     <TextBlock Text="{loc:Tr 本机识别模型}" Classes="label" />
+    <!-- §3.5: Mac ModelCatalog.localOCRChoices — both local recognition models are selectable. -->
+    <ComboBox ItemsSource="{Binding Settings.LocalOcrModelChoices}"
+              SelectedItem="{Binding Settings.SelectedLocalOcrModel}" Width="280" HorizontalAlignment="Left" />
     <StackPanel x:Name="ComponentRows" Spacing="{DynamicResource D4Spacing_6}" />
     <TextBlock Text="{loc:Tr 下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。}"
                Classes="caption" FontSize="11" TextWrapping="Wrap" />

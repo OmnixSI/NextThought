@@ -400,6 +400,10 @@ public class Lift : Button
 /// <summary>Stage.swift VoiceWave: five rounded bars breathing with the audio level.</summary>
 public class VoiceWave : Control
 {
+    private readonly Avalonia.Threading.DispatcherTimer ticker =
+        new() { Interval = TimeSpan.FromMilliseconds(90) };
+    private double phase;
+
     public static readonly StyledProperty<int> BarsProperty =
         AvaloniaProperty.Register<VoiceWave, int>(nameof(Bars), 5);
     public static readonly StyledProperty<double> LevelProperty =
@@ -410,6 +414,19 @@ public class VoiceWave : Control
     public int Bars { get => GetValue(BarsProperty); set => SetValue(BarsProperty, value); }
     public double Level { get => GetValue(LevelProperty); set => SetValue(LevelProperty, value); }
     public bool Active { get => GetValue(ActiveProperty); set => SetValue(ActiveProperty, value); }
+
+    public VoiceWave()
+    {
+        // Stage.swift VoiceWave: the bars move while someone is talking; reduced motion freezes them.
+        ticker.Tick += (_, _) =>
+        {
+            if (Motion.Reduce || !Active) return;
+            phase += 0.18;
+            InvalidateVisual();
+        };
+        AttachedToVisualTree += (_, _) => { if (!Motion.Reduce) ticker.Start(); };
+        DetachedFromVisualTree += (_, _) => ticker.Stop();
+    }
 
     static VoiceWave()
     {
@@ -429,7 +446,7 @@ public class VoiceWave : Control
             : new SolidColorBrush(Color.Parse("#706E68"));
         for (var index = 0; index < Bars; index++)
         {
-            var wobble = 0.55 + 0.45 * Math.Sin(index * 1.9);
+            var wobble = 0.55 + 0.45 * Math.Sin(index * 1.9 + phase);
             var height = Math.Max(3, Bounds.Height * Math.Min(1, Level * 1.6) * wobble);
             var rect = new Rect(index * (width + spacing), (Bounds.Height - height) / 2, width, height);
             var rounded = new RoundedRect(rect, width / 2);

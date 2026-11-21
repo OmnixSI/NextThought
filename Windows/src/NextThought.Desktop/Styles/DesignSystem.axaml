@@ -350,13 +350,7 @@
 
   <Style Selector="c|ScrollEdgeFade">
     <Setter Property="Height" Value="36" />
-    <Setter Property="Background">
-      <LinearGradientBrush StartPoint="50%,100%" EndPoint="50%,0%">
-        <GradientStop Color="#F7F5F0" Offset="0" />
-        <GradientStop Color="#D9F7F5F0" Offset="0.5" />
-        <GradientStop Color="#00F7F5F0" Offset="1" />
-      </LinearGradientBrush>
-    </Setter>
+    <Setter Property="Background" Value="{DynamicResource ScrollFadeToTop}" />
     <Setter Property="Template">
       <ControlTemplate>
         <Border Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" />
@@ -364,13 +358,7 @@
     </Setter>
   </Style>
   <Style Selector="c|ScrollEdgeFade.bottom">
-    <Setter Property="Background">
-      <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
-        <GradientStop Color="#F7F5F0" Offset="0" />
-        <GradientStop Color="#D9F7F5F0" Offset="0.5" />
-        <GradientStop Color="#00F7F5F0" Offset="1" />
-      </LinearGradientBrush>
-    </Setter>
+    <Setter Property="Background" Value="{DynamicResource ScrollFadeToBottom}" />
   </Style>
 
   <!-- ===== OperationFeedback ====================================================== -->

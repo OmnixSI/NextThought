@@ -5,6 +5,13 @@ using Avalonia.Interactivity;
 
 namespace NextThought.Desktop.Views;
 
+/// <summary>Which Mac sheet this window is: RegionScreenshotPicker or ScreenRegionSheet.</summary>
+public enum RegionCaptureMode
+{
+    Screenshot,
+    ContinuousReading
+}
+
 /// <summary>
 /// E13 / §6.7: RegionScreenshotPicker.swift — drag a rectangle over the captured screen, crop to it.
 /// The 显示器 picker switches the frozen frame to another display (Mac Picker "显示器 …·W×H"); changing
@@ -13,6 +20,7 @@ namespace NextThought.Desktop.Views;
 public partial class RegionCaptureWindow : Window
 {
     private readonly ScreenCapture.Capture source;
+    private readonly RegionCaptureMode mode;
     private readonly List<(string Label, PixelRect Rect)> displays = [];
     private ScreenCapture.Capture capture;
     private Point? origin;
@@ -23,11 +31,24 @@ public partial class RegionCaptureWindow : Window
 
     public RegionCaptureWindow() : this(ScreenCapture.VirtualScreen()) { }
 
-    public RegionCaptureWindow(ScreenCapture.Capture capture)
+    public RegionCaptureWindow(ScreenCapture.Capture capture, RegionCaptureMode mode = RegionCaptureMode.Screenshot)
     {
         source = capture;
+        this.mode = mode;
         this.capture = capture;
         InitializeComponent();
+        // ScreenRegionSheet.swift uses its own headline/caption; RegionScreenshotPicker.swift has
+        // the screenshot wording (the area-too-small prompt is ScreenshotService's error sentence).
+        if (mode == RegionCaptureMode.ContinuousReading)
+        {
+            Title = UiText.T("选择持续读取的区域");
+            HeadlineText.Text = UiText.T("选择持续读取的区域");
+            HintText.Text = UiText.T("框选演示内容；后续画面均读取该区域。");
+        }
+        else
+        {
+            HintText.Text = UiText.T("截图会裁切到选中范围。请把题目、代码或公式完整框入。");
+        }
         ScreenImage.Source = capture.Image;
         CanvasHost.PointerPressed += OnPressed;
         CanvasHost.PointerMoved += OnMoved;
@@ -48,7 +69,8 @@ public partial class RegionCaptureWindow : Window
             var right = Math.Min(bounds.X + bounds.Width, source.X + source.Width);
             var bottom = Math.Min(bounds.Y + bounds.Height, source.Y + source.Height);
             if (right - left < 2 || bottom - top < 2) continue;
-            displays.Add(($"{index} · {right - left}×{bottom - top}",
+            var friendly = FriendlyNameFor(screen.DisplayName, index);
+            displays.Add(($"{friendly} · {right - left}×{bottom - top}",
                 new PixelRect(left, top, right - left, bottom - top)));
         }
         if (displays.Count == 0) displays.Add(($"1 · {source.Width}×{source.Height}",
@@ -57,6 +79,21 @@ public partial class RegionCaptureWindow : Window
         DisplayBox.ItemsSource = displays.Select(display => display.Label).ToList();
         DisplayBox.SelectedIndex = 0;
         switching = false;
+    }
+
+    /// <summary>decisions §3.3: the system friendly monitor name, falling back to the adapter name.</summary>
+    private static string FriendlyNameFor(string? displayName, int index)
+    {
+        var names = NextThought.Platform.MonitorNames.FriendlyNames();
+        if (!string.IsNullOrEmpty(displayName))
+        {
+            var match = names.FirstOrDefault(item => string.Equals(item.Adapter, displayName, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(match.Friendly)) return match.Friendly;
+        }
+        if (index <= names.Count && !string.IsNullOrEmpty(names[index - 1].Friendly)) return names[index - 1].Friendly;
+        var raw = displayName ?? "";
+        var trimmed = raw.StartsWith("\\\\.\\", StringComparison.Ordinal) ? raw[4..] : raw;
+        return trimmed.Length > 0 ? trimmed : UiText.Format("显示器 %lld", index);
     }
 
     /// <summary>Mac onChange(of: selectedDisplayID): switching displays clears the selection.</summary>
@@ -91,6 +128,7 @@ public partial class RegionCaptureWindow : Window
         if (e.GetCurrentPoint(CanvasHost).Properties.IsLeftButtonPressed is false) return;
         origin = Clamp(e.GetPosition(CanvasHost));
         selection = new Rect(origin.Value, origin.Value);
+        PromptText.IsVisible = false;
         ApplySelection();
         e.Pointer.Capture(CanvasHost);
     }
@@ -129,18 +167,36 @@ public partial class RegionCaptureWindow : Window
 
     private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(null);
 
+    /// <summary>The Mac error sentence, shown in place instead of silently closing.</summary>
+    private void ShowInvalidSelection()
+    {
+        PromptText.Text = UiText.T("屏幕选区无效，请重新框选。");
+        PromptText.IsVisible = true;
+        AcceptButton.IsEnabled = false;
+        origin = null;
+        selection = default;
+        ApplySelection();
+    }
+
+    /// <summary>Evidence hook: show the Mac small-region prompt without a real too-small drag.</summary>
+    public void ShowInvalidSelectionForCheck() => ShowInvalidSelection();
+
+    /// <summary>Evidence hook: what the display picker lists (friendly names + size).</summary>
+    public IReadOnlyList<string> DisplayLabels => displays.Select(display => display.Label).ToList();
+
+    public RegionCaptureMode Mode => mode;
+
     private void Accept_Click(object? sender, RoutedEventArgs e)
     {
         var rect = ImageRect;
-        if (rect.Width <= 0) { Close(null); return; }
+        if (rect.Width <= 0) { ShowInvalidSelection(); return; }
         var scale = rect.Width / capture.Width;
         var x = (int)Math.Round((selection.X - rect.X) / scale);
         var y = (int)Math.Round((selection.Y - rect.Y) / scale);
         var width = (int)Math.Round(selection.Width / scale);
         var height = (int)Math.Round(selection.Height / scale);
-        // Reject absurdly small selections with the Mac rule (it only asks for a real rectangle, so
-        // anything under a few pixels is a click, not a region).
-        if (width < 4 || height < 4) { Close(null); return; }
+        // Mac ScreenshotService: 屏幕选区无效，请重新框选。 (a click or a too-small frame)
+        if (width < 4 || height < 4) { ShowInvalidSelection(); return; }
         SelectedScreenRect = new PixelRect(capture.X + x, capture.Y + y, width, height);
         Close(ScreenCapture.Crop(capture, new PixelRect(x, y, width, height)));
     }

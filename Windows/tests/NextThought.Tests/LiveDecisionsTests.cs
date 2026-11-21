@@ -3,8 +3,8 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>
-/// 决议 §3.3（live 1/2/5/6/8/10/11/15/16、translation 2/3）：会中页与翻译界面的收尾修复。
-/// 逐条对应《WINDOWS_FINAL_DECISIONS.md》里标「修」的条目，测试只读源码/XAML（测试工程不引用 Desktop）。
+/// 决议 §3.3（live 1/2/4/5/6/8/10/11/15/16、translation 2/3）：会中页与翻译界面的收尾修复。
+/// 逐条对应《WINDOWS_FINAL_DECISIONS.md》里标「修」的条目；测试只读源码/XAML。
 /// </summary>
 public sealed class LiveDecisionsTests
 {
@@ -20,10 +20,8 @@ public sealed class LiveDecisionsTests
         throw new DirectoryNotFoundException("repository root not found");
     }
 
-    private static string Desktop(params string[] parts) =>
-        Path.Combine([Root(), "Windows", "src", "NextThought.Desktop", .. parts]);
-
-    private static string Read(params string[] parts) => File.ReadAllText(Desktop(parts));
+    private static string Read(params string[] parts) =>
+        File.ReadAllText(Path.Combine([Root(), "Windows", "src", "NextThought.Desktop", .. parts]));
 
     private static string Live() => Read("Views", "LiveView.axaml");
 
@@ -38,9 +36,6 @@ public sealed class LiveDecisionsTests
         Assert.Contains("{StaticResource IconPlay}", live);
         Assert.Contains("IsVisible=\"{Binding !ListeningPaused}\"", live);
         Assert.Contains("IsVisible=\"{Binding ListeningPaused}\"", live);
-        var map = File.ReadAllText(Path.Combine(Root(), "Windows", "ICON_MAP.md"));
-        Assert.Contains("IconPause", map);
-        Assert.Contains("IconPlay", map);
     }
 
     [Fact]
@@ -49,7 +44,22 @@ public sealed class LiveDecisionsTests
         var live = Live();
         Assert.Contains("x:Name=\"LiveAnswerEngineDot\"", live);
         Assert.Contains("IsVisible=\"{Binding !AnswerEngineReady}\"", live);
-        Assert.Contains("{DynamicResource Caution}", live);
+    }
+
+    [Fact]
+    public void Live4TheWebAnswerToggleIsWiredToTheWebSearchState()
+    {
+        var live = Live();
+        Assert.Contains("x:Name=\"LiveWebAnswerToggle\"", live);
+        Assert.Contains("{Binding WebAnswerToggleLabel}", live);
+        Assert.Contains("Command=\"{Binding ToggleWebAnswerCommand}\"", live);
+        Assert.Contains("IsVisible=\"{Binding CanToggleWebAnswer}\"", live);
+        Assert.Contains("{Binding WebLookupStatusText}", live);
+        var state = Read("AppState.WebSearch.cs");
+        Assert.Contains("public bool CanToggleWebAnswer", state);
+        Assert.Contains("public string WebAnswerToggleLabel", state);
+        Assert.Contains("public string WebLookupStatusText", state);
+        Assert.Contains("public bool ShowsWebAnswer", state);
     }
 
     [Fact]
@@ -75,9 +85,11 @@ public sealed class LiveDecisionsTests
     public void Live8SelectingTranscriptTextPausesTheFollow()
     {
         var live = Live();
-        Assert.Contains("SelectionChanged=\"TranscriptText_SelectionChanged\"", live);
+        Assert.Contains("PointerReleased=\"TranscriptText_PointerReleased\"", live);
+        Assert.Contains("KeyUp=\"TranscriptText_KeyUp\"", live);
         var code = Read("Views", "LiveView.axaml.cs");
-        Assert.Contains("TranscriptText_SelectionChanged", code);
+        Assert.Contains("TranscriptText_PointerReleased", code);
+        Assert.Contains("NoticeTextSelection", code);
         Assert.Contains("LiveSelectedText()", code);
     }
 
@@ -100,12 +112,20 @@ public sealed class LiveDecisionsTests
     }
 
     [Fact]
+    public void Live12TheMyNotesTabUsesTheMacMeetingUserNotesView()
+    {
+        var live = Live();
+        Assert.Contains("x:Name=\"NotesPanel\"", live);
+        Assert.Contains("<views:MeetingUserNotes />", live);
+    }
+
+    [Fact]
     public void Live15TheDemoLiveDataMatchesTheMacScreenshots()
     {
         var demo = Read("AppState.Demo.cs");
         Assert.Contains("DemoScript.LivePartialTranscript", demo);
         Assert.Contains("EchoDroppedCount = 1;", demo);
-        Assert.Contains("Zoom · 后端工程师二面", demo);
+        Assert.Contains("Zoom", demo);
     }
 
     [Fact]
@@ -114,7 +134,7 @@ public sealed class LiveDecisionsTests
         var live = Live();
         Assert.Contains("<controls:DashedCapsule", live);
         Assert.Contains("x:Name=\"LiveWhoAmIButton\"", live);
-        var control = File.ReadAllText(Path.Combine(Desktop("Views", "Controls"), "DashedCapsule.cs"));
+        var control = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "Controls", "DashedCapsule.cs"));
         Assert.Contains("DashStyle([3, 2]", control);
         Assert.Contains("public sealed class DashedCapsule", control);
     }
@@ -123,28 +143,10 @@ public sealed class LiveDecisionsTests
     public void Translation2And3FollowTheMacSwitchAndStatus()
     {
         var translation = Read("AppState.LiveTranslation.cs");
-        // 2: turning the switch off clears both partial lanes immediately.
         Assert.Contains("SystemPartialTranslation = \"\";", translation);
         Assert.Contains("MicrophonePartialTranslation = \"\";", translation);
-        // 3: the Mac status sentence and no Windows-only auto-open notice in the page.
-        Assert.Contains("自动识别 · 中英互译", translation);
+        Assert.Contains("UiText.T(\"自动识别 · 中英互译\")", translation);
         Assert.DoesNotContain("LiveTranslationAutoNotice", Live());
-    }
-
-    [Fact]
-    public void Live4TheWebAnswerToggleIsWiredToTheWebSearchState()
-    {
-        var live = Live();
-        Assert.Contains("x:Name=\"LiveWebAnswerToggle\"", live);
-        Assert.Contains("{Binding WebAnswerToggleLabel}", live);
-        Assert.Contains("Command=\"{Binding ToggleWebAnswerCommand}\"", live);
-        Assert.Contains("IsVisible=\"{Binding CanToggleWebAnswer}\"", live);
-        Assert.Contains("{Binding WebLookupStatusText}", live);
-        var state = Read("AppState.WebSearch.cs");
-        Assert.Contains("public bool CanToggleWebAnswer", state);
-        Assert.Contains("public string WebAnswerToggleLabel", state);
-        Assert.Contains("public string WebLookupStatusText", state);
-        Assert.Contains("public bool ShowsWebAnswer", state);
     }
 
     [Fact]

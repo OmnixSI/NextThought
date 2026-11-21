@@ -62,7 +62,7 @@
 | 3.3 | 默认页签：自动回答→问答；否则实时纪要开着→实时纪要；否则我的笔记（onAppear） | `ShowRightTab`：`AnswerModeIsAuto` → 问答；`LiveNotesEnabled` → 实时纪要；否则我的笔记；模式切换时重选 | 一致 |
 | 3.4 | 实时纪要列：状态行（实时纪要没有开 / 正在更新… / 有了内容就开始整理 / 更新时间·约每 45 秒一次）+ 右「现在更新/开启实时纪要」Ghost；空态两段 Mac 文案 | `LiveNotesPanel`：`LiveNotesStatusText`（off/无回答服务/有了内容就开始整理）+ 右 `LiveNotesButtonText`（现在更新/开启实时纪要，`EnableLiveNotes_Click`）+ `LiveNotesHintText` 空态文案逐字 | 一致（生成引擎为 J1，见未解决 3） |
 | 3.5 | 建议回答头部：sparkle 图标 `tint` 11 +「建议回答」overline；回答中改「正在回答」；右侧上一条 22、「2/2」caption mono、下一条 22 | 同：`IconSparkle` + `AnswerColumnTitle`（正在回答/建议回答）、`PreviousAnswerCommand`、`HistoryPositionText`、`NextAnswerCommand`（`AnswerHistoryHasMultiple` 时显示） | 一致 |
-| 3.6 | 联网状态行 `WebStatusLine`：globe + 正在联网核查…/联网版 · N 个来源 + 看原回答/看联网版/重试 | `HasWebResults` 时显示 globe + `LiveWebStatusLine` + 重试；原回答↔联网版两阶段切换 Windows 无（E4 未做，见未解决 4） | 基本一致 |
+| 3.6 | 联网状态行 `WebStatusLine`：globe + 正在联网核查…/联网版 · N 个来源 + 看原回答/看联网版/重试 | `HasWebResults` 时显示 globe + `LiveWebStatusLine` + `{Binding WebLookupStatusText}`（搜索中/失败）+ `CanToggleWebAnswer` 时「原回答 ↔ 联网版」pill（`WebAnswerToggleLabel`/`ToggleWebAnswerCommand`）+ 重试；原回答不再预联网，联网版在后台生成后 pill 出现，切换后 `DisplayedAnswerText` 换成对应版本（§3.3 live 4，`c7fcad8a`） | 一致 |
 | 3.7 | 问题原文：caption 12 secondary 最多 2 行，`id(question)` | `DisplayedQuestionText` caption 12、MaxLines 2 + 双语问题行 | 一致 |
 | 3.8 | 回答卡片：`Ink.surface` 白底、`radiusLarge 22`、hairline 0.5、contactShadow + ambientShadow，占满剩余高度 | `AnswerCard`：Surface、RadiusLarge、Hairline 0.5、`PaperCardShadow`（contact 0 1 2 + ambient 0 8 14，Mac 为 20/10 见未解决 5），Grid 第 3 行 `*` 占满 | 一致 |
 | 3.9 | 回答正文 `MarkdownText` size 18、lineSpacing 8；加粗/列表/行内代码渲染；空态「对方提问时…」 | `views:MarkdownText BaseFontSize=18`（MarkdownReader 渲染 bold/list/inline code）；空态 `AnswerEmptyHint` | 一致 |
@@ -152,7 +152,7 @@ Windows 截图批次（`validation/screens/current/live-*.png`）只直接覆盖
 1. 暂停/继续按钮只有文字，缺 Mac 的 pause.fill / play.fill 图标：随包 Fluent 图标集里没有这两个字形（D7 图标对照表未含），需要补图标资源后加。
 2. 顶栏「自动回答/只记录」的 answerEngineReady 黄点未做（Windows 用更多菜单文字提示代替）。
 3. 实时纪要引擎已接（J1）；演示数据下 `现在更新` 因没有回答服务而禁用（Mac 演示有服务），`更新于` 之外的真实增量更新需配置回答服务后实测（脚本化响应用 `LiveNotesPrompt`/`LiveNotesSchedule` 测试覆盖）。
-4. 「原回答 ↔ 联网版」两阶段切换未做（Windows 单次回答架构，E4 已记在案）。
+4. 已修（§3.3 live 4，`c7fcad8a`）：原回答 ↔ 联网版切换已接 core-parity 的 web-search 状态层，`WebStatusLine` 显示状态行与「看原回答/看联网版」pill，不再是差别（见 3.6）。
 5. 回答卡片阴影用共享 `PaperCardShadow`（contact 0 1 2 + ambient 0 8 14），Mac 是 contact 0 1 1 + ambient 0 10 20；§5.7 的 float/contact/ambient 资源落地后替换。
 6. 立即回答按钮高度 36（`HitRow`）而 Mac 40（`Space.controlLarge`）；主题的命中 token 测试要求页面主按钮用 36，取 36 记录。
 7. focus / selected-focus 状态没有单独截图：焦点环由设计系统 `Button:focus-visible` 统一提供，自检只断言存在；需要人工点按留证。
