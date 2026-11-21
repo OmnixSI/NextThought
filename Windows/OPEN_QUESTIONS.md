@@ -11,8 +11,10 @@
 | E12 | 我的声音 | 已决定：复用现有 SpeakerEmbedder，不导出 MeetingVoiceTagger |
 | F13 | 蓝牙备用通道 | 本版不做 |
 | H5 | 旧 WPF 工程与命令行工程是否删除 | 等待答复，保持不动 |
-| 视觉 | Mac 截图与逐元素对照 | 人补拍浅/深两套到 `Windows/validation/mac-screens/`；到位前用 `docs/screenshots/v3/` 和 Swift 源码做对照 |
+| 视觉 | Mac 截图与逐元素对照 | **已到位（2026-11-21）**：93 张 Mac 3.4.0 浅/深参考图在 `Windows/validation/mac-screens/`，已生成对照索引并更新各 `compare.md`；剩余视觉差异记录在对应 compare 文档，「已验证」仍需人逐页确认 |
 | 硬件 | 需要其他设备的实机测试 | 步骤写在 `Windows/FINAL_REPORT.md` 与各任务证据中，等待安排 |
+| CI | Mac `Verify` workflow 的 `archive-ux` 自检失败 | 2026-11-21 起 `Verify`（self-hosted Mac）在 self-test `archive-ux` 报 `NSCocoaErrorDomain Code=4 "The file doesn't exist."`；发生在 Mac 应用自检路径，不在 Windows 代码内，`Sources/` 只读，需要维护者在该 Mac runner 上单独排查 |
+| A16 | Mac 端回读 Windows 导出的备份 | Windows 侧已用 Mac 备份夹具完成双向核对（`eda5575e`）；Mac 打开 Windows 导出的 `.ntbackup` 最后一步仍需人在 Mac 上执行 |
 
 ## H2 方法重命名
 
@@ -20,7 +22,7 @@
 - 规则：C# 方法名等于 Swift 方法名把首字母改成大写，例如 `beginNewMeeting` → `BeginNewMeeting`、`setDraftCarry` → `SetDraftCarry`。只改 Swift 里有对应物的方法；Windows 独有方法保持原名。
 - 统计口径：按首字母不区分大小写重新统计 179 个 Swift 方法名；现有「完全匹配 0」是大小写不同造成的误判。
 - 执行方式：一个文件一个提交，用 IDE / Roslyn 重命名，不手工替换字符串；每个提交后全部测试通过。排在第三部分第 8 步。
-- 状态：已决定并关闭，等待执行。
+- 状态：已执行完成（2026-11-21）：Roslyn 语义扫描全树 0 个需改名的方法，`AppState.Notes.cs` 已建立并对齐 AppState+Notes.swift，详见 `Windows/H2_RENAME_REPORT.md`。
 
 ## A15 MacCodec
 
@@ -32,7 +34,7 @@
   3. `Windows/MAC_FIXTURE_REQUEST.md` 增加 Mac 执行命令、产物输出到 `Windows/tests/Fixtures/mac/`、提交方式。
   4. Windows `check`：不依赖 7 个加密文件和 4 个平台文件的类型都要解码校验；跳过项逐条列出原因，不静默跳过。
 - 夹具未提交前 A15 状态为「已实现、未验证」；依赖夹具的测试先写好并标记等待夹具，不用假数据。A11/A16 同样处理。
-- 状态：已决定并关闭，等待夹具与实现。
+- 状态：已完成（2026-11-21）：人在 Mac 上 emit 并提交 `Windows/tests/Fixtures/mac/`，Windows `MacCodecCheck` 通过（纯数据家族）；CryptoKit/SQLite/Darwin/CoreGraphics/Sherpa 五类按 README 原因跳过。
 
 ## E9 持续读屏
 
