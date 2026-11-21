@@ -1,0 +1,30 @@
+﻿{
+    "test":  "K7 两小时长会议",
+    "startedAt":  "2026-11-21T16:19:07",
+    "minutesRequested":  120,
+    "exe":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-k7-artifacts\\bin\\NextThought.Desktop\\release_win-x64\\NextThought.exe",
+    "dataDir":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-k7-7ff394d8",
+    "passed":  false,
+    "failures":  [
+
+                 ],
+    "memory":  [
+                   {
+                       "minute":  1,
+                       "at":  "2026-11-21T16:20:21",
+                       "elapsedSeconds":  60,
+                       "workingSetMB":  909.8,
+                       "privateMB":  882.2,
+                       "transcriptLines":  11,
+                       "transcriptGrew":  true,
+                       "sessionBytes":  2943,
+                       "audioPlaying":  true
+                   }
+               ],
+    "transcriptCounts":  [
+                             11
+                         ],
+    "appPid":  30096,
+    "recordingStartedAt":  "2026-11-21T16:19:21",
+    "sessionDir":  "C:\\Users\\Thunderobot\\AppData\\Local\\Temp\\nt-k7-7ff394d8\\Sessions\\E394ACF8-9262-4718-A9C4-DD9565F38E56"
+}

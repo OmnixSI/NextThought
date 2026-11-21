@@ -101,7 +101,7 @@ public partial class AppState
         OnPropertyChanged(nameof(NotesFormatIsViewpoints));
         OnPropertyChanged(nameof(HasBilingualQuestion));
         OnPropertyChanged(nameof(RecordingElapsedText));
-        ModelStatusText = "演示模式：未加载识别模型";
+        ModelStatusText = "";
         ApplyDemoStage(stage);
     }
 
@@ -164,6 +164,19 @@ public partial class AppState
                 MeetingTitle = "";
             }
             SetPageSubtitle("演示数据 · 不会写入你的资料");
+        }
+        // §3.3 live 15: the demo live data matches the Mac screenshots — the last utterance is still
+        // being recognised, the audio source is the meeting app, and one echo line was ignored.
+        if (plan.IsRunning && plan.Name is DemoStages.Live or DemoStages.Home or DemoStages.Assistant)
+        {
+            SystemPartial = UiText.EnglishUi ? "What if deleting the cache fails?" : DemoScript.LivePartialTranscript;
+            EchoDroppedCount = 1;
+            AudioSourceText = UiText.EnglishUi ? "Zoom · Backend engineer, second round" : "Zoom · 后端工程师二面";
+        }
+        else
+        {
+            SystemPartial = "";
+            EchoDroppedCount = 0;
         }
         // Mac demo live state: the candidate strip offers the next question.
         liveCandidateOverride = plan.IsRunning && plan.Name is DemoStages.Live or DemoStages.Home or DemoStages.Assistant
