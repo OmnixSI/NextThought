@@ -103,7 +103,6 @@ public sealed class IslandCueRow : UserControl
             line.Text = row.Rest.Length > 0 && row.Head.Length == 0 ? row.Rest : row.Head + row.Rest;
             line.FontSize = size * 0.9;
             line.FontWeight = FontWeight.SemiBold;
-            line.LineHeight = size * 0.9 * 1.2 + size * 0.14;
             line.MaxLines = row.Expanded ? 5 : 2;
             line.Inlines = null;
         }
@@ -122,14 +121,12 @@ public sealed class IslandCueRow : UserControl
                 });
             line.FontSize = size * 0.76;
             line.FontWeight = FontWeight.Normal;
-            line.LineHeight = size * 0.76 * 1.2 + size * 0.12;
             line.MaxLines = row.Expanded ? 4 : 1;
         }
 
         gloss.IsVisible = row.Gloss.Length > 0;
         gloss.Text = row.Gloss;
         gloss.FontSize = Math.Max(11, size * 0.56);
-        gloss.LineHeight = Math.Max(11, size * 0.56) * 1.25;
         gloss.Margin = new Thickness(lead ? 0 : 12, 1, 0, 0);
         gloss.MaxLines = row.Expanded ? 3 : 1;
         gloss.Foreground = row.Said ? SaidGlossBrush : GlossBrush;

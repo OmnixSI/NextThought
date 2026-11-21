@@ -76,11 +76,14 @@ public sealed class AnswerLanguageParityTests
     [Fact]
     public void TheCueIslandShowsTheMeaningUnderEachLine()
     {
+        // C8: the island renders the meaning under each line through CueRow.withGloss — the cue
+        // row control draws Head/Rest/Gloss, the model feeds the gloss from CueScript.
         var island = Read("Views", "CueIslandWindow.axaml");
-        Assert.Contains("{Binding IslandHeadlineGloss}", island);
-        Assert.Contains("{Binding IslandDetailGloss}", island);
-        Assert.Contains("{Binding HasIslandHeadlineGloss}", island);
-        Assert.Contains("{Binding HasIslandDetailGloss}", island);
+        Assert.Contains("island:IslandCueRow", island);
+        var row = Read("Views", "Island", "IslandCueRow.cs");
+        Assert.Contains("row.Gloss", row);
+        var model = Read("Views", "Island", "CueIslandViewModel.cs");
+        Assert.Contains("Gloss = line.Gloss", model);
         var ui = Read("AppState.LiveUi.cs");
         Assert.Contains("IslandLines", ui);
     }

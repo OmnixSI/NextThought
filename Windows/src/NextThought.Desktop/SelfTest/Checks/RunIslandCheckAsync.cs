@@ -59,7 +59,7 @@ public partial class MainWindow
             string Text(string name) => island.FindControl<TextBlock>(name)?.Text ?? "<missing>";
             bool Visible(string name) => island.FindControl<Control>(name)?.IsEffectivelyVisible == true;
             var title = Text("DeckTitleText");
-            var sceneTag = Text("DeckSceneTag");
+            var sceneTag = Text("DeckSceneTagText");
             var mode = Text("DeckModeText");
             var speaker = Text("DeckHeardSpeaker");
             var heard = Text("DeckHeardText");
@@ -155,6 +155,7 @@ public partial class MainWindow
             Check("c9-edge", edge is Avalonia.Media.LinearGradientBrush
                              && Math.Abs(island.Model.EdgeWidth - 1.2) < 0.001,
                 edge?.GetType().Name ?? "null");
+            island.ApplyStateForCheck("compact");
             island.SetReducedMotionForCheck(true);
             island.SetHoveringForCheck(true);
             Check("c9-reduced-motion-snap",

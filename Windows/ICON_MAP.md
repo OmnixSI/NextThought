@@ -142,3 +142,24 @@ Microsoft；系统 `Segoe Fluent Icons` 作为回退）。字形的码点来自 
 - `IconTrayAndArrowDown`
 - `IconWaveform`
 - `IconXmarkCircleFill`
+
+## §6.6 提词岛图标（C5–C9）
+
+| SF Symbol | 字形 | 资源 | Fluent 名称 |
+|---|---|---|---|
+| `bolt.fill` | `U+E61A` | `IconIslandBolt` | `ic_fluent_flash_24_regular` |
+| `bubble.left` | `U+E3F3` | `IconIslandBubble` | `ic_fluent_comment_multiple_24_regular` |
+| `chevron.left` | `U+F2AC` | `IconIslandChevronLeft` | `ic_fluent_chevron_left_24_regular` |
+| `chevron.right` | `U+F2B2` | `IconIslandChevronRight` | `ic_fluent_chevron_right_24_regular` |
+| `chevron.up` | `U+F2B8` | `IconIslandChevronUp` | `ic_fluent_chevron_up_24_regular` |
+| `pencil.line` | `U+E5B2` | `IconIslandEdit` | `ic_fluent_edit_24_regular` |
+| `eye.fill` | `U+EFC8` | `IconIslandEye` | `ic_fluent_eye_24_regular` |
+| `textformat.size.smaller / larger` | `U+F0B9C` | `IconIslandFont` | `ic_fluent_text_font_size_24_regular` |
+| `mic.fill` | `U+E7FB` | `IconIslandMic` | `ic_fluent_mic_24_regular` |
+| `moon.zzz` | `U+EE45` | `IconIslandMoon` | `ic_fluent_weather_moon_24_regular` |
+| `pause.fill` | `U+E8CD` | `IconIslandPause` | `ic_fluent_pause_24_regular` |
+| `pin.fill / pin` | `U+E982` | `IconIslandPin` | `ic_fluent_pin_24_regular` |
+| `play.fill` | `U+E991` | `IconIslandPlay` | `ic_fluent_play_24_regular` |
+| `stop.fill` | `U+F0544` | `IconIslandStop` | `ic_fluent_stop_24_regular` |
+| `waveform` | `U+E9DE` | `IconIslandWaveform` | `ic_fluent_pulse_24_regular` |
+| `macwindow` | `U+EE5F` | `IconIslandWindow` | `ic_fluent_window_24_regular` |

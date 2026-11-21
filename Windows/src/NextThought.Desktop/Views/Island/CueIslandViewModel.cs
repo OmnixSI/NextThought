@@ -403,22 +403,24 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
 
     public bool ShowCoach => coachText.Length > 0;
 
-    /// <summary>The coach ear's symbol (Fluent glyph; CueIslandView.earLabel symbol).</summary>
-    public string CoachIcon
-    {
-        get => coachIcon;
-        private set => Set(ref coachIcon, value);
-    }
-    private string coachIcon = "\uEFC8";
+    /// <summary>Which symbol the coach ear shows (CueIslandView.earLabel symbol); one flag each,
+    /// so the view picks the matching icon resource instead of carrying glyph code points.</summary>
+    public bool CoachIconMoon { get; private set; }
+    public bool CoachIconBubble { get; private set; }
+    public bool CoachIconWaveform { get; private set; }
+    public bool CoachIconEye { get; private set; }
 
-    /// <summary>Mac SF Symbol name → the bundled Fluent glyph (Styles/Icons.axaml mapping).</summary>
-    private static string CoachGlyph(string symbol) => symbol switch
+    private void SetCoachIcon(string symbol)
     {
-        "moon.zzz" => "\uF87E",
-        "bubble.left" => "\uF308",
-        "waveform" => "\uE9DD",
-        _ => "\uEFC8"
-    };
+        var moon = symbol == "moon.zzz";
+        var bubble = symbol == "bubble.left";
+        var waveform = symbol == "waveform";
+        var eye = !moon && !bubble && !waveform;
+        if (CoachIconMoon != moon) { CoachIconMoon = moon; OnPropertyChanged(nameof(CoachIconMoon)); }
+        if (CoachIconBubble != bubble) { CoachIconBubble = bubble; OnPropertyChanged(nameof(CoachIconBubble)); }
+        if (CoachIconWaveform != waveform) { CoachIconWaveform = waveform; OnPropertyChanged(nameof(CoachIconWaveform)); }
+        if (CoachIconEye != eye) { CoachIconEye = eye; OnPropertyChanged(nameof(CoachIconEye)); }
+    }
 
     public IBrush CoachBrush => CautionBrush;
 
@@ -461,7 +463,8 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
     }
     private string listeningText = "";
 
-    public string ListeningTranslation
+    /// <summary>C8: the translation lane under their words (Mac IslandTranslation).</summary>
+    public string IslandTranslationText
     {
         get => listeningTranslation;
         private set => Set(ref listeningTranslation, value);
@@ -726,8 +729,8 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
 
     public string DeckPauseLabel => state.CueIslandPaused ? UiText.T("继续") : UiText.T("暂停");
 
-    /// <summary>Fluent pause/play glyph (pause_24_regular / play_24_regular of the bundled font).</summary>
-    public string DeckPauseIcon => state.CueIslandPaused ? "\uE991" : "\uE8CD";
+    /// <summary>True while listening is paused: the deck's action then shows a play symbol.</summary>
+    public bool IsPaused => state.CueIslandPaused;
 
     /// <summary>Hidden phases draw nothing (CueIslandView: phase == .hidden has no island).</summary>
     public bool ShowIsland => Phase != CueIslandPhase.Hidden || backdrop;
@@ -812,8 +815,10 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
 
     private void RefreshClock()
     {
-        var clock = DemoClock
-                    ?? (Phase is CueIslandPhase.Launcher or CueIslandPhase.Hidden ? "" : state.CueIslandClockText);
+        var showClockPhase = Phase is not (CueIslandPhase.Launcher or CueIslandPhase.Hidden);
+        var clock = showClockPhase
+            ? DemoClock ?? state.CueIslandClockText
+            : "";
         if (ClockText != clock) ClockText = clock;
         if (ShowClock != (clock.Length > 0 && !ShowCoach)) OnPropertyChanged(nameof(ShowClock));
     }
@@ -837,7 +842,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
         var autoEndSeconds = DemoAutoEndSeconds ?? state.CueIslandAutoEndSeconds;
         var coach = state.CueIslandCoachEnabled ? state.CueIslandCoachHint : "";
         CoachText = coach;
-        CoachIcon = CoachGlyph(state.CueIslandCoachSymbol);
+        SetCoachIcon(state.CueIslandCoachSymbol);
 
         var slidePage = state.CueIslandPresenting && state.CueIslandHasSlide
             ? state.CueIslandSlidePage + "/" + state.CueIslandSlidePageCount
@@ -851,12 +856,14 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
 
         ShowHearing = newPhase == CueIslandPhase.Hearing && state.CueIslandHasCandidate;
         HearingText = ShowHearing ? state.CueIslandCandidateText : "";
-        HearingTranslation = ShowHearing && state.CueIslandLiveTranslation ? state.CueIslandPartialTranslation : "";
+        HearingTranslation = ShowHearing && state.CueIslandLiveTranslation ? state.CueIslandIslandTranslation : "";
 
         ShowListening = newPhase == CueIslandPhase.Listening;
         ListeningText = theirTurn.Text;
-        ListeningTranslation = theirTurn.Translation;
-        hasListeningTranslation = theirTurn.Translation.Length > 0;
+        IslandTranslationText = theirTurn.Translation.Length > 0
+            ? theirTurn.Translation
+            : state.CueIslandLiveTranslation ? state.CueIslandIslandTranslation : "";
+        hasListeningTranslation = IslandTranslationText.Length > 0;
 
         ShowCue = newPhase == CueIslandPhase.Cue;
         CueQuestion = ShowCue ? state.CueIslandQuestion : "";
@@ -873,7 +880,9 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
                          && !state.CueIslandAnswering && cueLines.Count > 0
                          && (theirs >= 12 || state.CueIslandUnansweredTurn);
         HeardStripText = ShowHeardStrip ? theirTurn.Text : "";
-        HeardStripTranslation = ShowHeardStrip ? theirTurn.Translation : "";
+        HeardStripTranslation = ShowHeardStrip
+            ? theirTurn.Translation.Length > 0 ? theirTurn.Translation : state.CueIslandIslandTranslation
+            : "";
 
         ShowSlide = newPhase == CueIslandPhase.Slide;
         SlideHeader = ShowSlide ? state.CueIslandSlideHeader : "";
@@ -908,8 +917,8 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
         ShowDeckPrevious = ShowDeck && (collapsedKey is not null) && state.CueIslandDisplayedAnswer.Length > 0;
 
         ShowLauncher = newPhase == CueIslandPhase.Launcher;
-        if (ShowLauncher && launcherScenes.Count == 0)
-            LauncherScenes = BuildLauncher();
+        // Rebuilt on every refresh so a language switch reaches the scene names in place.
+        if (ShowLauncher) LauncherScenes = BuildLauncher();
 
         ShowAutoEnd = newPhase == CueIslandPhase.AutoEnd;
         AutoEndText = ShowAutoEnd
@@ -917,7 +926,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
             : "";
 
         // C9: the scene pigment runs along the lower edge; caution overrides it.
-        var edgeColor = ShowCoach ? Color.Parse("#F0B24A") : TintColor;
+        var edgeColor = ShowCoach || ShowAutoEnd ? Color.Parse("#F0B24A") : TintColor;
         EdgeBrush = new LinearGradientBrush
         {
             StartPoint = new Avalonia.RelativePoint(0.5, 0.35, Avalonia.RelativeUnit.Relative),
@@ -936,7 +945,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
                      nameof(FrameWidth), nameof(EdgeWidth), nameof(TintBrush), nameof(TintSoftBrush),
                      nameof(TintColor), nameof(ShowPulse), nameof(StatusDotBrush), nameof(WaveActive),
                      nameof(WaveLevel), nameof(ShowSlidePage), nameof(ShowCoach), nameof(CoachBrush),
-                     nameof(ShowHearingTranslation), nameof(ShowListeningTranslation), nameof(ShowEnableTranslation),
+                     nameof(ShowHearingTranslation), nameof(ShowListeningTranslation), nameof(ShowEnableTranslation), nameof(IslandTranslationText),
                      nameof(ShowCueQuestion), nameof(ShowCueAsked), nameof(ShowCueEmpty), nameof(ShowThinking),
                      nameof(ShowHeardStrip), nameof(ShowHeardStripTranslation), nameof(ShowSlideSteps),
                      nameof(SlidePrevEnabled), nameof(SlideNextEnabled), nameof(ShowSlideTransition),
@@ -947,7 +956,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
                      nameof(HoverBump), nameof(LauncherBusy), nameof(ShowAutoEndActions), nameof(ShowIsland),
                      nameof(ListeningTextSize), nameof(ListeningTranslationSize), nameof(HeardStripTextSize),
                      nameof(HeardStripTranslationSize), nameof(AskedTextSize), nameof(EmptyTextSize),
-                     nameof(SlideTransitionSize), nameof(DeckModeActionLabel), nameof(DeckPauseLabel), nameof(DeckPauseIcon)
+                     nameof(SlideTransitionSize), nameof(DeckModeActionLabel), nameof(DeckPauseLabel), nameof(IsPaused)
                  })
             OnPropertyChanged(name);
     }
@@ -1002,7 +1011,7 @@ public sealed class CueIslandViewModel : INotifyPropertyChanged
         foreach (var choice in state.Scenes)
             items.Add(new LauncherSceneItem
             {
-                Name = choice.Title,
+                Name = UiText.T(choice.TitleKey),
                 ModeKey = choice.Mode.ToString(),
                 Tint = new SolidColorBrush(Color.Parse(SceneTheme.For(choice.Mode).TintDark))
             });

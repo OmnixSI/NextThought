@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
 using NextThought.Platform;
 
@@ -99,6 +99,12 @@ public partial class AppState
 
     public string CueIslandPartialTranslation => LiveTranslationEnabled ? SystemPartialTranslation : "";
 
+    /// <summary>
+    /// C8: the island keeps one translation lane for their speech (Mac IslandTranslation); a
+    /// per-line interpretation wins when the translator has already returned it.
+    /// </summary>
+    public string CueIslandIslandTranslation => IslandTranslation.Length > 0 ? IslandTranslation : SystemPartialTranslation;
+
     public bool CueIslandLiveTranslation => LiveTranslationEnabled;
 
     /// <summary>下一条要问的问题: the detector's candidate, while it is still worth offering.</summary>
@@ -165,13 +171,24 @@ public partial class AppState
 
     public bool CueIslandAutomaticAnswers => Settings.AutomaticAnswers;
 
-    public bool CueIslandAnswerEngineReady => AnswerEngineReady;
+    /// <summary>True when an answer service is connected; the scripted captures override it.</summary>
+    public bool CueIslandAnswerEngineReady => cueAnswerReadyOverride ?? AnswerEngineReady;
+
+    private bool? cueAnswerReadyOverride;
+
+    /// <summary>Demo/self-check hook: pretend the answer service is (or is not) connected.</summary>
+    public void CueIslandDemoAnswerReady(bool? ready)
+    {
+        cueAnswerReadyOverride = ready;
+        OnPropertyChanged(nameof(CueIslandAnswerEngineReady));
+        OnPropertyChanged(nameof(CueIslandModeWarning));
+    }
 
     public string CueIslandModeText => ListeningPaused
         ? UiText.T("已暂停")
         : Settings.AutomaticAnswers ? UiText.T("自动回答") : UiText.T("只记录");
 
-    public bool CueIslandModeWarning => Settings.AutomaticAnswers && !ListeningPaused && !AnswerEngineReady;
+    public bool CueIslandModeWarning => Settings.AutomaticAnswers && !ListeningPaused && !CueIslandAnswerEngineReady;
 
     /// <summary>The newest line of the conversation, while it is still being said if possible.</summary>
     public (bool IsMe, string Text, string Translation)? CueIslandLastHeard
@@ -281,10 +298,14 @@ public partial class AppState
         get
         {
             if (CurrentSlide is not { } slide || SlideNotesFor(slide) is not { } notes) return [];
-            var (covered, next) = SlideCoverage(notes);
+            var (covered, next) = cueSlideCoveredOverride is { } scripted
+                ? (scripted, AnswerPoints.Next(scripted, notes.Points.Count))
+                : SlideCoverage(notes);
             return notes.Points.Select((point, index) => (point, covered.Contains(index), next == index)).ToList();
         }
     }
+
+    private HashSet<int>? cueSlideCoveredOverride;
 
     public string CueIslandSlideTransition =>
         CurrentSlide is { } slide && SlideNotesFor(slide) is { } notes && notes.Transition.Length > 0
@@ -316,8 +337,9 @@ public partial class AppState
             }
         ];
         slideIndex = 0;
+        cueSlideCoveredOverride = covered > 0 ? new HashSet<int>(Enumerable.Range(0, covered)) : null;
         var info = slides[0];
-        slideNotesCacheByPage[info.Key] = new SlideNotes
+        slideNotesCacheByPage[info.ToSlidePage().Key] = new SlideNotes
         {
             Points = points,
             Transition = transition,
@@ -338,6 +360,7 @@ public partial class AppState
     {
         slides = [];
         slideIndex = -1;
+        cueSlideCoveredOverride = null;
         OnPropertyChanged(nameof(CueIslandHasSlide));
     }
 

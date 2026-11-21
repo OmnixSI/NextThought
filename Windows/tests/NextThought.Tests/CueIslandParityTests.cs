@@ -28,6 +28,8 @@ public sealed class CueIslandParityTests
 
     private static string IslandXaml => Read("Windows", "src", "NextThought.Desktop", "Views", "CueIslandWindow.axaml");
     private static string IslandCode => Read("Windows", "src", "NextThought.Desktop", "Views", "CueIslandWindow.axaml.cs");
+    private static string IslandModel => Read("Windows", "src", "NextThought.Desktop", "Views", "Island", "CueIslandViewModel.cs");
+    private static string IslandData => Read("Windows", "src", "NextThought.Desktop", "AppState.Cue.cs");
 
     [Fact]
     public void C5TheSixStatesUseTheMacWidthsAndTheNotchMetrics()
@@ -71,11 +73,11 @@ public sealed class CueIslandParityTests
         Assert.Contains("x:Name=\"ClockText\"", IslandXaml);
         Assert.Contains("x:Name=\"CoachEar\"", IslandXaml);
         Assert.Contains("x:Name=\"SlidePageText\"", IslandXaml);
-        // The island's copy.
+        // The island's copy (the model owns the strings, the view binds them).
         Assert.Contains("对方在说", IslandXaml);
         Assert.Contains("开启同声传译", IslandXaml);
-        Assert.Contains("正在想", IslandXaml);
-        Assert.Contains("被问到时，回答会出现在这里。", IslandXaml);
+        Assert.Contains("正在想", IslandModel + IslandData);
+        Assert.Contains("被问到时，回答会出现在这里。", IslandModel + IslandData);
         Assert.Contains("开始一场", IslandXaml);
         Assert.Contains("点一个场景，立即开始。", IslandXaml);
         Assert.Contains("打开主窗口", IslandXaml);
@@ -92,9 +94,9 @@ public sealed class CueIslandParityTests
             Assert.Contains("x:Name=\"" + element + "\"", IslandXaml);
         Assert.Contains("DeckHeardSpeaker", IslandXaml);
         Assert.Contains("对方", IslandXaml);
-        Assert.Contains("自动回答", IslandXaml);
-        Assert.Contains("只记录", IslandXaml);
-        Assert.Contains("已暂停", IslandXaml);
+        Assert.Contains("自动回答", IslandXaml + IslandModel);
+        Assert.Contains("只记录", IslandXaml + IslandModel);
+        Assert.Contains("已暂停", IslandData);
     }
 
     [Fact]
@@ -112,7 +114,7 @@ public sealed class CueIslandParityTests
         Assert.Contains("Command=\"{Binding TogglePauseCommand}\"", IslandXaml);
         Assert.Contains("Command=\"{Binding EndMeetingCommand}\"", IslandXaml);
         Assert.Contains("立即回答", IslandXaml);
-        Assert.Contains("改为只记录", IslandXaml);
+        Assert.Contains("改为只记录", IslandXaml + IslandModel);
         Assert.Contains("暂停", IslandXaml);
         Assert.Contains("结束", IslandXaml);
         // The four pills are the Mac IslandAction: a white prominent one and three quiet ones
@@ -121,7 +123,8 @@ public sealed class CueIslandParityTests
         Assert.Contains("Classes=\"islandAction destructive\"", IslandXaml);
         // Only the buttons take clicks; the window stays click-through everywhere else.
         Assert.Contains("SetClickThrough", IslandCode);
-        Assert.Contains("InteractiveRects", IslandCode);
+        Assert.Contains("InteractiveControls", IslandCode);
+        Assert.Contains("CursorOverControl", IslandCode);
     }
 
     [Fact]
@@ -133,23 +136,27 @@ public sealed class CueIslandParityTests
                      "AutoEndText", "AutoEndIcon", "KeepRecordingButton", "EndNowButton"
                  })
             Assert.Contains("x:Name=\"" + element + "\"", IslandXaml);
-        Assert.Contains("我的讲稿", IslandXaml);
-        Assert.Contains("下一页", IslandXaml);
-        Assert.Contains("正在准备这一页的要点", IslandXaml);
+        Assert.Contains("我的讲稿", IslandData);
+        Assert.Contains("下一页", IslandData);
+        Assert.Contains("正在准备这一页的要点", IslandModel + IslandData);
         // C7: the auto-end reminder counts down and offers 继续记录 / 现在结束.
-        Assert.Contains("好像没人说话了，%lld 秒后结束记录", IslandXaml);
+        Assert.Contains("好像没人说话了，%lld 秒后结束记录", IslandData);
         Assert.Contains("Command=\"{Binding KeepRecordingCommand}\"", IslandXaml);
         Assert.Contains("Command=\"{Binding EndMeetingCommand}\"", IslandXaml);
         Assert.Contains("现在结束", IslandXaml);
         // C7: the coach hint rides on the notch ear.
-        Assert.Contains("CoachHint", IslandXaml);
+        Assert.Contains("CoachText", IslandXaml);
+        Assert.Contains("CueIslandCoachHint", IslandData + IslandModel);
     }
 
     [Fact]
     public void C8TheBilingualQuestionRowAndTranslationsAreBound()
     {
-        Assert.Contains("BilingualQuestionText", IslandXaml);
+        // C8: the question of a bilingual answer gets its own row (BilingualAnswer.question),
+        // gated by the island's asked mark; the translation lane keeps using IslandTranslation.
+        Assert.Contains("CueAsked", IslandXaml);
         Assert.Contains("x:Name=\"CueAskedText\"", IslandXaml);
+        Assert.Contains("BilingualAnswer.Question(", IslandData);
         Assert.Contains("IslandTranslation", IslandXaml);
         Assert.Contains("x:Name=\"ListeningTranslationText\"", IslandXaml);
         Assert.Contains("DeckHeardTranslation", IslandXaml);
@@ -164,19 +171,21 @@ public sealed class CueIslandParityTests
         Assert.Contains("QuadraticBezierSegment", shape);
         Assert.Contains("Flare", shape);
         Assert.Contains("Radius", shape);
-        // The scene-pigment edge: a gradient that only shows near the lower edge.
-        Assert.Contains("LinearGradientBrush", shape);
-        Assert.Contains("EdgeBrush", shape);
-        Assert.Contains("BoxShadow", shape);
+        // The scene-pigment edge: a gradient that only shows near the lower edge, stroked 1.2 pt.
+        Assert.Contains("LinearGradientBrush", IslandModel);
+        Assert.Contains("EdgeBrush", IslandXaml);
+        // The soft shadow under the frame.
+        Assert.Contains("BoxShadow", IslandXaml);
 
         // The morph spring is the Mac Motion.morph token (response 0.5, damping 0.82).
         Assert.Contains("Motion.Kind.Morph", IslandCode);
         Assert.Contains("Motion.Progress", IslandCode);
-        Assert.Equal(MotionKind.Morph, MotionTokens.Curve(MotionKind.Morph) is { } ? MotionKind.Morph : MotionKind.Hover);
-        Assert.Equal(0.5, MotionTokens.Morph.Response);
-        Assert.Equal(0.82, MotionTokens.Morph.DampingFraction);
-        // Reduced motion: no animation at all, the island snaps to its final width.
         Assert.Contains("Motion.Reduce", IslandCode);
+        var morph = MotionTokens.Morph;
+        Assert.Equal(0.5, morph.Response);
+        Assert.Equal(0.82, morph.DampingFraction);
+        // Reduced motion: no animation at all, the island snaps to its final width.
+        Assert.Contains("Motion.Reduce", IslandModel);
         // Never steal focus, click through when put away.
         Assert.Contains("WsExNoActivate", IslandCode);
         Assert.Contains("WsExTransparent", IslandCode);
@@ -203,7 +212,8 @@ public sealed class CueIslandParityTests
                  })
             Assert.Contains(state, runner);
         Assert.Contains("island-", runner);
-        Assert.Contains("Backdrop", runner);
+        Assert.Contains("ApplyStateForCheck", runner);
+        Assert.Contains("ClearStateForCheck", runner);
     }
 
     [Fact]

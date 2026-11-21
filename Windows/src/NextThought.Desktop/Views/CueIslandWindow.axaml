@@ -13,17 +13,6 @@
        of the top edge of the screen: concave shoulders, a big bottom radius, the scene's pigment
        along the lower edge and a soft shadow under it. The window never takes focus and clicks
        pass through it unless the pointer is over one of the controls. -->
-  <Window.Resources>
-    <!-- Fluent System Icons codepoints of the bundled font (Styles/Icons.axaml is the app table;
-         these are the symbols only the island uses). -->
-    <x:String x:Key="IslandIconPause">&#xE8CD;</x:String>
-    <x:String x:Key="IslandIconPlay">&#xE991;</x:String>
-    <x:String x:Key="IslandIconStop">&#xF0544;</x:String>
-    <x:String x:Key="IslandIconMic">&#xE7FB;</x:String>
-    <x:String x:Key="IslandIconEdit">&#xE5B2;</x:String>
-    <x:String x:Key="IslandIconPinOff">&#xE986;</x:String>
-    <x:String x:Key="IslandIconWindow">&#xEE5F;</x:String>
-  </Window.Resources>
 
   <Window.Styles>
     <!-- IslandAction: the deck's pills (CueIsland.swift IslandAction). -->
@@ -117,6 +106,41 @@
     <Style Selector="Button.islandStep:disabled">
       <Setter Property="Opacity" Value="0.25" />
     </Style>
+    <!-- The Fluent theme paints button content from theme brushes; the island's buttons drive
+         their TextBlocks explicitly so the Mac white-on-black copy survives any app theme. -->
+    <Style Selector="Button.islandAction TextBlock">
+      <Setter Property="Foreground" Value="#D9FFFFFF" />
+    </Style>
+    <Style Selector="Button.islandAction:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFFFF" />
+    </Style>
+    <Style Selector="Button.islandAction.prominent TextBlock">
+      <Setter Property="Foreground" Value="#FF000000" />
+    </Style>
+    <Style Selector="Button.islandAction.prominent:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#FF000000" />
+    </Style>
+    <Style Selector="Button.islandAction.destructive TextBlock">
+      <Setter Property="Foreground" Value="#FFF07055" />
+    </Style>
+    <Style Selector="Button.islandAction.destructive:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#FFF07055" />
+    </Style>
+    <Style Selector="Button.islandButton TextBlock">
+      <Setter Property="Foreground" Value="#B8FFFFFF" />
+    </Style>
+    <Style Selector="Button.islandButton:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFFFF" />
+    </Style>
+    <Style Selector="Button.islandChip TextBlock">
+      <Setter Property="Foreground" Value="#D9FFFFFF" />
+    </Style>
+    <Style Selector="Button.islandChip:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFFFF" />
+    </Style>
+    <Style Selector="Button.islandStep TextBlock">
+      <Setter Property="Foreground" Value="#CCFFFFFF" />
+    </Style>
   </Window.Styles>
 
   <Panel x:Name="Root">
@@ -151,8 +175,18 @@
                          VerticalAlignment="Center" />
               <StackPanel x:Name="CoachEar" Orientation="Horizontal" Spacing="5" IsVisible="{Binding ShowCoach}"
                           VerticalAlignment="Center">
-                <TextBlock Text="{Binding CoachIcon}" FontFamily="{StaticResource IconFont}" FontSize="10"
-                           Foreground="{Binding CoachBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconIslandMoon}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                           Foreground="{Binding CoachBrush}" VerticalAlignment="Center"
+                           IsVisible="{Binding CoachIconMoon}" />
+                <TextBlock Text="{StaticResource IconIslandBubble}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                           Foreground="{Binding CoachBrush}" VerticalAlignment="Center"
+                           IsVisible="{Binding CoachIconBubble}" />
+                <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                           Foreground="{Binding CoachBrush}" VerticalAlignment="Center"
+                           IsVisible="{Binding CoachIconWaveform}" />
+                <TextBlock Text="{StaticResource IconIslandEye}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                           Foreground="{Binding CoachBrush}" VerticalAlignment="Center"
+                           IsVisible="{Binding CoachIconEye}" />
                 <TextBlock Text="{Binding CoachText}" FontSize="11" FontWeight="SemiBold"
                            Foreground="{Binding CoachBrush}" TextTrimming="CharacterEllipsis" />
               </StackPanel>
@@ -168,7 +202,7 @@
                  interpretation underneath when live translation is on. -->
             <StackPanel x:Name="HearingPanel" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowHearing}"
                         Margin="18,2,18,12">
-              <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
+              <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                          Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
               <StackPanel Spacing="2" VerticalAlignment="Center">
                 <TextBlock x:Name="HearingText" Text="{Binding HearingText}" FontSize="13" FontWeight="Medium"
@@ -182,7 +216,7 @@
             <!-- 对方在说 as their turn: their sentences plus what they mean. -->
             <StackPanel x:Name="ListeningPanel" IsVisible="{Binding ShowListening}" Margin="20,4,20,16" Spacing="8">
               <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-                <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                            Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{loc:Tr 对方在说}" FontSize="12" FontWeight="Medium"
                            Foreground="#80FFFFFF" Margin="6,0,0,0" VerticalAlignment="Center" />
@@ -192,7 +226,7 @@
               </Grid>
               <TextBlock x:Name="ListeningText" Text="{Binding ListeningText}" FontSize="{Binding ListeningTextSize}"
                          Foreground="#C7FFFFFF" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
-              <TextBlock x:Name="ListeningTranslationText" Text="{Binding ListeningTranslation}"
+              <TextBlock x:Name="ListeningTranslationText" Text="{Binding IslandTranslationText}"
                          IsVisible="{Binding ShowListeningTranslation}" FontSize="{Binding ListeningTranslationSize}"
                          FontWeight="Medium" Foreground="#FFFFFFFF" TextWrapping="Wrap" MaxLines="4"
                          TextTrimming="CharacterEllipsis" />
@@ -202,7 +236,7 @@
             <StackPanel x:Name="CuePanel" IsVisible="{Binding ShowCue}" Margin="20,4,20,16">
               <StackPanel IsVisible="{Binding ShowHeardStrip}" Spacing="5" Margin="0,0,0,12">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                  <TextBlock Text="{StaticResource IconIslandWaveform}" FontFamily="{StaticResource IconFont}" FontSize="11"
                              Foreground="{Binding TintBrush}" VerticalAlignment="Center" />
                   <TextBlock Text="{loc:Tr 对方在说}" FontSize="12" FontWeight="Medium" Foreground="#80FFFFFF"
                              VerticalAlignment="Center" />
@@ -215,8 +249,11 @@
                 <Rectangle Height="1" Fill="#1FFFFFFF" Margin="0,6,0,0" />
               </StackPanel>
               <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCueQuestion}" Margin="0,0,0,8">
+                <!-- English questions are longer than Chinese ones: two lines, still trimmed at the end
+                     (Mac lineLimit(asked == nil ? 1 : 2), truncationMode(.head)). -->
                 <TextBlock x:Name="CueQuestionText" Text="{Binding CueQuestion}" FontSize="12" FontWeight="Medium"
-                           Foreground="#80FFFFFF" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                           Foreground="#80FFFFFF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                           MaxLines="2" />
                 <island:ThinkingDots x:Name="CueThinking" Grid.Column="1" IsVisible="{Binding ShowThinking}"
                                      Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
               </Grid>
@@ -249,12 +286,16 @@
                                      Tint="{Binding TintBrush}" VerticalAlignment="Center" Margin="6,0" />
                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowSlideSteps}"
                             VerticalAlignment="Center">
-                  <Button x:Name="SlidePrevButton" Classes="islandStep" Content="{StaticResource IconChevronLeft}"
-                          FontFamily="{StaticResource IconFont}" Command="{Binding StepSlideCommand}"
-                          CommandParameter="-1" IsEnabled="{Binding SlidePrevEnabled}" />
-                  <Button x:Name="SlideNextButton" Classes="islandStep" Content="{StaticResource IconChevronRight}"
-                          FontFamily="{StaticResource IconFont}" Command="{Binding StepSlideCommand}"
-                          CommandParameter="1" IsEnabled="{Binding SlideNextEnabled}" />
+                  <Button x:Name="SlidePrevButton" Classes="islandStep" Command="{Binding StepSlideCommand}"
+                          CommandParameter="-1" IsEnabled="{Binding SlidePrevEnabled}">
+                    <TextBlock Text="{StaticResource IconIslandChevronLeft}" FontFamily="{StaticResource IconFont}"
+                               FontSize="11" />
+                  </Button>
+                  <Button x:Name="SlideNextButton" Classes="islandStep" Command="{Binding StepSlideCommand}"
+                          CommandParameter="1" IsEnabled="{Binding SlideNextEnabled}">
+                    <TextBlock Text="{StaticResource IconIslandChevronRight}" FontFamily="{StaticResource IconFont}"
+                               FontSize="11" />
+                  </Button>
                 </StackPanel>
               </Grid>
               <TextBlock x:Name="SlideEmptyHint" Text="{Binding SlideEmptyText}" IsVisible="{Binding ShowSlideEmpty}"
@@ -281,8 +322,8 @@
                            Foreground="#FFFFFFFF" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                 <Border x:Name="DeckSceneTag" Grid.Column="1" Background="{Binding TintSoftBrush}" CornerRadius="9"
                         Padding="7,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding DeckSceneTag}" FontSize="11" FontWeight="Medium"
-                             Foreground="{Binding TintBrush}" />
+                  <TextBlock x:Name="DeckSceneTagText" Text="{Binding DeckSceneTag}" FontSize="11"
+                             FontWeight="Medium" Foreground="{Binding TintBrush}" />
                 </Border>
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                   <Border x:Name="DeckWarningDot" Width="5" Height="5" CornerRadius="3" Background="#F0B24A"
@@ -309,7 +350,7 @@
                         Command="{Binding ForceAnswerCommand}"
                         ToolTip.Tip="{loc:Tr 立即回答}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IconBoltFill}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandBolt}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 立即回答}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -322,7 +363,7 @@
                 <Button x:Name="DeckRecordOnlyButton" Grid.Column="2" Classes="islandAction"
                         Command="{Binding ToggleRecordOnlyCommand}" Margin="6,0,0,0">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IslandIconEdit}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandEdit}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding DeckModeActionLabel}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -331,15 +372,17 @@
                         Command="{Binding TogglePauseCommand}" Margin="0,0,6,0"
                         ToolTip.Tip="{loc:Tr 暂停或继续聆听}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{Binding DeckPauseIcon}" FontFamily="{StaticResource IconFont}"
-                               FontSize="10" VerticalAlignment="Center" />
+                    <TextBlock Text="{StaticResource IconIslandPause}" FontFamily="{StaticResource IconFont}"
+                               FontSize="10" VerticalAlignment="Center" IsVisible="{Binding !IsPaused}" />
+                    <TextBlock Text="{StaticResource IconIslandPlay}" FontFamily="{StaticResource IconFont}"
+                               FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPaused}" />
                     <TextBlock Text="{Binding DeckPauseLabel}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
                 </Button>
                 <Button x:Name="DeckEndButton" Grid.Column="5" Classes="islandAction destructive"
-                        Command="{Binding EndMeetingCommand}" ToolTip.Tip="{loc:Tr 结束并整理纪要}">
+                        Command="{Binding EndMeetingCommand}" ToolTip.Tip="{loc:Tr 现在结束并整理纪要}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IslandIconStop}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandStop}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 结束}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -378,7 +421,7 @@
                 <Button x:Name="LauncherOpenWindowButton" Grid.Column="1" Classes="islandAction"
                         Command="{Binding OpenMainWindowCommand}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IslandIconWindow}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandWindow}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 打开主窗口}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -389,7 +432,7 @@
             <!-- 自动结束提醒: nobody is talking, the meeting ends by itself soon. -->
             <StackPanel x:Name="AutoEndPanel" IsVisible="{Binding ShowAutoEnd}" Margin="18,6,18,14" Spacing="10">
               <StackPanel Orientation="Horizontal" Spacing="7">
-                <TextBlock x:Name="AutoEndIcon" Text="{StaticResource IconMoonZzz}"
+                <TextBlock x:Name="AutoEndIcon" Text="{StaticResource IconIslandMoon}"
                            FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="{Binding CautionBrush}"
                            VerticalAlignment="Center" />
                 <TextBlock x:Name="AutoEndText" Text="{Binding AutoEndText}" FontSize="13" FontWeight="Medium"
@@ -401,7 +444,7 @@
                         Command="{Binding KeepRecordingCommand}"
                         ToolTip.Tip="{loc:Tr 取消倒计时，继续记录这场会议}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IslandIconMic}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandMic}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 继续记录}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -409,7 +452,7 @@
                 <Button x:Name="EndNowButton" Classes="islandAction destructive"
                         Command="{Binding EndMeetingCommand}" ToolTip.Tip="{loc:Tr 现在结束并整理纪要}">
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{StaticResource IslandIconStop}" FontFamily="{StaticResource IconFont}"
+                    <TextBlock Text="{StaticResource IconIslandStop}" FontFamily="{StaticResource IconFont}"
                                FontSize="10" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 现在结束}" FontSize="12" FontWeight="Medium" />
                   </StackPanel>
@@ -423,14 +466,18 @@
                   Margin="20,10,20,16">
               <StackPanel Orientation="Horizontal" Spacing="2">
               <Button x:Name="HistoryPrevButton" Classes="islandButton" IsVisible="{Binding ShowHistoryControls}"
-                      Command="{Binding PreviousAnswerCommand}" Content="{StaticResource IconChevronLeft}"
-                      FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 上一条回答}" />
+                      Command="{Binding PreviousAnswerCommand}" ToolTip.Tip="{loc:Tr 上一条回答}">
+                <TextBlock Text="{StaticResource IconIslandChevronLeft}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <TextBlock Text="{Binding HistoryPosition}" IsVisible="{Binding ShowHistoryControls}" FontSize="11"
                          FontWeight="Medium" Foreground="#8CFFFFFF" VerticalAlignment="Center"
                          Margin="2,0" />
               <Button x:Name="HistoryNextButton" Classes="islandButton" IsVisible="{Binding ShowHistoryControls}"
-                      Command="{Binding NextAnswerCommand}" Content="{StaticResource IconChevronRight}"
-                      FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 下一条回答}" />
+                      Command="{Binding NextAnswerCommand}" ToolTip.Tip="{loc:Tr 下一条回答}">
+                <TextBlock Text="{StaticResource IconIslandChevronRight}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <Button x:Name="ShorterButton" Classes="islandButton" Command="{Binding ShorterCommand}"
                       Content="{loc:Tr 更简短}" ToolTip.Tip="{loc:Tr 把回答改短}" />
               <Button x:Name="ExampleButton" Classes="islandButton" Command="{Binding ExampleCommand}"
@@ -438,20 +485,30 @@
               </StackPanel>
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
               <Button x:Name="FontSmallerButton" Classes="islandButton" Command="{Binding SmallerFontCommand}"
-                      Content="{StaticResource IconTextformatSizeSmaller}" FontFamily="{StaticResource IconFont}"
-                      ToolTip.Tip="{loc:Tr 缩小文字}" />
+                      ToolTip.Tip="{loc:Tr 缩小文字}">
+                <TextBlock Text="{StaticResource IconIslandFont}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <Button x:Name="FontLargerButton" Classes="islandButton" Command="{Binding LargerFontCommand}"
-                      Content="{StaticResource IconTextformatSizeLarger}" FontFamily="{StaticResource IconFont}"
-                      ToolTip.Tip="{loc:Tr 放大文字}" />
+                      ToolTip.Tip="{loc:Tr 放大文字}">
+                <TextBlock Text="{StaticResource IconIslandFont}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <Button x:Name="OpenWindowButton" Classes="islandButton" Command="{Binding OpenMainWindowCommand}"
-                      Content="{StaticResource IslandIconWindow}" FontFamily="{StaticResource IconFont}"
-                      ToolTip.Tip="{loc:Tr 打开主窗口}" />
+                      ToolTip.Tip="{loc:Tr 打开主窗口}">
+                <TextBlock Text="{StaticResource IconIslandWindow}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <Button x:Name="PinButton" Classes="islandButton" Command="{Binding TogglePinCommand}"
-                      Content="{StaticResource IconPinFill}" FontFamily="{StaticResource IconFont}"
-                      ToolTip.Tip="{loc:Tr 一直展开}" />
+                      ToolTip.Tip="{loc:Tr 提词岛一直展开}">
+                <TextBlock Text="{StaticResource IconIslandPin}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               <Button x:Name="CollapseButton" Classes="islandButton" Command="{Binding CollapseCommand}"
-                      IsVisible="{Binding ShowCollapse}" Content="{StaticResource IconChevronUp}"
-                      FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 收起}" />
+                      IsVisible="{Binding ShowCollapse}" ToolTip.Tip="{loc:Tr 收起会议面板}">
+                <TextBlock Text="{StaticResource IconIslandChevronUp}" FontFamily="{StaticResource IconFont}"
+                           FontSize="11" />
+              </Button>
               </StackPanel>
             </Grid>
           </StackPanel>
