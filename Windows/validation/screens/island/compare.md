@@ -1,8 +1,14 @@
 # 提词岛 · Windows ↔ Mac 逐元素对照（§6.6 / C5–C9）
 
 - 日期：2026-11-21（windows/parity）
-- Mac 基准：v3.4.0 `f015e8c6`，`Sources/NextThought/CueIsland.swift`（1391 行）为唯一标准
+- Mac 基准：Mac 3.4.0，提交 `f015e8c6`，`Sources/NextThought/CueIsland.swift`（1391 行）为唯一标准
 - Mac 截图：`Windows/validation/mac-screens/island/`（1600 px 宽、Retina @2x）
+- Mac 3.4.0 参考图：[cue](../../mac-screens/island/cue-light.png) / [cue-dark](../../mac-screens/island/cue-dark.png)、
+  [deck](../../mac-screens/island/deck-light.png) / [deck-dark](../../mac-screens/island/deck-dark.png)、
+  [hearing](../../mac-screens/island/hearing-light.png) / [hearing-dark](../../mac-screens/island/hearing-dark.png)、
+  [launcher](../../mac-screens/island/launcher-light.png) / [launcher-dark](../../mac-screens/island/launcher-dark.png)、
+  [pinned](../../mac-screens/island/pinned-light.png) / [pinned-dark](../../mac-screens/island/pinned-dark.png)、
+  [autoend](../../mac-screens/island/autoend-light.png) / [autoend-dark](../../mac-screens/island/autoend-dark.png)。
 - Windows 截图：本目录 `island-<状态>-<light|dark>.png`（800 px 宽、100% 缩放、逻辑像素 1:1；岛恒为深色面板，与 Mac `panel.appearance = darkAqua` 一致，所以两种主题下的岛相同，只有桌面底色随主题）
 - 复现：`NEXTTHOUGHT_DATA_DIR=%TEMP%\nt-island NextThought.exe --demo --screenshots=<dir>`；状态由 `CueIslandWindow.ApplyStateForCheck`（`SelfTest/Checks/CueIslandWindowStates.cs`）按 Mac `DemoMode.snapshotIsland` 的同一套状态注入
 - 自检：`--self-test island` → 38/38 项通过（每个状态一遍、deck 文案/四个动作/命令绑定、几何、0.22/0.2、reduced-motion、非激活样式）
