@@ -86,4 +86,4 @@ Windows 实现：`Windows/src/NextThought.Desktop/Controls/DesignSystemComponent
 - `NotesView.axaml` 格式选择：4 个手写 chip RadioButton → `PillTabs`（`SelectedIndex={Binding NotesFormatIndex}`，`AppState.DesignSystemIndex.cs` 桥接 `SelectedNotesFormat`，Mac 顺序 复盘/提纲/鱼骨图/观点对照）。
 - `CorrectedTranscriptView.axaml` 版本选择：2 个 chip RadioButton → `PillTabs`（`SelectedIndex={Binding CorrectedTranscriptVersionIndex}` 桥接 `CorrectedTranscriptShowOriginal`）。
 - `NotesEditorWindow.axaml` 的「查看 AI 原稿」→ `InkSwitch`（前一次 E16 提交）。
-- 仍待接：NotesView 的 3 个信息 badge（自动/未完成等）改 `MetricPill`。
+- NotesView 的 3 个信息 badge（证据 Badge / 自动 / 未完成）已改用 `MetricPill`，页面不再有 `Classes="chip"`。

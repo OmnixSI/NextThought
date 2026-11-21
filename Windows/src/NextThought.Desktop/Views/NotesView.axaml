@@ -256,9 +256,7 @@
                     <DataTemplate x:DataType="local:SessionEvidenceRow">
                       <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                          <Border Classes="chip">
-                            <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
-                          </Border>
+                          <c:MetricPill Text="{Binding Badge}" />
                           <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
@@ -302,7 +300,7 @@
                   <Button Classes="quiet" Tag="{Binding}" Click="OpenSpeakerStrip_Click" ToolTip.Tip="{Binding Tooltip}"
                           Margin="{DynamicResource D4Margin_0_0_6_4}" Padding="{DynamicResource D4Padding_10_3}">
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                      <TextBlock Text="{Binding Mark}" FontSize="10" />
+                      <TextBlock Text="{Binding MarkGlyph}" FontSize="10" FontFamily="{StaticResource IconFont}" />
                       <TextBlock Text="{Binding DisplayLabel}" Classes="caption" />
                     </StackPanel>
                   </Button>
@@ -355,7 +353,8 @@
                     </ContextMenu>
                   </StackPanel.ContextMenu>
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}"
+                               IsVisible="{Binding ShowSpeakerLabel}" />
                     <TextBlock Text="{loc:Tr ★ 高亮}" FontSize="11" Foreground="{DynamicResource Caution}"
                                IsVisible="{Binding IsHighlighted}" />
                   </StackPanel>
@@ -379,12 +378,8 @@
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                    <Border Classes="chip">
-                      <TextBlock Text="{Binding AutomaticLabel}" Classes="overline" FontSize="10" />
-                    </Border>
-                    <Border Classes="chip" IsVisible="{Binding !IsComplete}">
-                      <TextBlock Text="{loc:Tr 未完成}" Classes="overline" FontSize="10" Foreground="{DynamicResource Caution}" />
-                    </Border>
+                    <c:MetricPill Text="{Binding AutomaticLabel}" />
+                    <c:MetricPill Text="{loc:Tr 未完成}" Foreground="{DynamicResource Caution}" IsVisible="{Binding !IsComplete}" />
                   </StackPanel>
                   <TextBlock Text="{Binding AnswerText}" Classes="body" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding MetaLine}" Classes="caption" />
