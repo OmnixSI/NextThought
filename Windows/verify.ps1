@@ -40,6 +40,13 @@ try {
     Invoke-Step 'build (Release)' {
         & $dotnet build src/NextThought.Desktop -c Release --no-restore --verbosity minimal
     }
+    # The test projects reference Core/Platform sources; build them here so the later
+    # `dotnet test --no-build` runs fresh assemblies instead of a previous batch's binaries.
+    Invoke-Step 'build (tests, Release)' {
+        & $dotnet build tests/NextThought.Core.Tests -c Release --no-restore --verbosity minimal
+        if ($LASTEXITCODE -ne 0) { return }
+        & $dotnet build tests/NextThought.Tests -c Release --no-restore --verbosity minimal
+    }
     Invoke-Step 'tests: NextThought.Core.Tests' {
         & $dotnet test tests/NextThought.Core.Tests -c Release --no-build --no-restore `
             --logger 'trx;LogFileName=core.trx' --results-directory artifacts/verify --verbosity minimal
