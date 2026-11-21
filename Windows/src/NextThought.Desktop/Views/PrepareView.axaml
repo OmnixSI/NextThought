@@ -3,335 +3,575 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
-             xmlns:sys="using:System"
+             xmlns:c="using:NextThought.Desktop.Controls"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:sys="using:System"
              x:Class="NextThought.Desktop.Views.PrepareView"
              x:DataType="local:AppState">
+  <!-- E2 §6.7: the page follows Mac PrepareView.swift 3.4.0 top to bottom — the one raised
+       composer sheet, then flat sections between hairlines (这场用什么 / 接着上一场 /
+       这次新加的资料 / 开始前检查), with the start bar pinned to the window bottom. -->
   <UserControl.Styles>
-    <Style Selector="Button.scene">
-      <Setter Property="Padding" Value="{DynamicResource D4Padding_10_8}" />
-      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_14}" />
+    <Style Selector="Button.sceneChip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="11,0" />
+      <Setter Property="Height" Value="30" />
       <Setter Property="MinHeight" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
       <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="Border.checkRow">
-      <Setter Property="Padding" Value="{DynamicResource D4Padding_4_10}" />
-      <Setter Property="MinHeight" Value="48" />
+    <Style Selector="Button.sceneChip:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
     </Style>
-    <Style Selector="TextBlock.checkLabel">
-      <Setter Property="Width" Value="56" />
+    <Style Selector="TextBlock.prepareSectionTitle">
+      <Setter Property="FontFamily" Value="{StaticResource SansSemiBoldFamily}" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="LetterSpacing" Value="0.66" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style Selector="TextBlock.prepareRowTitle">
+      <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- Mac InkSegmented (LiquidGlass.swift): sunken track radius 8 padding 2; the selected item is
+         a raised radius-6 block with a contact shadow and a hairline. -->
+    <Style Selector="Border.venueContainer">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="2" />
+    </Style>
+    <Style Selector="RadioButton.venue">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="MinWidth" Value="32" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.venue:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="BoxShadow" Value="{DynamicResource PaperCardShadow}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
   </UserControl.Styles>
+
   <Grid>
-    <!-- D6: the same pigment wash as the home page, still on the prepare page (Mac animated: false). -->
-    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" Animated="False" />
-  <Grid RowDefinitions="*,Auto">
-    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_18}">
-      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 准备}" Classes="display" />
-        <TextBlock Text="{loc:Tr 先选场合、补资料、做检查，再开始这场会。}" Classes="caption" />
-      </StackPanel>
+    <!-- Mac: InkWash(tint: mode.theme.tint, animated: false).frame(height: 300).opacity(0.7). -->
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="300" Opacity="0.7" VerticalAlignment="Top" Animated="False" />
 
-      <!-- PrepareComposer: title, venue and the scene (the one raised card). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
-            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1" Text="{Binding DraftTitle, Mode=TwoWay}" Background="Transparent" BorderThickness="0"
-                     FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="{DynamicResource Control}"
-                     PlaceholderText="{loc:Tr 这场会议叫什么}" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
-              <RadioButton GroupName="prepare-venue" Content="{loc:Tr 线上}" IsChecked="{Binding DraftOnline, Mode=TwoWay}" />
-              <RadioButton GroupName="prepare-venue" Content="{loc:Tr 线下}" IsChecked="{Binding DraftOffline, Mode=TwoWay}" />
-            </StackPanel>
-          </Grid>
-          <TextBlock Text="{Binding DraftVenueHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                     TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_0}" />
+    <Grid RowDefinitions="*,Auto">
+      <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Center" Margin="32,24,32,40" Spacing="40">
 
-          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-              <TextBlock Text="{loc:Tr 这是什么会}" Classes="overline" />
-              <TextBlock Text="{loc:Tr 根据标题选好了，可以改}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                         IsVisible="{Binding DraftGuessNoteVisible}" />
-            </StackPanel>
-            <WrapPanel Orientation="Horizontal">
-              <ItemsControl ItemsSource="{Binding Scenes}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="local:SceneChoice">
-                    <Button Classes="scene" Tag="{Binding}" Click="PrepareScene_Click" ToolTip.Tip="{Binding DefaultsSummary}">
-                      <TextBlock Text="{Binding Title}" FontSize="13" />
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <Button Classes="scene" Content="{loc:Tr 自定义…}" Click="CustomType_Click" />
-            </WrapPanel>
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding DraftIsCustom}">
-              <TextBox Text="{Binding DraftCustomTypeName, Mode=TwoWay}" Width="260"
-                       PlaceholderText="{loc:Tr 类型名称，例如：导师一对一}" />
-              <TextBlock Text="{loc:Tr 基于}" Classes="caption" VerticalAlignment="Center" />
-              <ComboBox x:Name="CustomBaseBox" ItemsSource="{Binding DraftBaseScenes}" SelectedIndex="0"
-                        SelectionChanged="CustomBase_SelectionChanged">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="local:SceneChoice">
-                    <TextBlock Text="{Binding Title}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </StackPanel>
-            <TextBlock Text="{Binding DraftPromise}" FontSize="17" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_4_0_0}" />
-            <TextBlock Text="{Binding DraftSummary}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-            <ItemsControl ItemsSource="{Binding DraftMoments}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="sys:String">
-                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                    <Ellipse Width="4" Height="4" VerticalAlignment="Center" Fill="{DynamicResource Secondary}" />
-                    <TextBlock Text="{Binding}" Classes="caption" />
+          <!-- ===== PrepareComposer: the one raised sheet (glyph, title, venue, type, promise). ===== -->
+          <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+                  CornerRadius="22" BoxShadow="{DynamicResource PaperCardShadow}">
+            <StackPanel>
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="24,24,24,24">
+                <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding DraftTitle, Mode=TwoWay}" Background="Transparent"
+                         BorderThickness="0" Padding="0" FontFamily="{StaticResource SerifFamily}" FontSize="30"
+                         FontWeight="Medium" MinHeight="44" VerticalAlignment="Center"
+                         PlaceholderText="{loc:Tr 这场会议叫什么}" />
+                <Border Grid.Column="2" Classes="venueContainer" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton Classes="venue" GroupName="prepare-venue" Content="{loc:Tr 线上}"
+                                 IsChecked="{Binding DraftOnline, Mode=OneWay}" Click="OnlineVenue_Click" />
+                    <RadioButton Classes="venue" GroupName="prepare-venue" Content="{loc:Tr 线下}"
+                                 IsChecked="{Binding DraftOffline, Mode=OneWay}" Click="OfflineVenue_Click" />
                   </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </StackPanel>
-      </Border>
+                </Border>
+              </Grid>
 
-      <!-- SeriesCarryCard + MaterialsBlock: the series and the documents this meeting uses. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="{loc:Tr 系列与资料}" Classes="section" />
-          <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
-          <ListBox ItemsSource="{Binding SeriesRows}" SelectedItem="{Binding SelectedSeries, Mode=TwoWay}"
-                   Background="Transparent" BorderThickness="0" MaxHeight="140">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="local:SeriesRow">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-                  <TextBlock Text="{Binding Name}" Classes="label" />
-                  <TextBlock Text="{Binding Meta}" Classes="caption" />
+              <!-- TypePicker: 这是什么会, the scene chips, the custom row and the scene's promise. -->
+              <StackPanel Margin="24,0,24,24" Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{loc:Tr 这是什么会}" Classes="overline" />
+                  <TextBlock Text="{loc:Tr 根据标题选好了，可以改}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                             IsVisible="{Binding DraftGuessNoteVisible}" />
                 </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-          <TextBlock Text="{Binding SelectedSeriesTitle}" Classes="label" />
-          <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
-          <WrapPanel>
-            <CheckBox Content="{loc:Tr 带入资料}" IsChecked="{Binding CarryMaterials}" />
-            <CheckBox Content="{loc:Tr 带入题库}" IsChecked="{Binding CarryReview}" />
-            <CheckBox Content="{loc:Tr 带入经验}" IsChecked="{Binding CarryLessons}" />
-            <CheckBox Content="{loc:Tr 带入上一场转写}" IsChecked="{Binding CarryTranscript}" />
-          </WrapPanel>
-          <TextBlock Text="{Binding PrepareCarrySummary}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding PrepareMaterialsHeader}" Classes="label" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-          <Border x:Name="DropZone" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                  Padding="{DynamicResource D4Padding_12_10}" DragDrop.AllowDrop="True">
-            <ItemsControl ItemsSource="{Binding PrepareMaterialsRows}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="local:PrepareMaterialRow">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_0_0_4}">
-                    <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption"
-                               Foreground="{DynamicResource Secondary}" IsVisible="{Binding Ready}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption"
-                               Foreground="{DynamicResource Caution}" IsVisible="{Binding Failed}" />
+                <WrapPanel Orientation="Horizontal">
+                  <ItemsControl x:Name="SceneChipsList" ItemsSource="{Binding DraftSceneChips}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:PrepareSceneChip">
+                        <Button Classes="sceneChip" Tag="{Binding Scene}" Click="PrepareScene_Click"
+                                Background="{Binding Background}" ToolTip.Tip="{Binding DefaultsSummary}">
+                          <TextBlock Text="{Binding Title}" Foreground="{Binding Foreground}" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="sceneChip" Click="CustomType_Click"
+                          Background="{Binding DraftCustomChipBackground}" ToolTip.Tip="{Binding DraftSummary}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{StaticResource IconPlus}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                 Foreground="{Binding DraftCustomChipForeground}" VerticalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr 自定义…}" Foreground="{Binding DraftCustomChipForeground}" />
+                    </StackPanel>
+                  </Button>
+                </WrapPanel>
+                <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding DraftIsCustom}">
+                  <TextBox Text="{Binding DraftCustomTypeName, Mode=TwoWay}" Width="260"
+                           PlaceholderText="{loc:Tr 类型名称，例如：导师一对一}" />
+                  <TextBlock Text="{loc:Tr 基于}" Classes="caption" VerticalAlignment="Center" />
+                  <ComboBox x:Name="CustomBaseBox" ItemsSource="{Binding DraftBaseScenes}" SelectedIndex="0"
+                            SelectionChanged="CustomBase_SelectionChanged">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="local:SceneChoice">
+                        <TextBlock Text="{Binding Title}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="8" Margin="0,4,0,0">
+                  <TextBlock Text="{Binding DraftPromise}" FontFamily="{StaticResource SerifFamily}" FontSize="17"
+                             FontWeight="Medium" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding DraftSummary}" Classes="caption" TextWrapping="Wrap" />
+                  <ItemsControl x:Name="MomentList" ItemsSource="{Binding DraftMomentRows}" Margin="0,2,0,0">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="16" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:PrepareMomentRow">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Ellipse Width="4" Height="4" Fill="{Binding Dot}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Text}" Classes="caption" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- ===== 这场用什么 (Mac PrepareSection + FeaturePicker + FeatureReset) ===== -->
+          <StackPanel Spacing="0">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" MinHeight="28">
+              <TextBlock Text="{loc:Tr 这场用什么}" Classes="prepareSectionTitle" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr 不用的可以关掉}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                         Margin="8,0,0,0" VerticalAlignment="Center" />
+              <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 恢复这个场景的默认}" FontSize="12"
+                      IsVisible="{Binding !MeetingFeaturesAreDefault}" Command="{Binding ResetMeetingFeaturesCommand}" />
+            </Grid>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="0,8,0,0" />
+            <StackPanel Margin="0,12,0,0">
+              <!-- 实时转写: always on, no switch. -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,12">
+                <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                           Foreground="{DynamicResource Secondary}" Width="24" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{loc:Tr 实时转写}" Classes="prepareRowTitle" />
+                  <TextBlock Text="{loc:Tr 把双方说的话写成文字。回答、纪要和搜索都靠它，一直开着。}" Classes="caption"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="{loc:Tr 始终开启}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                           VerticalAlignment="Center" />
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="44,0,0,0" />
+              <!-- 自动回答 -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,12">
+                <TextBlock Text="{StaticResource IconSparkles}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                           Foreground="{DynamicResource Secondary}" Width="24" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{loc:Tr 自动回答}" Classes="prepareRowTitle" />
+                  <TextBlock Text="{Binding MeetingFeatureAnswersDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <c:InkSwitch Grid.Column="2" IsChecked="{Binding MeetingFeatureAnswers, Mode=TwoWay}"
+                             IsEnabled="{Binding MeetingFeatureAnswersEnabled}" VerticalAlignment="Center" />
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="44,0,0,0" />
+              <!-- 实时纪要 -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,12">
+                <TextBlock Text="{StaticResource IconListBullet}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                           Foreground="{DynamicResource Secondary}" Width="24" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{loc:Tr 实时纪要}" Classes="prepareRowTitle" />
+                  <TextBlock Text="{Binding MeetingFeatureLiveNotesDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <c:InkSwitch Grid.Column="2" IsChecked="{Binding MeetingFeatureLiveNotes, Mode=TwoWay}"
+                             IsEnabled="{Binding MeetingFeatureLiveNotesEnabled}" VerticalAlignment="Center" />
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="44,0,0,0" />
+              <!-- 同声传译 -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,12">
+                <TextBlock Text="{StaticResource IconBubbleLeftAndBubbleRight}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                           Foreground="{DynamicResource Secondary}" Width="24" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{loc:Tr 同声传译}" Classes="prepareRowTitle" />
+                  <TextBlock Text="{Binding MeetingFeatureTranslationDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <c:InkSwitch Grid.Column="2" IsChecked="{Binding MeetingFeatureTranslation, Mode=TwoWay}"
+                             IsEnabled="{Binding MeetingFeatureTranslationEnabled}" VerticalAlignment="Center" />
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="44,0,0,0" />
+              <!-- 区分说话人 -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,12">
+                <TextBlock Text="{StaticResource IconPerson2}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                           Foreground="{DynamicResource Secondary}" Width="24" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{loc:Tr 区分说话人}" Classes="prepareRowTitle" />
+                  <TextBlock Text="{Binding MeetingFeatureSpeakersDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <c:InkSwitch Grid.Column="2" IsChecked="{Binding MeetingFeatureSpeakers, Mode=TwoWay}"
+                             IsEnabled="{Binding MeetingFeatureSpeakersEnabled}" VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- ===== 接着上一场 (Mac PrepareSection + SeriesCarryCard + SeriesBriefingPanel) ===== -->
+          <StackPanel Spacing="0" IsVisible="{Binding DraftContinuesSeries}">
+            <Grid ColumnDefinitions="Auto,*" MinHeight="28">
+              <TextBlock Text="{loc:Tr 接着上一场}" Classes="prepareSectionTitle" />
+            </Grid>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="0,8,0,0" />
+            <StackPanel Margin="0,12,0,0">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,0,8,12">
+                <Ellipse Width="7" Height="7" Fill="{Binding DraftSceneTintBrush}" VerticalAlignment="Top" Margin="0,7,0,0" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding DraftSeriesHeaderTitle}" Classes="body" />
+                  <TextBlock Text="{Binding DraftSeriesPreviousLine}" Classes="caption" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 不是同一个系列}" FontSize="12"
+                        Command="{Binding DeclineDraftSeriesCommand}" />
+              </Grid>
+
+              <!-- SeriesBriefingPanel: what this series brings from earlier meetings. -->
+              <StackPanel Spacing="12" Margin="8,0,8,12" IsVisible="{Binding DraftHasBriefing}">
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Text="{loc:Tr 系列简报}" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr 本机 · 已保存内容}" Classes="caption" HorizontalAlignment="Right" />
+                </Grid>
+                <StackPanel Spacing="4" IsVisible="{Binding DraftBriefingHasRecent}">
+                  <TextBlock Text="{Binding DraftBriefingRecentLine}" Classes="caption" />
+                  <ItemsControl ItemsSource="{Binding DraftBriefingRecentSessions}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:SessionMeta">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                          <TextBlock Text="{Binding Title}" Classes="caption" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                          <TextBlock Grid.Column="1" Text="{Binding LocalStartedAt}" Classes="caption"
+                                     Foreground="{DynamicResource Tertiary}" Margin="8,0,0,0" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock Text="{loc:Tr 这个系列还没有已归档的会议。}" Classes="caption" IsVisible="{Binding !DraftBriefingHasRecent}" />
+                <StackPanel Spacing="2" IsVisible="{Binding DraftBriefingHasLessons}">
+                  <TextBlock Text="{loc:Tr 已确认的经验}" Classes="caption" />
+                  <ItemsControl ItemsSource="{Binding DraftBriefingLessons}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:WorkspaceLesson">
+                        <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2" IsVisible="{Binding DraftBriefingHasQuestionBank}">
+                  <TextBlock Text="{loc:Tr 已确认的答法}" Classes="caption" />
+                  <ItemsControl ItemsSource="{Binding DraftBriefingQuestionBank}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:QuestionBankItem">
+                        <StackPanel Spacing="1">
+                          <TextBlock Text="{Binding Question}" Classes="caption" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Answer}" Classes="caption" Foreground="{DynamicResource Tertiary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock Text="{loc:Tr 系列知识已关闭；本简报不会带入经验或答法。}" Classes="caption"
+                           IsVisible="{Binding DraftBriefingKnowledgeOff}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding DraftBriefingPendingLine}" Classes="caption" Foreground="{DynamicResource Caution}"
+                           IsVisible="{Binding DraftBriefingHasPending}" TextWrapping="Wrap" />
+              </StackPanel>
+
+              <!-- CarryRow: what the series carries into this meeting. -->
+              <StackPanel Margin="0,0,0,0">
+                <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                <c:WideToggleRow IsChecked="{Binding CarryMaterials, Mode=TwoWay}" IsVisible="{Binding DraftCarryHasMaterials}">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding DraftCarryMaterialsTitle}" Classes="body" TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" />
+                    <TextBlock Grid.Column="1" Text="{Binding DraftCarryMaterialsDetail}" Classes="caption" />
                   </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Border>
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <Button Classes="primary" Content="{loc:Tr 导入资料}" Command="{Binding ImportPreparedDocumentsCommand}" />
-            <Button Content="{loc:Tr 打开资料库}" Command="{Binding NavigateCommand}" CommandParameter="Library" />
-            <Button Content="{loc:Tr 打开系列}" Command="{Binding NavigateCommand}" CommandParameter="Series" />
-          </StackPanel>
-          <!-- E2 task-33: MaterialsInsight (Mac 讨论准备 · AI 可选). -->
-          <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                  Padding="{DynamicResource D4Padding_14_12}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="{Binding PrepareInsightHeading}" Classes="overline" Foreground="{DynamicResource Secondary}" />
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{Binding PrepareInsightHint}" Classes="body" TextWrapping="Wrap"
-                           IsVisible="{Binding !PrepareInsightShowsBody}" />
-                <TextBlock Text="{Binding PrepareInsightStatus}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                           IsVisible="{Binding PrepareInsightRunning}" />
-                <TextBlock Text="{Binding PrepareInsightText}" Classes="body" TextWrapping="Wrap"
-                           IsVisible="{Binding PrepareInsightHasText}" />
-                <TextBlock Text="{Binding PrepareInsightError}" Classes="caption" Foreground="{DynamicResource Caution}"
-                           TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightHasText}" />
+                </c:WideToggleRow>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding DraftCarryHasReview}" />
+                <c:WideToggleRow IsChecked="{Binding CarryReview, Mode=TwoWay}" IsVisible="{Binding DraftCarryHasReview}">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{loc:Tr 复盘 · 改进后的答法}" Classes="body" TextWrapping="NoWrap" />
+                    <TextBlock Grid.Column="1" Text="{Binding DraftCarryReviewDetail}" Classes="caption" />
+                  </Grid>
+                </c:WideToggleRow>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding DraftCarryHasLessons}" />
+                <c:WideToggleRow IsChecked="{Binding CarryLessons, Mode=TwoWay}" IsVisible="{Binding DraftCarryHasLessons}">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding DraftCarryLessonsTitle}" Classes="body" TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" />
+                    <TextBlock Grid.Column="1" Text="{Binding DraftCarryLessonsDetail}" Classes="caption" />
+                  </Grid>
+                </c:WideToggleRow>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding DraftCarryHasTranscript}" />
+                <c:WideToggleRow IsChecked="{Binding CarryTranscript, Mode=TwoWay}" IsVisible="{Binding DraftCarryHasTranscript}">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{loc:Tr 上一场完整转写}" Classes="body" TextWrapping="NoWrap" />
+                    <TextBlock Grid.Column="1" Text="{Binding DraftCarryTranscriptDetail}" Classes="caption" />
+                  </Grid>
+                </c:WideToggleRow>
+                <TextBlock Text="{loc:Tr 这个系列还没有资料、题库或经验可以带入。}" Classes="caption"
+                           IsVisible="{Binding DraftCarryHasNothing}" Margin="8,8,8,8" TextWrapping="Wrap" />
+                <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding DraftCarryHasAnything}" />
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-                <Button Content="{Binding PrepareInsightAction}" Command="{Binding PrepareInsightActionCommand}"
-                        IsVisible="{Binding !PrepareInsightRunning}" />
-                <Button Content="{loc:Tr 取消生成}" Command="{Binding CancelMaterialsInsightCommand}"
-                        IsVisible="{Binding PrepareInsightRunning}" />
-              </StackPanel>
-              <TextBlock Text="{Binding PrepareInsightActionHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                         TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightShowsBody}" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
-      </Border>
-
-      <!-- SeriesBriefingPanel: what the series brings from earlier meetings. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="{loc:Tr 系列简报}" Classes="section" />
-          <TextBlock Text="{Binding SelectedSeriesBriefing.WorkspaceName}" Classes="label" />
-          <TextBlock Text="{Binding SelectedSeriesBriefing.SessionCount}" Classes="caption" />
-          <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
-          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.LatestSessions}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:SessionMeta">
-                <TextBlock Text="{Binding Title}" Classes="caption" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
-          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:WorkspaceLesson">
-                <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{loc:Tr 题库}" Classes="overline" />
-          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:QuestionBankItem">
-                <TextBlock Text="{Binding Question}" Classes="caption" TextWrapping="Wrap" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-
-      <!-- CheckCard: the three quiet checks before starting. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_18_6}">
-        <StackPanel>
-          <Border Classes="checkRow">
-            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAudioReady}" />
-              <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                         Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !PrepareAudioReady}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr 声音}" Classes="label checkLabel" />
-              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding AudioSourceText}" Classes="label" TextWrapping="Wrap" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                    <Button Classes="quiet" Content="{loc:Tr 只记录对方（不用麦克风）}" Command="{Binding ContinueWithoutMicrophoneCommand}"
-                            IsVisible="{Binding PrepareShowRecordOnly}" />
-                    <Button Classes="quiet" Content="{loc:Tr 重新打开麦克风}" Command="{Binding UseMicrophoneAgainCommand}"
-                            IsVisible="{Binding PrepareShowUseMicrophone}" />
-                    <Button Classes="quiet" Content="{loc:Tr 下载}" Command="{Binding PrepareModelsCommand}" />
-                    <Button Classes="quiet" Content="{loc:Tr 声音测试}" Click="VoiceTest_Click" />
-                    <Button Classes="quiet" Content="{loc:Tr 去准备}" Command="{Binding NavigateCommand}"
-                            CommandParameter="Settings" IsVisible="{Binding !PrepareAudioReady}" />
-                  </StackPanel>
-                </Grid>
-                <TextBlock Text="{Binding PrepareMicLine}" Classes="caption" Foreground="{DynamicResource Secondary}" />
-                <Grid ColumnDefinitions="Auto,140,Auto,140" ColumnSpacing="{DynamicResource D4Spacing_6}">
-                  <TextBlock Text="{loc:Tr 对方 · 系统声音}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                             VerticalAlignment="Center" />
-                  <ProgressBar Grid.Column="1" Value="{Binding SystemAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{loc:Tr 我 · 麦克风}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                             VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
-                  <ProgressBar Grid.Column="3" Value="{Binding MicrophoneAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
-                </Grid>
-                <TextBlock Text="{Binding PrepareAudioProblem}" Classes="caption" Foreground="{DynamicResource Caution}"
-                           TextWrapping="Wrap" IsVisible="{Binding !PrepareAudioReady}" />
-                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
-          </Border>
-          <Border Height="0.5" Background="{DynamicResource Hairline}" />
-          <Border Classes="checkRow">
-            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAnswerReady}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr AI 可选}" Classes="label checkLabel" />
-              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding PrepareAnswerLine}" Classes="label" TextWrapping="Wrap" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                    <Button Classes="quiet" Content="{Binding PrepareEngineActionLabel}" Command="{Binding TestAnswerEngineCommand}"
-                            IsEnabled="{Binding PrepareEngineActionEnabled}" />
-                    <Button Classes="quiet" Content="{Binding PrepareAnswerAction}" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
-                  </StackPanel>
-                </Grid>
-                <TextBlock Text="{Binding PrepareEngineStateLabel}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                           TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
-          </Border>
-          <Border Height="0.5" Background="{DynamicResource Hairline}" />
-          <Border Classes="checkRow">
-            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PreparePhoneReady}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr 手机}" Classes="label checkLabel" />
-              <TextBlock Grid.Column="2" Text="{Binding PreparePhoneLine}" Classes="label" TextWrapping="Wrap" />
-            </Grid>
-          </Border>
-          <Border Height="0.5" Background="{DynamicResource Hairline}" />
-          <Border Classes="checkRow">
-            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
-              <TextBlock Grid.Column="1" Text="{loc:Tr 资料与模型}" Classes="label checkLabel" />
-              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_2}">
-                <TextBlock Text="{Binding PrepareMaterialsLine}" Classes="caption" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
-          </Border>
-        </StackPanel>
-      </Border>
-      <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
-    </StackPanel>
-    </ScrollViewer>
-    <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
-            BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_32_12}">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}">
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAudioReady}" />
-              <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !PrepareAudioReady}" />
-              <TextBlock Text="{loc:Tr 声音}" Classes="caption" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAnswerReady}" />
-              <TextBlock Text="{loc:Tr AI 可选}" Classes="caption" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding PreparePhoneReady}">
-              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" />
-              <TextBlock Text="{loc:Tr 手机}" Classes="caption" />
             </StackPanel>
           </StackPanel>
-          <TextBlock Classes="caption" TextWrapping="Wrap">
-            <Run Text="{Binding Status}" />
-            <Run Text="  ·  " Foreground="{DynamicResource Secondary}" />
-            <Run Text="{Binding PrepareMaterialsLine}" Foreground="{DynamicResource Secondary}" />
-          </TextBlock>
+
+          <!-- ===== 这次新加的资料 (Mac PrepareSection + MaterialsActions + MaterialsBlock) ===== -->
+          <StackPanel Spacing="0">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" MinHeight="28">
+              <TextBlock Text="{loc:Tr 这次新加的资料}" Classes="prepareSectionTitle" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr 可跳过}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                         Margin="8,0,0,0" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                <Button Classes="quiet" FontSize="12" Content="{loc:Tr 从以前的会议带入…}" IsVisible="{Binding HasOtherSeries}">
+                  <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedRight">
+                      <StackPanel Spacing="4" MinWidth="220">
+                        <TextBlock Text="{loc:Tr 继续一个系列}" Classes="overline" />
+                        <ItemsControl ItemsSource="{Binding OtherSeriesRows}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:SeriesRow">
+                              <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                      Tag="{Binding Id}" Click="ContinueSeries_Click">
+                                <StackPanel Spacing="1">
+                                  <TextBlock Text="{Binding Name}" Classes="label" />
+                                  <TextBlock Text="{Binding Meta}" Classes="caption" />
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+                <Button Classes="quiet" FontSize="12" Command="{Binding ImportPreparedDocumentsCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Text="{StaticResource IconPlus}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="{loc:Tr 添加}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Grid>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="0,8,0,0" />
+            <StackPanel Margin="0,12,0,0" Spacing="16">
+              <!-- Empty drop zone (Mac MaterialsBlock.dropZone). -->
+              <Border IsVisible="{Binding !PrepareHasMaterialRows}" Background="{DynamicResource Sunken}" CornerRadius="14"
+                      Padding="16,24" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                  <TextBlock Text="{StaticResource IconTrayAndArrowDown}" FontFamily="{StaticResource IconFont}" FontSize="18"
+                             Foreground="{DynamicResource Tertiary}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr 把文件拖到这里，或点右上角“添加”}" Classes="body" Foreground="{DynamicResource Secondary}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding PrepareDropHint}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                             HorizontalAlignment="Center" IsVisible="{Binding PrepareDropHintVisible}" />
+                </StackPanel>
+              </Border>
+              <!-- File rows (Mac FileRow). -->
+              <StackPanel IsVisible="{Binding PrepareHasMaterialRows}" Spacing="0">
+                <ItemsControl ItemsSource="{Binding PrepareMaterialsRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:PrepareMaterialRow">
+                      <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="8,8">
+                          <TextBlock Text="{Binding Name}" Classes="body" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                          <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                                     IsVisible="{Binding Ready}" />
+                          <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption" Foreground="{DynamicResource Caution}"
+                                     IsVisible="{Binding Failed}" />
+                        </Grid>
+                        <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <TextBlock Text="{Binding PrepareMaterialsSummary}" Classes="caption" TextWrapping="Wrap"
+                         IsVisible="{Binding !PrepareHasMaterialRows}" />
+              <!-- MaterialsInsight: 讨论准备 · AI 可选 (Mac MaterialsInsight). -->
+              <Border Background="{DynamicResource AiSoft}" CornerRadius="14" Padding="16" IsVisible="{Binding PrepareInsightHasMaterials}">
+                <StackPanel Spacing="12">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Text="{StaticResource IconSparkle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                               Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding PrepareInsightHeading}" Classes="overline" Foreground="{DynamicResource Ai}" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding PrepareInsightHint}" Classes="body" Foreground="{DynamicResource Secondary}"
+                             TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightShowsBody}" />
+                  <TextBlock Text="{Binding PrepareInsightStatus}" Classes="caption" IsVisible="{Binding PrepareInsightRunning}" />
+                  <TextBlock Text="{Binding PrepareInsightText}" Classes="body" TextWrapping="Wrap"
+                             IsVisible="{Binding PrepareInsightHasText}" />
+                  <TextBlock Text="{Binding PrepareInsightError}" Classes="caption" Foreground="{DynamicResource Caution}"
+                             TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightHasText}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="{Binding PrepareInsightAction}" Command="{Binding PrepareInsightActionCommand}"
+                            IsVisible="{Binding !PrepareInsightRunning}" />
+                    <Button Content="{loc:Tr 取消生成}" Command="{Binding CancelMaterialsInsightCommand}"
+                            IsVisible="{Binding PrepareInsightRunning}" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding PrepareInsightActionHint}" Classes="caption" Foreground="{DynamicResource Tertiary}"
+                             TextWrapping="Wrap" IsVisible="{Binding !PrepareInsightShowsBody}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- ===== 开始前检查 (Mac PrepareSection + CheckCard) ===== -->
+          <StackPanel Spacing="0">
+            <Grid ColumnDefinitions="Auto,*" MinHeight="28">
+              <TextBlock Text="{loc:Tr 开始前检查}" Classes="prepareSectionTitle" />
+            </Grid>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" Margin="0,8,0,0" />
+            <StackPanel Margin="0,12,0,0">
+              <!-- 声音 -->
+              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12" Margin="8,0" MinHeight="48">
+                <c:StatusDot Tone="{Binding PrepareAudioTone}" />
+                <TextBlock Grid.Column="1" Text="{loc:Tr 声音}" Classes="prepareRowTitle" Width="56"
+                           Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Spacing="6" Margin="0,12">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding AudioSourceText}" Classes="label" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                      <Button Classes="quiet" FontSize="12" Content="{loc:Tr 只记录对方（不用麦克风）}"
+                              Command="{Binding ContinueWithoutMicrophoneCommand}" IsVisible="{Binding PrepareShowRecordOnly}" />
+                      <Button Classes="quiet" FontSize="12" Content="{loc:Tr 重新打开麦克风}"
+                              Command="{Binding UseMicrophoneAgainCommand}" IsVisible="{Binding PrepareShowUseMicrophone}" />
+                      <Button Classes="quiet" FontSize="12" Content="{loc:Tr 下载}" Command="{Binding PrepareModelsCommand}" />
+                      <Button Classes="quiet" FontSize="12" Content="{loc:Tr 声音测试}" Click="VoiceTest_Click" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding PrepareMicLine}" Classes="caption" />
+                  <Grid ColumnDefinitions="Auto,140,Auto,140" ColumnSpacing="6">
+                    <TextBlock Text="{loc:Tr 对方 · 系统声音}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                               VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="1" Value="{Binding SystemAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{loc:Tr 我 · 麦克风}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                               VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="3" Value="{Binding MicrophoneAudioLevelPercent}" Maximum="1" VerticalAlignment="Center" />
+                  </Grid>
+                  <TextBlock Text="{Binding PrepareAudioProblem}" Classes="caption" Foreground="{DynamicResource Caution}"
+                             TextWrapping="Wrap" IsVisible="{Binding !PrepareAudioReady}" />
+                  <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" />
+              <!-- AI 可选 -->
+              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12" Margin="8,0" MinHeight="48">
+                <c:StatusDot Tone="{Binding PrepareAiTone}" />
+                <TextBlock Grid.Column="1" Text="{loc:Tr AI 可选}" Classes="prepareRowTitle" Width="56"
+                           Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Spacing="6" Margin="0,10">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding PrepareAnswerEngineLine}" Classes="label" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                      <Button Classes="quiet" FontSize="12" Content="{Binding PrepareEngineActionLabel}"
+                              Command="{Binding TestAnswerEngineCommand}" IsEnabled="{Binding PrepareEngineActionEnabled}" />
+                      <Button Classes="quiet" FontSize="12" Content="{Binding PrepareAnswerAction}"
+                              Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding PrepareEngineVerification}" Classes="caption" TextWrapping="Wrap"
+                             IsVisible="{Binding PrepareAnswerEngineConfigured}" />
+                </StackPanel>
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding PrepareShowPhoneCheck}" />
+              <!-- 手机 -->
+              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12" Margin="8,0" MinHeight="48"
+                    IsVisible="{Binding PrepareShowPhoneCheck}">
+                <c:StatusDot Tone="{Binding PreparePhoneTone}" />
+                <TextBlock Grid.Column="1" Text="{loc:Tr 手机}" Classes="prepareRowTitle" Width="56"
+                           Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding PreparePhoneLine}" Classes="label" TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </StackPanel>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-          <Button Classes="quiet" Content="{loc:Tr 取消}" Command="{Binding CancelDraftCommand}" />
-          <Button Content="{loc:Tr 只记录对方}" Command="{Binding ContinueWithoutMicrophoneCommand}" IsVisible="{Binding PrepareShowRecordOnly}" />
-          <Button Content="{loc:Tr 导入 WAV}" Command="{Binding ImportWaveCommand}" />
-          <Button Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartPreparedMeetingCommand}" />
-        </StackPanel>
-      </Grid>
-    </Border>
-  </Grid>
+      </ScrollViewer>
+
+      <!-- ===== PreparationStartBar: pinned to the window bottom, status left, actions right. ===== -->
+      <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0.5,0,0" Padding="32,12">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <StackPanel Spacing="4" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:StatusDot Tone="{Binding PrepareAudioTone}" DotSize="6" />
+                <TextBlock Text="{loc:Tr 声音}" Classes="caption" Foreground="{DynamicResource InkBrush}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:StatusDot Tone="{Binding PrepareAiTone}" DotSize="6" />
+                <TextBlock Text="{loc:Tr AI 可选}" Classes="caption" Foreground="{DynamicResource InkBrush}" />
+              </StackPanel>
+            </StackPanel>
+            <TextBlock Text="{Binding PrepareStartDetail}" Classes="caption" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Classes="quiet" Content="{loc:Tr 取消}" Command="{Binding CancelDraftCommand}" />
+            <Button Classes="primary" Height="40" MinHeight="40" Padding="18,0" CornerRadius="9"
+                    Command="{Binding StartPreparedMeetingCommand}" IsEnabled="{Binding PrepareStartEnabled}"
+                    ToolTip.Tip="{Binding PrepareReadinessMessage}">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource Seal}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding PrepareStartLabel}" Foreground="{DynamicResource OnInk}" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>

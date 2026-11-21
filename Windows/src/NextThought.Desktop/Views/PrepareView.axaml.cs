@@ -42,8 +42,29 @@ public partial class PrepareView : UserControl
     private void CustomType_Click(object? sender, RoutedEventArgs e) =>
         (DataContext as AppState)?.SetDraftCustomTypeCommand.Execute(null);
 
+    /// <summary>Mac "从以前的会议带入…": continue one earlier series so its materials carry over.</summary>
+    private void ContinueSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string seriesId } && DataContext is AppState state)
+            state.ContinueDraftSeries(seriesId);
+    }
+
     /// <summary>True while the page itself is republishing the base-type list (ComboBox re-entrancy).</summary>
     private bool applyingDraft;
+
+    /// <summary>
+    /// Mac VenuePicker (InkSegmented): one-way checked state plus a click, so the control's own
+    /// state cannot write a stale value back over a page refresh.
+    /// </summary>
+    private void OnlineVenue_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.DraftOnline = true;
+    }
+
+    private void OfflineVenue_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.DraftOffline = true;
+    }
 
     private void CustomBase_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
