@@ -1,3 +1,24 @@
+## 2026-11-21 · 0.5.145 · 第四波：E2/E3/E4/E5/E6/E7/E8/E9/E11/E12/E23 收尾、H2 完成、G9 补齐
+改动：
+- E2（aa768fb8）：准备页收尾 — MeetingDraft（标题猜场景/自定义类型+基于/取消/带 draft 开始）、PreparationStartBar、VenuePicker 语义与采集设置、CheckCard（采音电平/回答服务测试/麦克风重开）、资料行状态+拖放导入、资料洞察 MaterialsInsight（Core PreparationPrompt + 真实回答服务流式往返，未配置/无资料/取消/失败状态机）、只记录对方、SceneSummary tooltip、BeginPreparedMeeting(planSeries)；修复 Prepare 页 ComboBox 递归栈溢出；`--self-test startup/prepare/onboarding` passed。
+- E3（fa9e9c72）：首次引导收尾 — SettingsSetupChecklist 移到设置「通用」页（Mac 位置）、示例会议面板（滚动转写区/13s 参考回答/空态/进度+重播/关闭停表）、GuideMotion 切步动效（PhaseIn 460ms）、compare/click-through 与逐步浅深英截图。
+- E4 补全（507934bb、dc2c42ea）：三态联网模式（不联网/自动判断/每次都查，WebSearchMode+ShouldSearch）与原回答设置菜单三选中；滚动跟随/「回到现场」（ScrollFollowState+距底 24px 暂停+新行计数）；状态行回声数/遗漏段/麦克风未开；背景状态点（answerEngineReady 黄点）；Ctrl+L 聚焦输入框；WebSearchModesTests 5、LivePageParity 9。未做：原回答↔联网版两阶段切换（Windows 单次回答架构，已记 compare）。
+- E5 补全（005a69cb、9c404046）：模块预设菜单/标题改 Mac 原句、回答历史空态 Mac 句、置信度条阈值换色（≥0.6 绿/≥0.4 橙/否则灰+ToolTip）、四个 Mac 同名实时对话气泡视图（ConversationPanel/ConversationBubble/EmptyConversationHint/PartialBubbles）接入独立模块窗口、question 窗口 520×160；assistant-ui 自检 22 项；WORDING 重生成。
+- E6（7d5636b）：答案语言与双语 — Views/BilingualAnswerText 逐句正文+次要色译文、提词岛 gloss、AppState.QuestionTurn.cs 整轮提问合并（Heard/Spoke/词数/AnswersWholeTurns/静音 2s/patience 30s/≤250 词/≤4 次/Asked/Reset）、工具菜单回答语言与英文对照接设置；Core 6 + NextThought 5 + live-ui 47 项。
+- E7（eff8f0b7）：洞察面板真实实现 — 头部（立即识别/齿轮）、屏幕感知关闭提示、幻灯片区（页位置/文档名/上下页/重新生成/要点已讲·下一句·未讲/过渡/听众问题）、屏幕区（状态·来源/错误/识别文字 3↔30 行）、回答进度条；InsightsPanelParity 6 + AnswerPointsInsights 6 + compare.md。
+- E8（3e97f698）：会中笔记 — Views/MeetingUserNotes（唯一草稿+保存状态+说明句、「重点 · N」分段合并 Core MeetingHighlightSegments ≤30s、★+[mm:ss]+原话点击跳回、空态）；HighlightLine 真开关；笔记/高亮写 user-content.json；Notes 个人笔记页承载；测试 6+7。
+- E9（b7823040）：讲稿与屏幕观察 — Core SlideFollowController（屏幕排名决定页/手动翻页 anchor 暂停/20s·120s 宽限/本人讲稿 ≥16 字符 +1/+2）、SlideNotesCacheStore（指纹=模式+页文本、按文档 JSON）、ScreenClassification（Mac ScreenKind 七类启发式）；Desktop 我跟读/每次读屏分类+跟页/讲稿要点缓存+编号要点+下一页标题/观察行；slide-follow 自检扩断言 + compare.md。
+- E11（5230b942）：实时翻译界面 — Core LiveTranslationPolicy（方向检测 5:7、≥4 英文词、自动打开四条件）、AppState.LiveTranslation（开关/状态/自动提示/记忆选择）、Live 工具行同声传译按钮、两条未定稿 lane「译文：」、转写行 Mac「译文：」；测试 6/6。
+- E12（40a53a8）：说话人与我的声音 — Notes 转写说话人条/编辑与 MeEditor、名字与「这是我」/合并写 Mac 兼容 meta.json（voiceNames/meVoices）、MyVoiceSettings 摘要/删除确认、四句录入面板与我的声音引导；SpeakerMetaPersistenceTests 3/3。
+- E23（76a3cf4）：文档处理 — 四个 Mac 同名视图（DocumentReadingSettings/DocumentComponentsAdvanced/DocumentChoiceSummary/ManagedModelRow）、组件行安装·校验·删除（运行包/PaddleOCR-VL/Embedding）、增强识别引导入口；Platform DocumentAssets/CodexDocumentReader/DocumentPreparation 全链路；document-settings compare.md + 16 张截图。未实测真实下载（需联网+本机 Python 3.12）。
+- H2（03bcc17e，分析见 `Windows/H2_RENAME_REPORT.md`）：Roslyn 语义扫描 clean HEAD 全树，与 Swift 同名方法全部已 PascalCase，**需改名 0**；AppState.cs 354 行、49 个部分类；新建 `AppState.Notes.cs`（762 行，Templates.cs 整体并入 + StructuredNotes 移入 10 个纪要方法与纪要页导航块，逐字校验）；删除 AppState.Templates.cs。
+- G9 补齐（c21fefe5）：UiTextWindows 859→1171 行，补 E4/E5/glossary/speaker/window-picker/assistant/live-conversation 等英文；三处裸中文改 UiText.T/Format；WORDING 1134 行、英文扫描 50 页/192 含中文行/残留 0；Core 定位测试全绿。
+- 事故记录：本轮曾出现共享文件被批量误替换（`AppState.Live.cs`/`Lifecycle.cs`/`MacPreferenceMap.cs` 大写 `S`→`e`），已从 HEAD 恢复并重放 WIP；之后无残留（E4 提交 507934bb 说明中记录）。
+测试：Core **1642/1642**，NextThought.Tests **512/512**，0 失败 0 跳过；`verify.ps1` PASS（restore/构建 Desktop/构建测试工程/两套测试/A15 夹具缺失 SKIP/D1 截图）。新增/更新测试：E4 WebSearchModes 5+LivePageParity 9、E5 assistant 14、E6 Core 6+NT 5、E7 6+6、E8 6+7、E9 slide-follow 自检、E11 6、E12 3、E23 CodexDocumentReader 7+DocumentSettingsViews 5、H2（无新增，全量回归）。
+状态：E2、E3、E4、E5、E6、E7、E8、E9、E11、E12、E23、H2 均改为「已实现、未验证」；此前 E1/E13/E14/E15–E22/E25–E31 等已是「已实现、未验证」；未做只剩 A16（等 Mac 备份夹具）、E10（等模型方案答复）、H5（等旧工程处置答复）。
+证据：提交 aa768fb8、fa9e9c72、507934bb、dc2c42ea、005a69cb、9c404046、7d5636b、eff8f0b7、3e97f698、b7823040、5230b942、40a53a8、76a3cf4、03bcc17e、c21fefe5；`Windows/H2_RENAME_REPORT.md`、各 `validation/screens/*/compare.md` 与截图。
+未解决：E4 原回答↔联网版两阶段切换、E7 会中页左栏嵌入版洞察面板、E9 真实读屏/窗口来源选择、E11 系统 TranslationSession 宿主等价物、E23 真实下载与 document MCP、E12 真实麦克风、E2/E3/E5 各 compare.md 列出的视觉/实机项；A15 夹具、A16 Mac 备份、E10 模型方案、H5 旧工程答复仍等外部。
+
 ## 2026-11-21 · 0.5.145 · 第三波：E4/E5、E13/E14、E21/E22、E23b/E26b、E28/E25、E2 与 E3/E1 增量
 改动：
 - E4（6b7c4dd）：会中页按 LiveSessionView.swift 重写补齐 — 顶栏（计时/聆听/暂停继续、场景+标题+系列、自动回答↔只记录、手机/屏幕状态、回答设置菜单、工具菜单、结束/开始）、转写区（问题标记胶囊、候选条+置信度、行内动作、partial、状态行）、答案栏（建议回答/上一条下一条/联网状态+编号来源/精修菜单/证据行+详情）、底部 LiveComposer（截图预览/输入/区域窗口截图/发送/立即回答）；回答链路落盘 EvidenceBundle；`--self-test=live-ui` 40 项全过；新增 LivePageParityTests 9；compare.md + 浅深英截图。
