@@ -86,10 +86,29 @@ public partial class AppState
     /// <summary>Mac prepareSlideNotes(force: true): drop the cached notes and write them again.</summary>
     public void RegenerateSlideNotes() => _ = RegenerateSlideNotesAsync();
 
+    public string SlideNotesCacheClearLabel => UiText.T("清除缓存");
+
+    /// <summary>Mac SlideNotesCache: drop every saved slide-note file, then refresh the panel.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ClearSlideNotesCache()
+    {
+        slideNotesCacheByPage.Clear();
+        try
+        {
+            if (Directory.Exists(SlideNotesDirectory))
+                foreach (var file in Directory.GetFiles(SlideNotesDirectory)) File.Delete(file);
+        }
+        catch (Exception error) { SlideNotesError = UiText.Format("讲稿提示生成失败：%@", error.Message); }
+        SlideNotesError = "";
+        RefreshInsights();
+        SetStatus(UiText.T("讲稿缓存已清除"));
+    }
+
     private async Task RegenerateSlideNotesAsync()
     {
         if (CurrentSlide is not { } info) return;
-        var pageInfo = SlidePages().FirstOrDefault(item => item.Number == info.Number && item.DocumentName == info.DocumentName);
+        var pages = SlidePages();
+        var pageInfo = pages.FirstOrDefault(item => item.Number == info.Number && item.DocumentName == info.DocumentName);
         if (pageInfo is null) return;
         var page = pageInfo.ToSlidePage();
         SlideNotesError = "";
@@ -97,7 +116,21 @@ public partial class AppState
         slideNotesCacheByPage.Remove(pageInfo.Key);
         try
         {
-            var notes = await Task.Run(() => BuildRegeneratedSlideNotes(pageInfo));
+            // decisions §3.3 presenter 4: with no speaker notes, the answer model writes the
+            // talking points (Mac prepareSlideNotes -> SlideNotes.prompt/parse). The local
+            // fallback only runs when the model gave nothing usable.
+            var previous = pages.FirstOrDefault(item => item.DocumentId == pageInfo.DocumentId && item.Number == pageInfo.Number - 1);
+            var next = pages.FirstOrDefault(item => item.DocumentId == pageInfo.DocumentId && item.Number == pageInfo.Number + 1);
+            var prompt = SlideNotes.Prompt(SelectedMode, page, previous?.Text, next?.Text, null, "");
+            var text = await CurrentClient().AnswerAsync(AnswerOptions(), SlideNotes.SystemPrompt, prompt);
+            SlideNotes notes;
+            if (SlideNotes.Parse(text) is { } parsed)
+                notes = parsed;
+            else
+            {
+                notes = BuildRegeneratedSlideNotes(pageInfo);
+                SlideNotesError = UiText.T("讲稿提示没有按格式返回，可以点“重新生成”。");
+            }
             slideNotesCacheByPage[pageInfo.Key] = notes;
             var directory = SlideNotesDirectory;
             var fingerprint = SlideNotesCacheStore.Fingerprint(page, SlideNotesMode);

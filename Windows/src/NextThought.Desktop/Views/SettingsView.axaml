@@ -425,6 +425,11 @@
             <ComboBox Grid.Column="1" Width="140" ItemsSource="{Binding Settings.InsightSourceLabels}"
                       SelectedItem="{Binding Settings.SelectedInsightSourceLabel}" />
           </Grid>
+          <ComboBox Width="320" HorizontalAlignment="Left"
+                    ItemsSource="{Binding Settings.InsightCaptureTargetLabels}"
+                    SelectedItem="{Binding Settings.SelectedInsightCaptureTarget, Mode=TwoWay}"
+                    IsVisible="{Binding Settings.InsightScreenWatch}"
+                    ToolTip.Tip="{loc:Tr 可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding Settings.InsightScreenWatch}">
             <Button Content="{loc:Tr 立即识别}" Command="{Binding ReadScreenNowCommand}" />
             <Button Content="{loc:Tr 框选区域}" Click="PickScreenRegion_Click" />

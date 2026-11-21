@@ -29,7 +29,11 @@ public sealed class InsightsNotesStatesTests
         var state = Read("AppState.Insights.cs");
         Assert.Contains("slideNotesGenerating", state, StringComparison.Ordinal);
         Assert.Contains("SlideNotesGenerating", state, StringComparison.Ordinal);
-        Assert.Contains("Task.Run(() => BuildRegeneratedSlideNotes(pageInfo))", state, StringComparison.Ordinal);
+        // E30/decisions §3.3 presenter 4: when the page has no speaker notes the answer model writes
+        // the talking points; the local points are only the fallback when the model reply is unusable.
+        Assert.Contains("CurrentClient().AnswerAsync(AnswerOptions(), SlideNotes.SystemPrompt, prompt)", state, StringComparison.Ordinal);
+        Assert.Contains("SlideNotes.Parse(text)", state, StringComparison.Ordinal);
+        Assert.Contains("BuildRegeneratedSlideNotes(pageInfo)", state, StringComparison.Ordinal);
         var panel = Read("Views", "InsightsPanel.axaml");
         Assert.Contains("{Binding SlideNotesGenerating}", panel, StringComparison.Ordinal);
         Assert.Contains("{Binding !SlideNotesGenerating}", panel, StringComparison.Ordinal);

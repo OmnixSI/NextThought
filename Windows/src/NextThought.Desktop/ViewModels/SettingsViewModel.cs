@@ -621,6 +621,29 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool insightScreenWatch;
     [ObservableProperty] private double insightScreenInterval = 1;
     [ObservableProperty] private bool insightFollowSlides = true;
+    [ObservableProperty] private string selectedInsightCaptureTarget = "";
+
+    /// <summary>Mac InsightSettingsView.captureTargets: displays plus the other on-screen windows.</summary>
+    public IReadOnlyList<string> InsightCaptureTargetLabels => BuildInsightCaptureTargets();
+
+    private static IReadOnlyList<string> BuildInsightCaptureTargets()
+    {
+        var labels = new List<string> { UiText.T("主显示器") };
+        try
+        {
+            foreach (var window in ScreenCapture.AvailableWindows().Take(30))
+                labels.Add(window.DisplayTitle + " · " + window.Owner);
+        }
+        catch { }
+        return labels;
+    }
+
+    partial void OnSelectedInsightCaptureTargetChanged(string value)
+    {
+        if (value.Length == 0) return;
+        InsightScreenSource = value == UiText.T("主显示器") ? "display" : "window";
+    }
+
     [ObservableProperty] private string insightScreenSource = "display";
     [ObservableProperty] private string insightScreenRegion = "";
 
