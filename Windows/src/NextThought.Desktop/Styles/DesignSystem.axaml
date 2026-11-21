@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:motion="using:NextThought.Desktop"
         xmlns:c="using:NextThought.Desktop.Controls">
   <!--
     Stage 3 §6.1: the reusable Mac design-system controls (VIEW_PARITY "通用组件").
@@ -141,12 +142,12 @@
   <!-- ===== InkSegmented / PillTabs / UnderlineTabs ================================ -->
 
   <Style Selector="c|InkSegmented">
-    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="Background" Value="Transparent" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="2" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="2">
+        <Border Background="Transparent" CornerRadius="8" Padding="2">
           <ItemsPresenter />
         </Border>
       </ControlTemplate>
@@ -179,8 +180,13 @@
   <Style Selector="c|InkSegmented > ListBoxItem:selected TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
   </Style>
-  <Style Selector="c|InkSegmented > ListBoxItem:selected">
-    <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+  <Style Selector="c|InkSegmented > ListBoxItem">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+        </BrushTransition>
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="c|PillTabs > ListBoxItem">
@@ -469,4 +475,83 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ai}" />
     <Setter Property="BorderThickness" Value="1.5" />
   </Style>
+
+  <!-- decisions §3.1 components 1: every interactive component eases its wash on Motion.hover
+       and its structural changes on Motion.snappy instead of snapping. -->
+  <Style Selector="c|ControlButtonBody">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|InteractiveRowBody">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|InkSwitch">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.28">
+          <BrushTransition.Easing><motion:MotionSnappyEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|WideToggleRow">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|MenuPicker">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|PaperFieldBody">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|PillTabs > ListBoxItem">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.28">
+          <BrushTransition.Easing><motion:MotionSnappyEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="c|UnderlineTabs > ListBoxItem">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing><motion:MotionHoverEasing /></BrushTransition.Easing>
+        </BrushTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+
 </Styles>

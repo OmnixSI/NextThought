@@ -6,6 +6,7 @@
         xmlns:core="using:NextThought.Core"
         x:Class="NextThought.Desktop.Views.SeriesEditorWindow"
         x:DataType="local:AppState"
+        x:CompileBindings="False"
         Title="{loc:Tr 编辑系列}" Width="760" Height="720" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
   <Window.Styles>
