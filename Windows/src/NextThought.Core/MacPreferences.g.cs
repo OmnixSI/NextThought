@@ -6,7 +6,7 @@
 #nullable enable
 namespace NextThought.Core;
 
-/// <summary>G5: the 113 Mac preference keys with their Mac type, default value, view and range.</summary>
+/// <summary>G5: the 114 Mac preference keys with their Mac type, default value, view and range.</summary>
 public static class MacPreferencesData
 {
     public static readonly MacPreference[] Entries =
@@ -116,6 +116,7 @@ public static class MacPreferencesData
         new("teleprompterFontSize", MacPreferenceKind.Real, 22.0, "设置 → 提词与教练 → 提词·字号", "object(forKey: \"teleprompterFontSize\") as? Double ?? 22", null, 14.0, 36.0),
         new("teleprompterHideBackground", MacPreferenceKind.Bool, false, "设置 → 提词与教练 → 提词", "object(forKey: \"teleprompterHideBackground\") as? Bool ?? false", null, null, null),
         new("teleprompterOpacity", MacPreferenceKind.Real, 1.0, "设置 → 高级 → 提词·不透明度", "object(forKey: \"teleprompterOpacity\") as? Double ?? 1.0", null, 0.35, 1.0),
+        new("textZoom", MacPreferenceKind.Real, 1.0, "全局文字缩放", "UserDefaults.standard.set(value, forKey: \"textZoom\")", null, 0.9, 1.45),
         new("transcriptionBackend", MacPreferenceKind.String, "zipformer", "设置 → 高级 → 声音与识别·引擎", "string(forKey: \"transcriptionBackend\")", new[] { "zipformer", "apple", "cloud" }, null, null),
         new("updateChannel", MacPreferenceKind.String, "stable", "设置 → 高级 → 更新·更新渠道", "string(forKey: \"updateChannel\") ?? \"\"", new[] { "stable", "main" }, null, null),
         new("updateRepository", MacPreferenceKind.String, "OmnixSI/NextThought", "设置 → 高级 → 更新 → GitHub 访问·仓库", "string(forKey: \"updateRepository\") ?? \"OmnixSI/NextThought\"", null, null, null),

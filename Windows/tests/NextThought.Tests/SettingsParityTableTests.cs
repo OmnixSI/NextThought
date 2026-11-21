@@ -8,7 +8,7 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>
-/// G5: SETTINGS_PARITY.md covers all 113 Mac preference keys with type, Mac default, Mac settings
+/// G5: SETTINGS_PARITY.md covers all 114 Mac preference keys with type, Mac default, Mac settings
 /// view and a Windows status that carries code evidence; the Windows settings store and the Mac
 /// settings.plist use the same Mac key names and Mac defaults.
 /// </summary>
@@ -24,9 +24,9 @@ public sealed class SettingsParityTableTests
         Assert.True(File.Exists(file), file);
         var lines = File.ReadAllLines(file);
         var rows = lines.Where(line => line.StartsWith("| `", StringComparison.Ordinal)).ToList();
-        // Mac 3.4.0 adds textZoom, which Windows has not ported yet: it is listed as 未做 and is not
-        // part of the generated runtime registry until J7 implements the scaling.
-        Assert.Equal(MacPreferences.All.Count + 1, rows.Count);
+        // Mac 3.4.0 adds textZoom; J7 implements it, so the table and the runtime registry both
+        // contain it and no row is 未做 any more.
+        Assert.Equal(MacPreferences.All.Count, rows.Count);
         var listed = new List<string>();
         foreach (var row in rows)
         {
@@ -39,11 +39,6 @@ public sealed class SettingsParityTableTests
             Assert.False(string.IsNullOrWhiteSpace(cells[3]), key);
             Assert.False(string.IsNullOrWhiteSpace(cells[4]), key);
             var status = cells[5];
-            if (key == "textZoom")
-            {
-                Assert.StartsWith("未做", status, StringComparison.Ordinal);
-                continue;
-            }
             Assert.True(status.StartsWith("已实现、未验证", StringComparison.Ordinal)
                         || status.StartsWith("本版不做", StringComparison.Ordinal),
                 $"{key}: {status}");
@@ -53,7 +48,7 @@ public sealed class SettingsParityTableTests
             Assert.False(string.IsNullOrWhiteSpace(evidence), $"{key} has no evidence");
             Assert.True(evidence.Length > 8, $"{key}: {evidence}");
         }
-        Assert.Equal(MacPreferences.All.Count + 1, listed.Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(MacPreferences.All.Count, listed.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains("textZoom", listed, StringComparer.Ordinal);
     }
 
@@ -76,7 +71,7 @@ public sealed class SettingsParityTableTests
             var store = new SettingsStore(new AppPaths(root));
             var values = store.LoadMacPreferences();
             var defaults = MacPreferences.CreateDefaults();
-            Assert.Equal(113, values.Count);
+            Assert.Equal(114, values.Count);
             foreach (var (key, expected) in defaults)
             {
                 Assert.True(MacPreferences.ValuesEqual(expected, values[key]),

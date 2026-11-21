@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1210;
+    public const int Count = 1211;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1205,6 +1205,7 @@ internal static class UiTextWindowsEnglish
         ["技能可用于所有系列，或在系列中按系列选择。"] = "Skills can apply to all series, or be chosen per series.",
         ["技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。"] = "A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab.",
         ["开下一场"] = "Start next meeting",
+        ["字体样张"] = "Type specimen",
         ["上一页"] = "Previous",
         ["下一句："] = "Next:",
         ["依据："] = "Based on:",

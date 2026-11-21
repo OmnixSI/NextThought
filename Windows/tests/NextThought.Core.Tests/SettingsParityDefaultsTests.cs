@@ -5,7 +5,7 @@ using Xunit;
 namespace NextThought.Core.Tests;
 
 /// <summary>
-/// G5: every one of the 113 Mac preference keys keeps the Mac key name, type, default value and
+/// G5: every one of the 114 Mac preference keys keeps the Mac key name, type, default value and
 /// range. The expected values below are copied verbatim from the Swift sources
 /// (AppState.swift, LiveInsightsState.swift, CueIsland.swift, PresenterMode.swift, Updater.swift,
 /// LiveCoach.swift, Onboarding.swift, AssistantLayout.swift, SceneSettings.swift and the Core
@@ -134,6 +134,7 @@ public sealed class SettingsParityDefaultsTests
         ["teleprompterFontSize"] = new(MacPreferenceKind.Real, 22.0, null, 14.0, 36.0),
         ["teleprompterHideBackground"] = new(MacPreferenceKind.Bool, false),
         ["teleprompterOpacity"] = new(MacPreferenceKind.Real, 1.0, null, 0.35, 1.0),
+        ["textZoom"] = new(MacPreferenceKind.Real, 1.0, null, 0.9, 1.45),
         ["transcriptionBackend"] = new(MacPreferenceKind.String, "zipformer", ["zipformer", "apple", "cloud"]),
         ["updateChannel"] = new(MacPreferenceKind.String, "stable", ["stable", "main"]),
         ["updateRepository"] = new(MacPreferenceKind.String, "OmnixSI/NextThought"),
@@ -146,13 +147,13 @@ public sealed class SettingsParityDefaultsTests
     };
 
     [Fact]
-    public void RegistryHasThe113MacKeys()
+    public void RegistryHasThe114MacKeys()
     {
-        Assert.Equal(113, MacDefaults.Count);
-        Assert.Equal(113, MacPreferences.All.Count);
+        Assert.Equal(114, MacDefaults.Count);
+        Assert.Equal(114, MacPreferences.All.Count);
         Assert.Equal(MacDefaults.Keys.OrderBy(key => key, StringComparer.Ordinal),
             MacPreferences.Keys.OrderBy(key => key, StringComparer.Ordinal));
-        Assert.Equal(113, MacPreferences.ByKey.Count);
+        Assert.Equal(114, MacPreferences.ByKey.Count);
     }
 
     [Fact]
