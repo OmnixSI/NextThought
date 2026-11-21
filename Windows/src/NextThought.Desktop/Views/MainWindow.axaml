@@ -3,6 +3,7 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:views="using:NextThought.Desktop.Views"
+        xmlns:components="using:NextThought.Desktop.Controls"
         xmlns:viewsshell="using:NextThought.Desktop.Views"
         x:Class="NextThought.Desktop.Views.MainWindow"
         x:DataType="local:AppState"
@@ -182,9 +183,7 @@
           </ScrollViewer>
 
           <StackPanel Grid.Row="3" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_2_10_2_0}">
-            <Border Classes="chip" HorizontalAlignment="Left">
-              <TextBlock Text="{Binding StatsText}" Classes="caption" FontSize="10" />
-            </Border>
+            <components:MetricPill Text="{Binding StatsText}" HorizontalAlignment="Left" />
             <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                     Command="{Binding OpenDataCommand}" ToolTip.Tip="{loc:Tr 打开数据目录}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
