@@ -1,0 +1,11 @@
+﻿2026-11-21 16:17:47  K7 runner start: minutes=120 exe=C:\Users\THUNDE~1\AppData\Local\Temp\nt-k7-artifacts\bin\NextThought.Desktop\release_win-x64\NextThought.exe
+2026-11-21 16:17:47  rendering known-speech.wav with SAPI (Huihui)
+2026-11-21 16:17:47  wav=D:\NextThought开发\src\NextThought\Windows\validation\realmachine\K7\known-speech.wav size=1141922
+2026-11-21 16:17:47  K7 FAILED: 无法对参数“ArgumentList”执行参数验证。该参数为 Null、为空或参数集合的某个元素包含 Null 值。请提供一个不包含任何 Null 值的集合，然后重试此命令。
+2026-11-21 16:19:07  K7 runner start: minutes=120 exe=C:\Users\THUNDE~1\AppData\Local\Temp\nt-k7-artifacts\bin\NextThought.Desktop\release_win-x64\NextThought.exe
+2026-11-21 16:19:07  wav=D:\NextThought开发\src\NextThought\Windows\validation\realmachine\K7\known-speech.wav size=1141922
+2026-11-21 16:19:13  main window visible
+2026-11-21 16:19:15  audio looping on default speaker; sending record hotkey
+2026-11-21 16:19:21  recording started, session=C:\Users\Thunderobot\AppData\Local\Temp\nt-k7-7ff394d8\Sessions\E394ACF8-9262-4718-A9C4-DD9565F38E56
+2026-11-21 16:20:21  minute 1 ws=909.8MB lines=11 grew=True
+2026-11-21 16:20:21  K6 first-60s keywords=缓存,命中率,灰度,时序图
