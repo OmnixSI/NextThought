@@ -75,3 +75,18 @@
 - Mac 截图由人补拍浅/深两套到 `Windows/validation/mac-screens/`；到位前用 `docs/screenshots/v3/` 和 Swift 视图源码做标准。
 - 2026-11-21：浅/深两套已放进 `Windows/validation/mac-screens/`（93 张，目录说明见其中 README.md），来自 3.4.0 演示模式。
 - 本机可做的实机检查自己做并留记录（日期、版本、步骤、结果、证据），可写「已验证」；需要其他设备的只写步骤。
+
+## 2026-11-21 收尾：仍未解决（每条一句话）
+
+1. Mac 侧 `Verify` workflow 的 `archive-ux` self-test 仍失败（NSCocoaErrorDomain Code=4），需 Mac 维护者修复；Windows 侧无法复现、不阻塞 Windows 验证。
+2. 在真实 Mac 上导入 `Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup` 并逐场打开核对——需 Mac 设备（人）。
+3. A15 五类非纯数据家族（CryptoKit HKDF/AES-GCM、SQLite DocumentJob、Darwin ProcessLineReader、CoreGraphics ScrollFollow、Sherpa Zipformer）Windows 无对应实现，按夹具 README 跳过，需 Mac 侧确认可接受。
+4. E10 看镜头：真机摄像头能打开、录图三态通过，但尚未用真人在真实摄像头前复测（需一个人站在摄像头前）。
+5. 截图提问只把 OCR 文本作为屏幕上下文，未把图像作为模型输入——是否本版必须需产品决定（Mac 参考实现会附图像）。
+6. 导出对话框的 PDF 分页预览未实现（Windows 无 PDF 渲染控件，预览用同一投影源文本，导出文件本身一致）——需产品决定。
+7. 所有记录右栏用归档概览卡、未内嵌 MeetingPage（导航架构差异）——需产品/架构决定是否重构。
+8. 显示器友好名称、AddToGlossarySheet 剪贴板自动预填等小差异受 Windows/Avalonia 12 API 限制——需平台决定。
+9. 38 份 `compare.md` 仍列有差异（动效近似、字体度量偏移、平台机制、Mac 专属控件等），逐条见 `Windows/validation/screens/*/compare.md`；其中多数属平台差异，需逐项确认「本版不做」还是继续修。
+10. 更新通道选择按 §2.8 本版不做（只有正式通道，见 `SETTINGS_PARITY.md` 12 个内部键）；K10 应用内更新真机验证留给人。
+11. 连续实采 2 小时、真实音频设备切换、睡眠/唤醒、Windows 沙盒首次引导、伴侣手机真机配对（K7/K12/K11/K8）需其他设备/环境。
+12. Mac 截图由人补拍最终确认（现有 93 张 3.4.0 参考图已用于对照）。

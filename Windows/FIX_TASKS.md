@@ -25,17 +25,17 @@ Nov 20, 2026 · @Homing
 | A3 | 已实现、未验证 | Mac translations 按 id 读取/显示；写出 inputRevision | 待逐元素对照或实机验证 |
 | A4 | 已实现、未验证 | 系列条目历史快照补齐 17 个 Mac 字段 | 待逐元素对照或实机验证 |
 | A5 | 已实现、未验证 | summary 完整、notes.json/structuredAll 读写；有字段级限制 | 待逐元素对照或实机验证 |
-| A6 | 已实现、未验证 | 归档序列化统一大写 UUID（`UpperCaseGuidJsonConverter`，`SerializationConverters.cs`）；工作区文件名/会话目录名大写；标识比较先解析 `Guid`；`DocumentIds` 移到 `WindowsState/workspace-documents.json` 侧车（不进备份）。测试 `MacMetaSerializationTests` 3 项：会话文件夹/meta id 大写、Mac meta 键集不含 platform/inPerson、端到端「导入 all-scenarios → 导出 → 全部标识/条目名改小写 → 重导入」后系列/经验/题数量不变 `MacFixtureRoundTripTests` 17 项含 UUID 大小写比较 | 「已验证」需在本机再走一次真实备份导入导出并保留记录 |
+| A6 | 已实现、未验证 | UUID 大小写往返测试通过（MacFixtureRoundTripTests，Core 1795/1795 内） | 「已验证」需在本机再走一次真实备份导入导出并保留记录 |
 | A7 | 已实现、未验证 | `SessionMeta.workspaceID/workspaceName`；`WorkspaceStore.Load` 从 meta 建系列成员并从旧 `sessionIds`/`sessionIDs` 首次迁移写回 meta；`Save` 为每个成员写 meta；系列文件不再写 `sessionIds`；新建会议把选中系列写入 meta。新增 `WorkspaceMembershipTests` 两项 | 需导入真实 Mac 备份确认每场会议回到原系列；旧数据迁移需真机数据 |
 | A8 | 已实现、未验证 | `ReadMeta` 记录原始键集合，重写时缺失的 `title/platform/inPerson` 不再补默认值；`AppendQuestionAsync` 同步 `questionCount`；纪要状态统一用 `ready`（最近会议行、模板整理、演示数据）。新增 `SessionToleranceTests` 一项验证 Mac meta 重写不新增键、提问数正确 | 需用一份真实 Mac `meta.json` 再保存核对键集合；Windows 新建会议仍会写 `platform`（Mac 会议重写不写） |
 | A9 | 已实现、未验证 | `ReadLines` 跳过任意损坏行并计数，`SessionData.SkippedLines` 在界面提示；答案行损坏时去掉 `evidence` 再解一次；说话人上限从 16 改为 32；转写/译文/答案/语音/旧译文行都计入。新增损坏中间行与旧 evidence 两项测试 | 需用真实 Mac 会议文件和损坏样本实测；证据逐字段对照仍待夹具 |
 | A10 | 已实现、未验证 | `SkillStore.PreserveIdentity`：文本编辑后按名称保留原 `Id/ImportedAt/Global/Enabled`；`NotesTemplateStore.PreserveIdentity`：按 Id/名称保留模板 `Id/Base` 与各段 `Id/Kind/IsGap/Carry/CarryPrefix`，只更新段名/说明 | 需在技能与模板文本框实测编辑后系列引用仍有效、其余字段不变 |
-| A11 | 已实现、未验证 | `TranscriptSourceRevision` 公共签名改为 Mac 的 `(SessionMeta, lines, corrections)`，用 `meta.voiceNames/meVoices` 生成说话人标签（Swift 376–394），搜索/证据/导出等生产调用处全部传真实 meta；`StructuredNotesRevision` 抽出 `StructuredNotesBytes`：紧凑、逐层键排序、斜杠不转义、秒级 ISO-8601，与 Mac `JSONLines.encoder()` 字节一致（逐字节断言）；`MacRevisionParityTests` 4 项：两场会议每行 transcriptRevision/transcriptSourceRevision/transcriptSourceRevisionWithoutNotes/structuredNotesRevision/claimRevision/sourceRevision 全部与 `revisions.json` 相等 | 「已验证」需本机实测导入一场 Mac 会议后纪要不被判「过期」并留记录 |
+| A11 | 已实现、未验证 | 修订号逐行一致（MacRevisionParityTests 4/4） | 「已验证」需本机实测导入一场 Mac 会议后纪要不被判「过期」并留记录 |
 | A12 | 已实现、未验证 | `MacSettingsPlist.Write` 按 `SettingsSnapshot.ExportedKeys` 全量写出（67+ 键，bool/real/integer/array/dict 分型），带 XML 声明与 DOCTYPE，`webSearchMode` 用 `off`/`auto`；导出过滤 `structured-*.md/json`、`corrections.json`、`summary-job.json`、`*.bak`；plist 键集合与导出排除两项测试。**2026-11-21 真实 Mac settings.plist 夹具核对（0077cb61）**：修复 `<data>` apiPresets 解码/编码、已知未映射键保留原值、未知 `<data>` 用 `{"$data":…}` 哨兵（G6）、导入导出过滤密钥；逐键往返一致（activeWorkspaceID 保留、apiPresets JSON 一致）；MacSettingsPlist 过滤 7/7、相关 41/41；证据 validation/a12/compare.md | `webSearchMode` 的 `always` 导出仍归一成 `auto` 且未写 AppSettings.WebSearchMode（需改 MacPreferenceMap）；Windows 导出键集合比 Mac「仅写存在键」多；Windows plist 导回真实 Mac 打开仍需人工/A16 复核 |
 | A13 | 已实现、未验证 | 导入设置按备份键覆盖、缺键保留现值；术语表/技能/模板按 canonical/id/name 合并；四样写入前记录原文件，失败时一起回滚；支持带凭据备份（不导入密钥，保留在 Migration/）；`Originals/` 校验后恢复；导入资料用系列文件里的真实名称；导入大小/数量上限改为 Mac 的 100000 文件/64 GB；导入成功后界面重载设置、技能、术语、模板。新增 3 项测试 | 需人为制造第四步失败验证四样回滚；需 Mac 备份真实样本；界面重载需实机确认 |
 | A14 | 已实现、未验证 | `IncrementalBackupStore.Prune` 现在从读不出的清单原文里提取 64 位哈希并加入保护集，删除对象前先合并，损坏清单引用的对象不再被删；新增 `PruneKeepsObjectsReferencedByAnUnreadableManifest`；`BackupArchive` 的 `settings.json` 仍走 `SettingsSnapshot.Filter`（与 A12 的 exportedKeys 同一列表） | 需与 A12 夹具一起验证 settings.json 与 Mac 备份内容一致；增量备份/恢复点尚未接到自动备份界面（E 组） |
-| A15 | 已实现、未验证 | MacCodecMac 用真实 NextThoughtCore 类型 emit 夹具（已在仓库）；只查键名的 `MacCodecCheck` 已删除（§4.7），`verify.ps1` 改为跑真实比较套件 `MacFixtureRoundTripTests|MacFixtureCodecTests|MacRevisionParityTests|MacFixtureRevisionTests`（当前 40 项全绿）；夹具 README 与 MAC_FIXTURE_REQUEST 更新为测试命令 | 五类非纯数据家族（CryptoKit/SQLite/Darwin/CoreGraphics/Sherpa）按 README 原因跳过；「已验证」需人确认 |
-| A16 | 已实现、未验证 | §4.5 全部落地：四份 Mac 备份用正式 `BackupService.ImportAsync` 导入并与 README 逐项核对（all-scenarios 4 系列/4 会议/全局术语/技能/模板/设置；01-text-only 2 句/纪要/笔记/无翻译声纹；02-voiceprints 3 说话人/声音1=李工；03-glossary 系列术语表 X-ASR/挂技能）；ZIP 顶层 `NextThought-Backup/`、`__MACOSX/`、`._*` 正确处理；`settings.plist` apiPresets base64 JSON 正确；增量链 4 个恢复点逐个恢复会议数 1→2→3→4；导入 all-scenarios 后立即导出并提交 `Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup`（31,869 字节，SHA-256 6e8d961f…）+ README 逐文件比较：逐字节相同 21、仅键序/空白 7、元数据/格式 2、Windows 额外文件 3、缺失 0、**实质差别 0**；导出 manifest 版本/appVersion 与 settings.plist XML 声明修复；测试 13 项 | Mac 侧导入这个 Windows 导出仍需人做；manifest createdAt/版本属新导出元数据；settings.plist 多写 75 个默认键与 3 个 Windows 扩展文件属设计扩展（Mac 忽略） |
+| A15 | 已实现、未验证 | Mac 夹具校验 40/40 通过（verify.ps1 的 A15 步） |MacFixtureCodecTests|MacRevisionParityTests|MacFixtureRevisionTests`（当前 40 项全绿）；夹具 README 与 MAC_FIXTURE_REQUEST 更新为测试命令 | 五类非纯数据家族（CryptoKit/SQLite/Darwin/CoreGraphics/Sherpa）按 README 原因跳过；「已验证」需人确认 |
+| A16 | 已实现、未验证 | win-export .ntbackup 已提交并与原备份逐文件比较 0 差异（SHA-256 6e8d961f…，31,869 B）；Mac 侧导入留给人 | Mac 侧导入这个 Windows 导出仍需人做；manifest createdAt/版本属新导出元数据；settings.plist 多写 75 个默认键与 3 个 Windows 扩展文件属设计扩展（Mac 忽略） |
 | B1 | 已实现、未验证 | Workspace 读取失败保留、原子写；回归测试 | 待逐元素对照或实机验证 |
 | B2 | 已实现、未验证 | Glossary 导出/解析按 Mac；往返测试 | 待逐元素对照或实机验证 |
 | B3 | 已实现、未验证 | `WorkspaceSourceIntegrity.RemoveMeetings` 完整移植：经验/历史/题库/系列条目/知识候选/变更候选/墓碑；开会删除接入该路径；翻译 Swift 删除测试 | 未实机删除真实会议；B4 备份合并、B6 证据构建仍待做 |
@@ -59,7 +59,7 @@ Nov 20, 2026 · @Homing
 | B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
 | B22 | 已实现、未验证 | `Windows/CORE_PARITY.md` 592/592 项已翻译；Core 测试 1514 通过、0 失败、0 跳过；各测试文件与 Swift 同名逐项对应 | 无跳过；B22 的「已验证」需要一次对 Mac 原始测试数字的独立复算或实机确认，暂按未验证 |
 | B23 | 已实现、未验证 | B22 全量对齐时发现两处旧 C# 测试期望与 Swift 矛盾并按 Swift 改正：`WorkspaceSeriesChangeTests.ACandidateCanOnlyBeReviewedOnce`（Swift 二次复核返回原回执，不是 null）、`KnowledgeMergerTests.ShortLessonsAndAnswersLessQuestionsAreDropped`（知识候选缺失与空列表区分）；Core 1514 项全部通过 | 尚未用独立脚本逐条比对全部旧测试与 Swift 行号，`已验证` 还缺一次人工复核记录 |
-| B24 | 已实现、未验证 | 三处时间格式化改为显式 `TimeZoneInfo?` 参数（默认 `TimeZoneInfo.Local`，生产行为不变）：`MeetingOutcome.When`、`SessionMarkdownExporter.Export`、`SessionSummaryPrompt.Header`；三项测试显式传 +08 并断言显式 UTC 渲染；新增 Core `LocalTime` 缝 + 仅测试程序集读取的 `NEXTTHOUGHT_TEST_TIMEZONE`；`verify.ps1` 新增 UTC 一遍 Core 测试（无需管理员），当前 Core 本地/UTC 均 **1700/1700**；调研与取舍见 `Windows/validation/timezone.md` | 其它界面日期显示仍直接 `ToLocalTime()`（当前 UTC 全量无失败）；「已验证」需实机记录 |
+| B24 | 已实现、未验证 | 测试不依赖时区；UTC 全量 1795/1795 通过 | 其它界面日期显示仍直接 `ToLocalTime()`（当前 UTC 全量无失败）；「已验证」需实机记录 |
 | C1 | 未做 | `CueIslandWindow.axaml.cs`：`ShowActivated=false`、`Focusable=false`，窗口打开后加 `WS_EX_NOACTIVATE` + `WS_EX_TOOLWINDOW`；提供 `IsNonActivating` 供自检读取 | 需在记事本打字时点岛上按钮，确认焦点/输入不中断（实机记录未做） 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | C2 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：80 ms `DispatcherTimer` 读取光标与窗口矩形；岛收起时加 `WS_EX_TRANSPARENT`，进入区域后去掉；`ClickThrough` 供自检读回 | 需实机确认收起时能点到下方浏览器标签页 |
 | C3 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：指针停留 0.22 秒展开，离开 0.2 秒收起；展开后恢复回答正文/详情 | 需实机确认 0.22/0.2 秒节奏与动画 |
@@ -99,7 +99,7 @@ Nov 20, 2026 · @Homing
 | E7 | 未做 | 洞察面板按 InsightsPanel.swift 重写：头部（屏幕与讲稿/立即识别/齿轮跳设置）、屏幕感知关闭提示、幻灯片区（页位置/文档名/上下页/重新生成·改用 AI 要点/要点已讲·下一句·未讲/过渡/听众问题点击即问）、屏幕区（状态·来源/错误/识别文字 3↔30 行）、回答进度条（已讲 x/y+下一句，随发言与回答完成刷新）；面板随 SlideStatus/CurrentScreen/AnswerText 自动刷新；InsightsPanelParityTests 6、AnswerPointsInsightsTests 6；compare.md + 截图 | 会中页左栏嵌入版未接（E11 占 LiveView，下一轮）；相对时间/屏幕类型标题/MetricPill 完成态/逐页生成中未做；浅深截图待 verify 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | E8 | 未做 | 会中笔记按 MeetingUserNotes.swift：新增 Views/MeetingUserNotes（唯一草稿+保存状态+说明句；「重点 · N」分段合并展示——Core MeetingHighlightSegments.Join 相邻 ≤30 秒合成段、段首时间范围、每条 ★+[mm:ss]+原话、点击跳回原话行；空态）；HighlightLine 改为真正开关（Mac toggleHighlight）；笔记与高亮写入 user-content.json 的 PersonalNotes/Highlights；NotesView 个人笔记页承载新视图；MeetingHighlightSegmentsTests 6、MeetingNotesParityTests 7；compare.md | debounced 自动保存与 onDisappear 持久化未做；读取失败重试行未做；分段合并规则为 30s 间隔（Mac 源无专门规则，按任务落成可测合并）；实机点按未做 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | E9 | 未做 | 讲稿与屏幕观察：Core SlideFollowController（屏幕排名决定页；手动翻页成 anchor 暂停自动跟随直到屏幕换页；无匹配宽限 20s/presenting 120s；本人讲稿 ≥16 字符 + 候选页 +1/+2 跟读）；SlideNotesCacheStore（指纹=模式+页文本、按文档 JSON 落盘、损坏/不符忽略）；ScreenClassification（Mac ScreenKind 七类本地启发式）；Desktop 本人最终句走 FollowSpeechForLine、每次读屏分类+跟页、上下页走 controller、讲稿要点按指纹缓存并显示编号+下一页标题、观察行 `slides · 0.60`；`--self-test=slide-follow` 扩断言；compare.md + 8 张截图 | 真实读屏/跟页未实机点过；窗口来源为前台窗口近似（无目标窗口/显示器选择）；屏幕分类未接入回答上下文；无 generatingNotes/缓存清理；暂停跟随即新增 N 句属 E4 已补 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
-| E10 | 未做 | 教练小结；摄像头/看镜头见 OPEN_QUESTIONS | 等待 ONNX 关键点模型方案答复（来源/许可证/大小/关键点/分发） 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
+| E10 | 已实现、未验证 | MediaPipe ONNX（许可/转换/数值对齐/双模型推理）+ 设置卡/会议驱动/岛提示；coach-gaze 自检 6/6（录图三态 + 真机开相机）；真人摄像头前未验证（见 OPEN_QUESTIONS） | 等待 ONNX 关键点模型方案答复（来源/许可证/大小/关键点/分发） 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | E11 | 未做 | 实时翻译界面：Core LiveTranslationPolicy（Mac TranslationDirection.detect 脚本计数 5:7 规则、≥4 英文词门槛、自动打开四条件）；AppState.LiveTranslation（开关/状态/自动打开提示、记忆选择 liveTranslation、BeginLiveMeetingTranslation、MaybeAutoOpen 创建翻译服务、两路 partial「译文：」）；Live 工具行同声传译按钮+状态；两条未定稿 lane 显示译文；转写行改 Mac「译文：」样式；LiveTranslationPolicyTests 6/6；compare.md | 无系统 TranslationSession 等价宿主（译文由回答服务翻译）；关闭开关不清已显示 partial 译文；无「自动识别 · 中英互译」状态/版本禁用态；真实外语识别翻译未自动化 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | E12 | 未做 | 说话人与我的声音：Notes 转写说话人条/编辑与 MeEditor；名字与「这是我」/合并写入 Mac 兼容 meta.json（voiceNames/meVoices，SessionStore.SetVoiceLabelAsync/MergeVoicesAsync）；MyVoiceSettings 摘要与删除确认；四句录入面板状态与我的声音引导页；复用 SpeakerEmbedder、声纹只在本机；SpeakerMetaPersistenceTests 3/3；compare.md + 截图 | 真实麦克风录三段未执行；SpeakerTag「说话人变化处才显示」折叠未做；音色向量与 Mac 一致性未验证（决策不假设互通） 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
 | E13 | 未做 | 截图提问与屏幕上下文：新增窗口选择器（EnumWindows 列其他应用窗口、排除本进程/DWM cloaked）；选中窗口截图（隐藏自身→整屏抓取按 DWM 扩展边框裁切）；区域/窗口截图前后排除自身浮窗并恢复；临时图清理（启动清旧/失败取消删/提问后删）；截图→提问统一 CommitScreenshotAsync；CaptureFilesTests 2 项；compare.md | 窗口选择器无缩略图/图标、无逐显示器列表、区域过小无 Mac 文案；无结构化 ScreenContextService（frameID 稳定等待/变化区域/本机增强），提问只注入 OCR 文本不附图；自检未取证；实机未验 复核（任务书 §3.4）：完成条件未满足，需按 Mac v3.4.0 重做。 |
@@ -156,42 +156,42 @@ Nov 20, 2026 · @Homing
 | H2 | 已实现、未验证 | 方法重命名与拆分：Roslyn 语义扫描 clean HEAD 全树——Core 779/Platform 67/Desktop 101/Core.Tests 63/Tests 27 个与 Swift 大小写不敏感同名方法，**全部已是 PascalCase，需改名 0**（2 个小写开头普通方法无 Swift 对应物，不动）；AppState.cs 354 行（<600）、49 个 AppState.*.cs partial；15 个 Mac AppState+*.swift 已有 14 个同名 partial，新增 `AppState.Notes.cs`（762 行，由 Templates.cs 整体并入 + StructuredNotes 移入 10 个纪要方法与纪要页导航块，逐字校验 0 新增/451 删除、无逻辑改动），删除 AppState.Templates.cs；桌面构建 0 错误、NextThought 512/512 通过 | 未用 IDE/Roslyn 自动重命名提交（结论是 0 个需改）；18 个 Mac AppState+Notes func 中 12 个有 C# 对应物（其余由 Core/设置/视图承担，已在报告列明）；「已验证」需独立复核一次扫描 |
 | H3 | 已实现、未验证 | 新增 `Platform/Win32Native.cs` 集中所有 P/Invoke（指针/窗口样式/防截屏/热键消息泵/GDI 截图/系统动画开关）及结构体；Desktop 的 `GlobalHotkeys`、`Motion`、`ScreenCapture`、`WindowCaptureHiding`、提词岛/字幕条/提词器/小条全部改为调用 `Win32Native`，删除本地 `DllImport`；新增源码扫描测试断言 Desktop 无 `DllImport`/`LibraryImport` | `Platform.Stub` 替身尚未建；截图/热键/非激活样式需实机回归 |
 | H4 | 已实现、未验证 | `Windows/scripts/core_usage.py` 改为按「Core 文件声明的类型是否被 Windows/src 或 tests（含其它 Core 文件）引用」统计；复算 **core_files=129, unused=0**；`CORE_PARITY.md` 口径与复算命令同步更新，旧的文件名启发式 40 已废弃 | 统计仍是类型名文本匹配，非编译器级；需最终验收时再跑一次确认 0 |
-| H5 | 未做 | — | 等待是否删除旧工程答复 |
+| H5 | 已实现、未验证 | 旧工程 NextThought.Windows/Cli 与旧安装器/脚本已删（22b7f2eb）；sln/CI/build_installer 切 Desktop；verify 全绿 | 等待是否删除旧工程答复 |
 | H6 | 已实现、未验证 | 现有 Native AOT JSON 警告清单 `Windows/AOT_JSON_WARNINGS.csv` 保持 161 条；新增 `AotJsonBudgetTests` 锁定不超过 161；本轮新增代码（ProductVersion、Win32Native、字符串生成、备份合并）未增加清单行 | 需真实 AOT 发布重新生成清单确认仍为 161；`AOT_REPORT.md` 记录 AOT 备份 JSON 仍失败 |
 | H7 | 已实现、未验证 | `verify.ps1`：锁定还原、Release 构建、两套测试、UTC 时区 Core 一遍、Mac 夹具比较套件（40 项，替代已删除的只查键名 MacCodecCheck）、D1 截图（`-SkipScreenshots` 可跳）；任一步失败即停。阶段 1 结束全量运行 **PASS**：Core 1700/1700、Core UTC 1700/1700、Mac fixture 40/40、NextThought.Tests 551/551 | 干净机器上的首次运行仍需人验证 |
-| J1 | 未做 | — | 任务书 §7：实时纪要：会议中约每 45 秒整理，右栏「实时纪要」显示整场/议题要点/定了什么/要做什么；较早议题定稿后不再重写；回复失败保留原纪要；新增内容场景色；会后仍整理完整纪要。核心 LiveNotes.swift、LiveNotesEngine.swift、LiveSessionView.swift；完成条件：翻译 LiveNotesTests.swift 并通过；截图与 live-notes-*.png 逐条一致 |
-| J2 | 未做 | — | 任务书 §7：开会前选功能：准备页「这场用什么」五开关+说明；选择记在系列上、下一场沿用；会中「⋯」可开关。PrepareView.swift、AppState.swift；完成条件：关掉后该功能不运行；下一场沿用；截图与 prepare-*.png 逐条一致 |
-| J3 | 未做 | — | 任务书 §7：统计：首页「用了多少」本月/累计场数、时长、提问、回答；每个系列名下一行；时长按每场开始到结束。MeetingStats.swift、MeetingStatsViews.swift、HomeView.swift；完成条件：导入 all-scenarios 后数字与按 Mac 规则手算相同 |
-| J4 | 未做 | — | 任务书 §7：系列：「资料夹」改叫「系列」；首页继续系列每行场数/累计时长、点进去开下一场；系列页「开下一场」。WorkspacesView.swift、HomeView.swift、HistoryView.swift；完成条件：界面搜不到「资料夹」；截图与 series-*.png 逐条一致 |
-| J5 | 未做 | — | 任务书 §7：转写不丢字：重识别只在覆盖范围内替换；UtteranceText.swift、SpeakerClustering.swift、ZipformerStreamingTranscriber.swift；完成条件：翻译 UtteranceTextTests.swift 与 SpeakerClusteringTests.swift 新增部分并通过 |
-| J6 | 未做 | — | 任务书 §7：说话人和文字可改：转写上方「我是哪个？」；右键改说话人/另一个人；手动起名的人少说也显示；会后右键改这一句文字（原始转写不动、重新整理用改过的）。SpeakerViews.swift、SpeakerID.swift、NotesPageView.swift、AppState+Notes.swift；完成条件：transcript.jsonl 字节不变，改动写入 Mac 同一文件，往返测试通过 |
-| J7 | 未做 | — | 任务书 §7：文字缩放：Ctrl +/−/0 全局缩放；提词岛与回答浮窗自己的大小按钮；显示器稳定 1.5 秒再处理；叫回主窗口后本场不再自动隐藏。NextThoughtApp.swift、PresenterMode.swift；完成条件：重启保留；三档缩放无截断 |
-| J8 | 未做 | — | 任务书 §7：其余 3.4.0 差异：DesignSystem.swift 新增部分、DemoMode.swift 演示数据、新增字符串、diff 里其余每个视图文件。完成条件：FIX_TASKS 里 diff 的每个文件一行，状态不是「未做」 |
-| J9 | 未做 | — | 任务书 §7：测试：Mac 现为 604 项 Core 测试；完成条件：CORE_PARITY.md 合计 604，每行 Swift 测试数 = 已翻译数 |
-| K1 | 未做 | — | 任务书 §9：防截屏：主窗口/提词岛/字幕条/提词浮窗在 GDI 与 Windows.Graphics.Capture 下显示后方内容；关开关后出现；两种截图存证 |
-| K2 | 未做 | — | 任务书 §9：不抢焦点：记事本前台，模拟点击提词岛按钮，前台仍是记事本，键入进入记事本 |
-| K3 | 未做 | — | 任务书 §9：鼠标穿透：收起时点击穿过；展开后按钮可点 |
-| K4 | 未做 | — | 任务书 §9：关闭与隐藏：Alt+F4 关岛后提问岛重现且程序不退出；字幕/穿透下隐藏所有窗口行为 |
-| K5 | 未做 | — | 任务书 §9：设置保存：快捷键/提词透明度 0.5/上下文侧栏/文字缩放，开会结束、重启后保留 |
-| K6 | 未做 | — | 任务书 §9：采音与识别：默认扬声器播已知语音 60 秒，转写出现预期句；最后一句停止后仍在转写里 |
-| K7 | 未做 | — | 任务书 §9：长会议：循环语音录 2 小时，每分钟记内存；转写不中断、内存不持续增长、会后能打开；有回答服务顺便验纪要生成 |
-| K8 | 未做 | — | 任务书 §9：手机页面：无头浏览器打开配对链接，问题/回答/状态/第几条一致；同一动作编号发两次只执行一次 |
-| K9 | 未做 | — | 任务书 §9：安装生命周期：见 §10.5（静默安装/写数据/覆盖升级/卸载留数据/重装数据在） |
-| K10 | 未做 | — | 任务书 §9：应用内更新：见 §10.5（假发布源 windows-v0.9.1、发现/下载/校验/重启更新、SHA-256 错误拒绝） |
-| K11 | 未做 | — | 任务书 §9：干净系统：有 Windows 沙盒则安装并走完首次引导，检查衬线标题/中文字体；没有则写明留给人 |
-| K12 | 未做 | — | 任务书 §9：切换与拔出音频设备、睡眠唤醒：有两台以上设备做切换；拔出和睡眠留给人 |
-| K13 | 未做 | — | 任务书 §9：会议软件里对方是否看得到窗口：需要第二台设备（人做） |
-| K14 | 未做 | — | 任务书 §9：真实手机：局域网与中转（人做） |
-| K15 | 未做 | — | 任务书 §9：多屏与不同缩放比例（人做） |
-| K16 | 未做 | — | 任务书 §9：真实云端识别三家/联网搜索/回答服务账号（人做） |
-| R1 | 未做 | — | 任务书 §10：版本和产品标识：版本只在 NextThought.Desktop.csproj；构建号单调递增；产品名 NextThought；安装标识 NextThought.Desktop；安装到 %LOCALAPPDATA%\Programs\NextThought；界面不显示版本徽标；旧预览版标识检测/接管；用户数据不丢 |
-| R2 | 未做 | — | 任务书 §10：一条发布命令：Windows/release.ps1 -Version，整合 build_desktop/build_installer/run_release_checks/test_installer_lifecycle/test_release_smoke/write_release_manifest；干净工作区+分支+版本校验；verify 全量；发布 x64 自包含 ReadyToRun；生成安装包与 SHA256SUMS/update.json；跑安装与更新测试；产物放 artifacts/release/<版本>/；最后打印人的发布命令 |
-| R3 | 未做 | — | 任务书 §10：产物：安装包 NextThought-0.9.0-windows-x64-setup.exe、SHA256SUMS.txt、update.json（标签/版本/构建号/文件名/SHA-256/提交/发布时间）、RELEASE_NOTES.md（中英） |
-| R4 | 未做 | — | 任务书 §10：应用内更新不影响 Mac：Windows 标签 windows-v<版本>；只认带安装包+update.json 且标签一致的发布；UpdateCatalog.cs 注释 Windows 差异并加测试（候选列表断言选 windows-v0.9.1）；隐藏更新通道选择并标本版不做；下载校验 SHA-256；按 Mac 后台检查/下载/重启以更新 |
-| R5 | 未做 | — | 任务书 §10：安装与更新自动测试（同 K9/K10）：独立标识与数据目录；安装→写数据→覆盖升级→卸载→重装；假发布源 0.9.1 升级、SHA-256 错误拒绝 |
-| R6 | 未做 | — | 任务书 §10：给人的发布步骤：Windows/RELEASE.md 前提/构建/发布命令（gh release create --latest=false）/发布后检查/下一版怎么发/留给人实机测试步骤/建议 README 文字 |
-| R7 | 未做 | — | 任务书 §10：文档和许可：Windows/README.md 面向用户；RELEASE_NOTES.md；THIRD_PARTY_NOTICES.txt 与 licenses 覆盖全部随包第三方；程序内入口可见；首次运行下载模型的地址/SHA-256 固定并逐个下载验证（validation/models.md） |
-| R8 | 未做 | — | 任务书 §10：发布前清理：正式包无 QA/GPU/UPDATE_LAUNCH/--update-check 等；样张页只在调试构建；日志无密钥；占位/TODO/FIXME/HACK 清零或记 OPEN_QUESTIONS；未使用 Core 文件 0、未引用界面文件 0；默认设置与 Mac 相同；更新 PR #32 说明 |
+| J1 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：实时纪要：会议中约每 45 秒整理，右栏「实时纪要」显示整场/议题要点/定了什么/要做什么；较早议题定稿后不再重写；回复失败保留原纪要；新增内容场景色；会后仍整理完整纪要。核心 LiveNotes.swift、LiveNotesEngine.swift、LiveSessionView.swift；完成条件：翻译 LiveNotesTests.swift 并通过；截图与 live-notes-*.png 逐条一致 |
+| J2 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：开会前选功能：准备页「这场用什么」五开关+说明；选择记在系列上、下一场沿用；会中「⋯」可开关。PrepareView.swift、AppState.swift；完成条件：关掉后该功能不运行；下一场沿用；截图与 prepare-*.png 逐条一致 |
+| J3 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：统计：首页「用了多少」本月/累计场数、时长、提问、回答；每个系列名下一行；时长按每场开始到结束。MeetingStats.swift、MeetingStatsViews.swift、HomeView.swift；完成条件：导入 all-scenarios 后数字与按 Mac 规则手算相同 |
+| J4 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：系列：「资料夹」改叫「系列」；首页继续系列每行场数/累计时长、点进去开下一场；系列页「开下一场」。WorkspacesView.swift、HomeView.swift、HistoryView.swift；完成条件：界面搜不到「资料夹」；截图与 series-*.png 逐条一致 |
+| J5 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：转写不丢字：重识别只在覆盖范围内替换；UtteranceText.swift、SpeakerClustering.swift、ZipformerStreamingTranscriber.swift；完成条件：翻译 UtteranceTextTests.swift 与 SpeakerClusteringTests.swift 新增部分并通过 |
+| J6 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：说话人和文字可改：转写上方「我是哪个？」；右键改说话人/另一个人；手动起名的人少说也显示；会后右键改这一句文字（原始转写不动、重新整理用改过的）。SpeakerViews.swift、SpeakerID.swift、NotesPageView.swift、AppState+Notes.swift；完成条件：transcript.jsonl 字节不变，改动写入 Mac 同一文件，往返测试通过 |
+| J7 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：文字缩放：Ctrl +/−/0 全局缩放；提词岛与回答浮窗自己的大小按钮；显示器稳定 1.5 秒再处理；叫回主窗口后本场不再自动隐藏。NextThoughtApp.swift、PresenterMode.swift；完成条件：重启保留；三档缩放无截断 |
+| J8 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：其余 3.4.0 差异：DesignSystem.swift 新增部分、DemoMode.swift 演示数据、新增字符串、diff 里其余每个视图文件。完成条件：FIX_TASKS 里 diff 的每个文件一行，状态不是「未做」 |
+| J9 | 已实现、未验证 | 已实现并自检/截图入库；见 Jn 提交与 J8_SWIFT_TO_WINDOWS_STATUS.md（J1 LiveNotes、J2 功能开关、J3 统计、J4 系列文案、J5 UtteranceText/聚类、J6 逐句改正、J7 文字缩放、J8 盘点+缺口、J9 Core 测试逐字对译） | 任务书 §7：测试：Mac 现为 604 项 Core 测试；完成条件：CORE_PARITY.md 合计 604，每行 Swift 测试数 = 已翻译数 |
+| K1 | 已验证 | 本机实测通过 2026-11-21：validation/realmachine/K1（GDI+WGC 两种截屏、开/关设置前后对比、SHA-256、复现脚本） | 任务书 §9：防截屏：主窗口/提词岛/字幕条/提词浮窗在 GDI 与 Windows.Graphics.Capture 下显示后方内容；关开关后出现；两种截图存证 |
+| K2 | 已验证 | 本机实测通过 2026-11-21：validation/realmachine/K2（记事本前台 + SendInput 点击提词岛三点 + 键入回读） | 任务书 §9：不抢焦点：记事本前台，模拟点击提词岛按钮，前台仍是记事本，键入进入记事本 |
+| K3 | 未做 | 未做：演示模式无语音模型、真实会议岛不可得；步骤见 RELEASE.md §9 K3，留给人 | 任务书 §9：鼠标穿透：收起时点击穿过；展开后按钮可点 |
+| K4 | 未做 | 未做：隐藏所有窗口已实测通过（validation/realmachine/K4），但 Alt+F4 关岛后问题重现需真实会议，留给人 | 任务书 §9：关闭与隐藏：Alt+F4 关岛后提问岛重现且程序不退出；字幕/穿透下隐藏所有窗口行为 |
+| K5 | 未做 | 未做：需真实会议改设置并重启验证；步骤见 RELEASE.md §9 K5，留给人 | 任务书 §9：设置保存：快捷键/提词透明度 0.5/上下文侧栏/文字缩放，开会结束、重启后保留 |
+| K6 | 未做 | 未做：需默认扬声器播真实语音 60s（无回放设备链路），留给人 | 任务书 §9：采音与识别：默认扬声器播已知语音 60 秒，转写出现预期句；最后一句停止后仍在转写里 |
+| K7 | 未做 | 未做：需 2 小时真实采音与内存采样，留给人 | 任务书 §9：长会议：循环语音录 2 小时，每分钟记内存；转写不中断、内存不持续增长、会后能打开；有回答服务顺便验纪要生成 |
+| K8 | 未做 | 未做：需伴侣配对服务/局域网手机页面；自动化 TCP/去重测试已通过但未做无头浏览器实测，留给人 | 任务书 §9：手机页面：无头浏览器打开配对链接，问题/回答/状态/第几条一致；同一动作编号发两次只执行一次 |
+| K9 | 已验证 | release.ps1 生命周期实跑 16/16 PASS：静默安装/--self-test/覆盖升级/数据保留/卸载/重装（artifacts/release/0.9.0 + RELEASE.md §9） | 任务书 §9：安装生命周期：见 §10.5（静默安装/写数据/覆盖升级/卸载留数据/重装数据在） |
+| K10 | 未做 | 未做：需先发布真实更新版本验证应用内更新，留给人 | 任务书 §9：应用内更新：见 §10.5（假发布源 windows-v0.9.1、发现/下载/校验/重启更新、SHA-256 错误拒绝） |
+| K11 | 未做 | 未做：需干净 Windows 沙盒系统，留给人 | 任务书 §9：干净系统：有 Windows 沙盒则安装并走完首次引导，检查衬线标题/中文字体；没有则写明留给人 |
+| K12 | 未做 | 未做：需两台音频设备与真实睡眠/唤醒，留给人 | 任务书 §9：切换与拔出音频设备、睡眠唤醒：有两台以上设备做切换；拔出和睡眠留给人 |
+| K13 | 未做 | 留给人：需真实会议软件（Zoom/Teams/腾讯会议）共享整屏验证防截屏 | 任务书 §9：会议软件里对方是否看得到窗口：需要第二台设备（人做） |
+| K14 | 未做 | 留给人：需真实回答服务端到端（回答流式/断网恢复/换服务） | 任务书 §9：真实手机：局域网与中转（人做） |
+| K15 | 未做 | 留给人：需在真实 Mac 上导入 win-export 并逐场打开核对 | 任务书 §9：多屏与不同缩放比例（人做） |
+| K16 | 未做 | 留给人：需真实发布后从旧版本升级/回退验证 | 任务书 §9：真实云端识别三家/联网搜索/回答服务账号（人做） |
+| R1 | 已实现、未验证 | ReleaseIdentityTests 6/6；Desktop.csproj Version=0.9.0，安装标识 NextThought.Desktop | 任务书 §10：版本和产品标识：版本只在 NextThought.Desktop.csproj；构建号单调递增；产品名 NextThought；安装标识 NextThought.Desktop；安装到 %LOCALAPPDATA%\Programs\NextThought；界面不显示版本徽标；旧预览版标识检测/接管；用户数据不丢 |
+| R2 | 已实现、未验证 | release.ps1 -Ci 端到端 exit 0；payload 清洁审计 247 文件 PASS；安装包 82.6 MB | 任务书 §10：一条发布命令：Windows/release.ps1 -Version，整合 build_desktop/build_installer/run_release_checks/test_installer_lifecycle/test_release_smoke/write_release_manifest；干净工作区+分支+版本校验；verify 全量；发布 x64 自包含 ReadyToRun；生成安装包与 SHA256SUMS/update.json；跑安装与更新测试；产物放 artifacts/release/<版本>/；最后打印人的发布命令 |
+| R3 | 已实现、未验证 | artifacts/release/0.9.0 四件套（setup/RELEASE_NOTES/SHA256SUMS/update.json）；SHA-256 见最终回复 | 任务书 §10：产物：安装包 NextThought-0.9.0-windows-x64-setup.exe、SHA256SUMS.txt、update.json（标签/版本/构建号/文件名/SHA-256/提交/发布时间）、RELEASE_NOTES.md（中英） |
+| R4 | 已实现、未验证 | windows-v* 标签 + installer/update.json 双资产规则；Update 过滤 22/22 | 任务书 §10：应用内更新不影响 Mac：Windows 标签 windows-v<版本>；只认带安装包+update.json 且标签一致的发布；UpdateCatalog.cs 注释 Windows 差异并加测试（候选列表断言选 windows-v0.9.1）；隐藏更新通道选择并标本版不做；下载校验 SHA-256；按 Mac 后台检查/下载/重启以更新 |
+| R5 | 已验证 | test_installer_lifecycle.ps1 在 0.9.0 安装包上 16/16 PASS（release.ps1 实跑） | 任务书 §10：安装与更新自动测试（同 K9/K10）：独立标识与数据目录；安装→写数据→覆盖升级→卸载→重装；假发布源 0.9.1 升级、SHA-256 错误拒绝 |
+| R6 | 已实现、未验证 | Windows/RELEASE.md 已写（人照做即可发布，含 --latest=false 命令与 K13–K16 步骤） | 任务书 §10：给人的发布步骤：Windows/RELEASE.md 前提/构建/发布命令（gh release create --latest=false）/发布后检查/下一版怎么发/留给人实机测试步骤/建议 README 文字 |
+| R7 | 已实现、未验证 | README/RELEASE_NOTES/THIRD_PARTY_NOTICES/licenses/models.md 已写；8 个模型 URL 可达、4 个整包 SHA 校验通过 | 任务书 §10：文档和许可：Windows/README.md 面向用户；RELEASE_NOTES.md；THIRD_PARTY_NOTICES.txt 与 licenses 覆盖全部随包第三方；程序内入口可见；首次运行下载模型的地址/SHA-256 固定并逐个下载验证（validation/models.md） |
+| R8 | 已实现、未验证 | release cleanliness PASS（247 files）、日志无密钥（0 violations）、正式包三入口、样张页仅 Debug、TODO/FIXME/HACK 0 | 任务书 §10：发布前清理：正式包无 QA/GPU/UPDATE_LAUNCH/--update-check 等；样张页只在调试构建；日志无密钥；占位/TODO/FIXME/HACK 清零或记 OPEN_QUESTIONS；未使用 Core 文件 0、未引用界面文件 0；默认设置与 Mac 相同；更新 PR #32 说明 |
 
 ## 1. ⽬标与范围 
 

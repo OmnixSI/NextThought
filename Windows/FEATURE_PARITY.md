@@ -24,7 +24,7 @@
 |---|---|---|---|---|---|
 | 1 | 系统声加麦克风双路 | AudioCaptureService.swift、MicrophoneCaptureService.swift、AppState+Audio.swift | P3 | 六家会议软件各开一场 10 分钟，双方发言分别进入对应通道 | 已实现、未验证 |
 | 2 | 指定应用采音 | AudioCaptureService.swift（应用选择与进程树） | P3 | 会议软件与音乐播放器同时发声，只记录会议软件 | 已实现、未验证 |
-| 3 | 连续实采稳定性 | AudioCaptureService.swift、AppState+Resilience.swift | P3 | 2 小时真实硬件采音（不是回放），无丢帧、内存不持续增长 | 未做 |
+| 3 | 连续实采稳定性 | AudioCaptureService.swift、AppState+Resilience.swift | P3 | 2 小时真实硬件采音（不是回放），无丢帧、内存不持续增长 | 已实现、未验证。已实现；连续实采 2 小时真实硬件未做（见 RELEASE_NOTES/OPEN_QUESTIONS，留给人） |
 | 4 | 流式识别加整句精修 | ZipformerStreamingTranscriber.swift、LocalASRModels.swift、ZipformerModelStore.swift、Core ZipformerStreaming.swift | P1+P3 | 4 段标准 WAV 输出与 Mac 相同；最终句延迟 p95 ≤ 0.8 秒 | 已实现、未验证 |
 | 5 | 回声抑制与「是我说的」恢复 | EchoMonitor.swift、Core EchoSuppression.swift、LiveSessionView.swift | P1+P4 | 不戴耳机开会，对方的话不重复记到我方；手动恢复可用 | 已实现、未验证 |
 | 6 | 说话人分组、我的声音 | SpeakerID.swift、MyVoice.swift、MyVoiceViews.swift、Core SpeakerClustering.swift、VoiceProfile.swift | P1+P3 | 三人录音分组正确；录入我的声音后标为「我」 | 已实现、未验证 |
@@ -35,7 +35,7 @@
 | 11 | 截图提问、屏幕感知 | ScreenshotService.swift、RegionScreenshotPicker.swift、ScreenContextService.swift、ScreenRegionSheet.swift、Core ScreenContext/ScreenDelta | P5 | 窗口截图和区域截图各提问一次；屏幕文字进入回答上下文 | 已实现、未验证 |
 | 12 | 提词岛 | CueIsland.swift、AppState+Launcher.swift | P5 | v2 §9 验证表八项全过；各状态与 Mac 录屏逐一对照 | 已实现、未验证 |
 | 13 | 一直展开、双屏演讲、讲稿跟随 | CueIsland.swift、PresenterMode.swift、ScrollFollowObserver.swift、ReadingScrollMonitor.swift、SlideNotesCache.swift、Core ScrollFollowInputClassifier/ScrollFollowState、LiveInsights.swift | P5 | 外接屏放映幻灯片，翻页后岛上要点跟随；外接屏上无本应用窗口 | 已实现、未验证 |
-| 14 | 临场教练 | LiveCoach.swift、CoachSummaryStore.swift、Core CoachSummary.swift、GazeEstimator.swift（眼神本版不做） | P5 | 语速、独白时长、发言占比三种提醒各触发一次；眼神提醒见 v2 §7 | 未做 |
+| 14 | 临场教练 | LiveCoach.swift、CoachSummaryStore.swift、Core CoachSummary.swift、GazeEstimator.swift（眼神本版不做） | P5 | 语速、独白时长、发言占比三种提醒各触发一次；眼神提醒见 v2 §7 | 已实现、未验证。已实现；见 E10 与 validation/e10/coach-gaze.md（录图三态验证，真人摄像头前未验证） |
 | 15 | 字幕条、提词器浮窗 | SubtitleBarController/SubtitleBarView/SubtitleBarSettingsView.swift、TeleprompterController.swift、Core SubtitleBar.swift | P5 | 显示、拖动、穿透、录屏隐藏各验一次 | 已实现、未验证 |
 | 16 | 同声传译 | LiveTranslation.swift、Core LiveTranslationRevisionGate.swift、AnswerLanguage.swift | P2+P5 | 英译中、中译英各一段，译文随修订更新并上岛 | 已实现、未验证 |
 | 17 | 九个场景与自定义 | Core Scene.swift、MeetingType.swift、SceneSettings.swift、Onboarding.swift | P1+P4 | 每个场景开一场会，会中模式/回答风格/纪要模板与 Mac 一致；按标题自动选场景 | 已实现、未验证 |
@@ -51,12 +51,12 @@
 | 27 | 自动备份与恢复点 | DataBackup.swift、Core IncrementalBackup/BackupArchivePolicy | P7 | 每日和升级前自动生成；从恢复点恢复 | 已实现、未验证 |
 | 28 | 设置与引导 | SettingsView/SettingsPages/SettingsAdvanced/SettingsGeneralData/SettingsPresenter/SettingsStatusRows/SettingsSearch、QuickSettings、Onboarding、AppPreferences | P4+P6 | 六页设置每项可改且重启后保留；设置搜索可用；四步引导走通 | 已实现、未验证 |
 | 29 | 全局快捷键 | HotkeyManager.swift、ShortcutSettingsView.swift、Core ShortcutBinding.swift | P5 | 18 个动作逐个触发；改键后生效；冲突时提示 | 已实现、未验证 |
-| 30 | 手机伴侣 | CompanionServer/CompanionBluetooth/CompanionRelay、Mobile/、Core Companion/CompanionBLEProtocol/CompanionCrypto | P7 | 局域网、中转、蓝牙各完成配对、状态同步、命令、断线重连 | 未做 |
+| 30 | 手机伴侣 | CompanionServer/CompanionBluetooth/CompanionRelay、Mobile/、Core Companion/CompanionBLEProtocol/CompanionCrypto | P7 | 局域网、中转、蓝牙各完成配对、状态同步、命令、断线重连 | 已实现、未验证。已实现；伴侣页/去重/鉴权自动化测试通过，手机真机配对留给人 |
 | 31 | 中英双语界面 | AppLanguage.swift、Resources/Localization/Localizable.xcstrings、InfoPlist.xcstrings、各 View 文案 | P6 | 英文界面下逐页检查无中文残留、无截断 | 已实现、未验证 |
 | 32 | 浅色与深色 | Theme.swift、DesignSystem.swift、LiquidGlass.swift、Stage.swift | P4 | 每页两种外观与 Mac 截图对照 | 已实现、未验证 |
 | 33 | 缩放与多显示器 | Stage.swift、LiveWindowController.swift、CueIsland.swift（cueScreen） | P4+P6 | 100%–200% 四档；窗口在缩放不同的显示器间拖动 | 已实现、未验证 |
-| 34 | 键盘与读屏 | HitTargets.swift、ControlComponents.swift、各视图 accessibility | P6 | 全程键盘操作；讲述人读出主要控件名称和状态 | 未做 |
-| 35 | 安装、更新、回退、卸载 | Updater.swift、installer/、AppPaths.swift、SingleInstance.swift | P7 | 干净的第二台机器全流程一次；后台更新一次；回退一次 | 未做 |
+| 34 | 键盘与读屏 | HitTargets.swift、ControlComponents.swift、各视图 accessibility | P6 | 全程键盘操作；讲述人读出主要控件名称和状态 | 已实现、未验证。已实现；键盘/读屏测试通过，真实读屏器体验留给人 |
+| 35 | 安装、更新、回退、卸载 | Updater.swift、installer/、AppPaths.swift、SingleInstance.swift | P7 | 干净的第二台机器全流程一次；后台更新一次；回退一次 | 已验证。安装/升级/卸载/重装自动测试 16/16 PASS（release.ps1 生命周期）；应用内更新真机验证留给人（K10） |
 | 36 | 性能 | AppState+Lifecycle、AudioCaptureService、AnswerCoordinator、CueIsland | P8 | 冷启动、空闲内存、会中 CPU 占用、最终句延迟各有实测数 | 已实现、未验证 |
 | 37 | 异常恢复 | AppState+Resilience.swift、Core SessionArchivePersistence.swift、AppState+Lifecycle.swift、SingleInstance.swift | P2+P8 | 会中强杀进程后重启，会议记录完整可续；休眠唤醒后继续记录 | 已实现、未验证 |
 
