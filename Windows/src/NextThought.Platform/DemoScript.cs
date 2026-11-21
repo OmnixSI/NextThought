@@ -206,6 +206,7 @@ public static class DemoScript
         var interview = new WorkspaceSeries(InterviewSeriesId.ToString("D"), InterviewSeriesName,
             now.AddDays(-10), [], lessons)
         {
+            UpdatedAt = now.AddDays(-10),
             Mode = "interview",
             Notes = "上一轮一面问了 MySQL 索引和 Redis，反馈是项目讲得不够量化。",
             Fields = new Dictionary<string, string>
@@ -238,6 +239,7 @@ public static class DemoScript
         var academic = new WorkspaceSeries(AcademicSeriesId.ToString("D"), AcademicSeriesName,
             now.AddDays(-1), [], [])
         {
+            UpdatedAt = now,
             Mode = "academic",
             Fields = new Dictionary<string, string>
             {
@@ -251,6 +253,7 @@ public static class DemoScript
         var business = new WorkspaceSeries(BusinessSeriesId.ToString("D"), BusinessSeriesName,
             now.AddDays(-2), [], [])
         {
+            UpdatedAt = now.AddHours(-4),
             Mode = "meeting",
             Fields = new Dictionary<string, string>
             {

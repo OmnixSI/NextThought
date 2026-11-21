@@ -11,35 +11,66 @@
       <Setter Property="FontSize" Value="19" />
       <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
     </Style>
+    <!-- Mac sceneChip: text only; the scene pigment lives on the sliding selection capsule. -->
+    <Style Selector="Button.scene">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="MinHeight" Value="{DynamicResource Control}" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    </Style>
+    <Style Selector="Button.scene:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <!-- Mac SceneChipStyle: scaleEffect(isPressed ? 0.96 : 1). -->
+    <Style Selector="Button.scene:pressed">
+      <Setter Property="RenderTransform">
+        <ScaleTransform ScaleX="0.96" ScaleY="0.96" />
+      </Setter>
+    </Style>
   </UserControl.Styles>
-  <Border Classes="card" Padding="{DynamicResource D4Padding_24}">
+  <Border x:Name="ComposerCard" Classes="card" Padding="{DynamicResource D4Padding_24}">
+    <Border.Transitions>
+      <Transitions>
+        <!-- Mac: .animation(Motion.hover, value: titleFocused) on the stroke. -->
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.14" />
+      </Transitions>
+    </Border.Transitions>
     <StackPanel Spacing="{DynamicResource D4Spacing_16}">
       <!-- Scene glyph + title field (Mac StartComposer: 38 pt glyph, 19 pt medium field). -->
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-        <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
+        <controls:SceneGlyph x:Name="SceneGlyphControl" Mode="{Binding SelectedMode}" Size="38"
+                             VerticalAlignment="Center" RenderTransformOrigin="50%,50%" />
         <TextBox x:Name="TitleBox" Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent"
                  BorderThickness="0.5" BorderBrush="Transparent" CornerRadius="{DynamicResource RadiusMedium}"
                  Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="19"
                  FontWeight="Medium" MinHeight="{DynamicResource Control}" VerticalAlignment="Center"
                  Watermark="{loc:Tr 给这场会起个名字，比如“字节二面”}" TextChanged="Title_Changed" />
       </Grid>
-      <!-- Scene pills: selected pill takes the scene's pigment at 13% (Mac StartComposer). -->
-      <ItemsControl ItemsSource="{Binding Scenes}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <WrapPanel Orientation="Horizontal" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="local:SceneChoice">
-            <Button Classes="scene" Tag="{Binding}" Click="Scene_Click"
-                    Margin="{DynamicResource D4Margin_0_0_4_4}" ToolTip.Tip="{Binding Promise}">
-              <TextBlock Text="{Binding Title}" FontSize="13" />
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+      <!-- Scene pills: one capsule slides between the chips (Mac matchedGeometryEffect). -->
+      <Grid x:Name="ChipHost">
+        <Canvas x:Name="SelectionLayer" IsHitTestVisible="False" ClipToBounds="False">
+          <Border x:Name="SelectionCapsule" Height="30" CornerRadius="15" IsVisible="False" />
+        </Canvas>
+        <ItemsControl x:Name="SceneChips" ItemsSource="{Binding Scenes}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:SceneChoice">
+              <Button Classes="scene" Tag="{Binding}" Click="Scene_Click"
+                      Margin="{DynamicResource D4Margin_0_0_4_4}" ToolTip.Tip="{Binding DefaultsSummary}">
+                <TextBlock Text="{Binding Title}" FontSize="13" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+      <!-- Mac: promise + moments are .id(scene) with .transition(.blurReplace). -->
+      <StackPanel x:Name="PromisePanel" Spacing="{DynamicResource D4Spacing_8}" RenderTransformOrigin="0%,0%">
         <TextBlock Text="{Binding SelectedScene.Promise}" FontFamily="{StaticResource SerifFamily}" FontSize="17" FontWeight="Medium" />
         <ItemsControl x:Name="MomentsList" ItemsSource="{Binding SelectedScene.Moments}">
           <ItemsControl.ItemsPanel>
@@ -59,7 +90,7 @@
       </StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-          <Border Classes="chip" Padding="6,2" CornerRadius="{DynamicResource RadiusSmall}">
+          <Border Classes="chip" Padding="{DynamicResource D4Padding_6_2}" CornerRadius="{DynamicResource RadiusSmall}">
             <TextBlock Text="Ctrl+Alt+N" Classes="caption" FontSize="11" />
           </Border>
           <TextBlock Text="{loc:Tr 不挑场合，立即记录}" Classes="caption" VerticalAlignment="Center" />

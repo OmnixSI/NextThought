@@ -32,6 +32,12 @@ public partial class AppState
     /// <summary>"接下来是什么场合？" in the hero's second line.</summary>
     public string HomeQuestion => UiText.T("接下来是什么场合？");
 
+    /// <summary>
+    /// Mac HomeView: <c>InkWash(tint:animated: !reducedEffects)</c>. InkWash also re-checks
+    /// Motion.Reduce on every tick, so toggling 减少视觉特效 stops the drift without a page reload.
+    /// </summary>
+    public bool HomeInkWashAnimated => !Motion.Reduce;
+
     // ---- scene guessing (StartComposer) ---------------------------------------------
 
     /// <summary>
@@ -104,9 +110,9 @@ public partial class AppState
                 Last = sessions.Where(meta => series.SessionIds.Contains(meta.Id.ToString("D")))
                     .OrderByDescending(meta => meta.StartedAt).FirstOrDefault()
             })
-            .OrderByDescending(item => item.Last?.StartedAt ?? item.Series.CreatedAt)
+            .OrderByDescending(item => item.Last?.StartedAt ?? item.Series.EffectiveUpdatedAt)
             // Demo meetings share one timestamp; keep the order stable across renders.
-            .ThenByDescending(item => item.Series.CreatedAt)
+            .ThenByDescending(item => item.Series.EffectiveUpdatedAt)
             .ThenBy(item => item.Series.Name, StringComparer.Ordinal)
             .Take(3);
         foreach (var item in rows)

@@ -7,8 +7,10 @@
              x:Class="NextThought.Desktop.Views.HomeView"
              x:DataType="local:AppState">
   <Grid>
-    <!-- E1/Mac: the page takes on the pigment of the picked scene (InkWash height 380). -->
-    <controls:InkWash Mode="{Binding SelectedMode}" Height="380" VerticalAlignment="Top" Animated="True" />
+    <!-- E1/Mac: the page takes on the pigment of the picked scene (InkWash height 380, animated
+         only when reducedEffects is off, exactly like HomeView.swift). -->
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="380" VerticalAlignment="Top"
+                      Animated="{Binding HomeInkWashAnimated}" />
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Margin="{DynamicResource D4Margin_32_40_32_40}" MaxWidth="760" HorizontalAlignment="Center">
         <!-- Date + two-line hero: greeting in ink, the question in tertiary (Mac HomeView). -->

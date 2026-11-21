@@ -72,7 +72,7 @@ try {
         product  = 'NextThought.Desktop'
         version  = $Version
         revision = $commit
-        signing  = 'unsigned'
+        signing  = 'unsigned-preview'
         build    = $buildNumber
     } | ConvertTo-Json
     [IO.File]::WriteAllText((Join-Path $payload 'release-manifest.json'), $manifest, [Text.UTF8Encoding]::new($false))

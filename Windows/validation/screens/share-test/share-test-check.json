@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "共享可见性测试：整屏抓取（含自身浮窗，不隐藏窗口）",
+      "passed": true,
+      "detail": "2560×1440"
+    },
+    {
+      "step": "ShareTestSheet UI：标题 + ScreenCaptureKit 说明 + 整屏截图 + 关闭",
+      "passed": true,
+      "detail": "图像 2560×1440"
+    },
+    {
+      "step": "QRCodeView：地址二维码白底圆角卡片",
+      "passed": true,
+      "detail": "200×200"
+    }
+  ]
+}
