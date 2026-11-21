@@ -94,7 +94,7 @@
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
         <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
-        <Button Classes="primary" Content="{loc:Tr 保存更改}" Command="{Binding SaveNotesEditorCommand}"
+        <Button Classes="primary" Content="{Binding NotesEditorSaveLabel}" Command="{Binding SaveNotesEditorCommand}"
                 IsEnabled="{Binding CanSaveNotesEditor}" />
       </StackPanel>
     </Grid>

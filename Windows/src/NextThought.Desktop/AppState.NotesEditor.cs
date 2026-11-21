@@ -28,11 +28,22 @@ public partial class AppState
         ? UiText.T("更改尚未保存")
         : UiText.T("没有未保存的更改");
     public bool HasNotesEditorError => NotesEditorError.Length > 0;
+
+    /// <summary>Mac BusyActionLabel: the save button says 正在保存… while the write runs.</summary>
+    public string NotesEditorSaveLabel => NotesEditorSaving
+        ? UiText.T("正在保存…")
+        : UiText.T("保存更改");
+
+    private DateTimeOffset? notesEditorGeneratedAt;
     public bool CanSaveNotesEditor => !NotesEditorSaving && !NotesEditorShowOriginal;
 
     partial void OnNotesEditorTextChanged(string value) => RaiseNotesEditorDirty();
     partial void OnPersonalNotesTextChanged(string value) => RaiseNotesEditorDirty();
-    partial void OnNotesEditorSavingChanged(bool value) => OnPropertyChanged(nameof(CanSaveNotesEditor));
+    partial void OnNotesEditorSavingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanSaveNotesEditor));
+        OnPropertyChanged(nameof(NotesEditorSaveLabel));
+    }
     partial void OnNotesEditorShowOriginalChanged(bool value) => OnPropertyChanged(nameof(CanSaveNotesEditor));
     partial void OnNotesEditorErrorChanged(string value) => OnPropertyChanged(nameof(HasNotesEditorError));
 
@@ -54,6 +65,7 @@ public partial class AppState
         try
         {
             var content = SessionUserContentStore.Load(Sessions.Folder(meta.Id));
+            notesEditorGeneratedAt = LoadSummaryGeneratedAt(meta);
             var aiDraft = SummaryText;
             NotesEditorOriginalText = aiDraft;
             LoadStructuredNotesEditor(meta, content);
@@ -124,7 +136,7 @@ public partial class AppState
                 EditedSummary = editedSummary,
                 EditedMarkdown = editedMarkdown,
                 PersonalNotes = PersonalNotesText,
-                BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? DateTimeOffset.UtcNow
+                BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? notesEditorGeneratedAt ?? DateTimeOffset.UtcNow
             }, folder);
             notesEditorBaseline = NotesEditorText;
             personalNotesBaseline = PersonalNotesText;
@@ -141,6 +153,20 @@ public partial class AppState
         {
             NotesEditorSaving = false;
         }
+    }
+
+    /// <summary>Mac parser reads summary.json generatedAt so basedOnGeneratedAt is the AI draft time.</summary>
+    private DateTimeOffset? LoadSummaryGeneratedAt(SessionMeta meta)
+    {
+        try
+        {
+            var path = Path.Combine(Sessions.Folder(meta.Id), "summary.json");
+            if (!File.Exists(path)) return null;
+            if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is not System.Text.Json.Nodes.JsonObject summary) return null;
+            return summary["generatedAt"] is { } node
+                && DateTimeOffset.TryParse(node.GetValue<string>(), out var generated) ? generated : null;
+        }
+        catch { return null; }
     }
 
     /// <summary>True when the current meeting's notes have a user version (Mac hasEdits).</summary>

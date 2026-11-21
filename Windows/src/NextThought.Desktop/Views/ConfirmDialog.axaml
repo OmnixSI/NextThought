@@ -7,8 +7,8 @@
   <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_12}">
     <TextBlock x:Name="MessageText" Classes="body" TextWrapping="Wrap" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
-      <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
-      <Button Classes="destructive" Content="{loc:Tr 删除}" Click="Confirm_Click" />
+      <Button x:Name="CancelButton" Content="{loc:Tr 取消}" Click="Cancel_Click" />
+      <Button x:Name="ConfirmButton" Classes="destructive" Content="{loc:Tr 删除}" Click="Confirm_Click" />
     </StackPanel>
   </StackPanel>
 </Window>

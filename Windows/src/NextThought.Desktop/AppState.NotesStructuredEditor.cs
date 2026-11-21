@@ -137,7 +137,8 @@ public partial class AppState
         var folder = Sessions.Folder(meta.Id);
         var saved = SessionUserContentStore.Save(StructuredNotesEditing.WithEditedNotes(content, edited) with
         {
-            PersonalNotes = PersonalNotesText
+            PersonalNotes = PersonalNotesText,
+            BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? LoadSummaryGeneratedAt(meta) ?? notesEditorGeneratedAt ?? DateTimeOffset.UtcNow
         }, folder);
         notesEditorStructuredDoc = saved.EditedNotes;
         notesEditorStructuredDirty = false;
