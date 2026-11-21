@@ -108,3 +108,15 @@ Windows 截图：`Windows/validation/screens/speakers/`（自检 `speakers` 生�
 - **5 标记用图标资源**：`SpeakerPersonRow.MarkGlyph` 使用随包 Fluent System Icons 字形（`IconPersonFill`/`IconCircle`/`IconSquare`/`IconTriangle`/`IconDiamond`，即 person/circle/square/triangle/diamond 的 24px regular 字形），实时页胶囊、Notes 说话人条与说话人编辑器统一 `FontFamily="{StaticResource IconFont}"`，不再用 ●■▲◆ 几何字符。
 - **截图/自检**：`--self-test=speakers` 在隔离数据目录 **passed**，本目录 `speaker-strip-{light,dark}.png`、`my-voice-{light,dark}.png`、`speakers-check.json` 已重跑更新。
 - 仍留：真实麦克风四句录入（需真机）与 Mac popover→独立窗口（平台差异）两条件同 §6/§7。
+
+## 9. E12 speakers 3：实时页说话人条按 Mac（本轮 HEAD 复核）
+
+| # | Mac SpeakerStrip（`SpeakerViews.swift`） | Windows `LiveView.axaml` `LiveSpeakerStrip` | 结论 |
+|---|---|---|---|
+| 1 | 只显示已认出的声音；每人一个 sunken 胶囊（SpeakerMark + 名字，24pt） | `SpeakerPeople` 胶囊 + `MarkGlyph` + `DisplayLabel`，24pt | 逐条一致 |
+| 2 | 点胶囊打开 SpeakerEditor / MeEditor | `SpeakerChip_Click` 打开 `SpeakerEditorWindow`（MeEditor 分支同在窗口内） | 逐条一致（popover→独立窗口为平台差异） |
+| 3 | 没认出「我」时虚线「我是哪个？」胶囊，选择后标成我 | `LiveWhoAmIButton` + `controls:DashedCapsule` + 「我是哪个？」+ `WhoAmI_Click` | 逐条一致 |
+| 4 | 右侧提示「点名字改名、合并或标成我」 | `LiveSpeakerStripHint` 同文案 | 逐条一致 |
+| 5 | `layout.isShown` 控制显示 | `LiveSpeakerStripVisible`（`SpeakerPeople.Count > 0`） | 逐条一致 |
+
+`--self-test=speakers` 在隔离数据目录 passed（含说话人条人数/命名/合并/标签断言）；截图 `speaker-strip-{light,dark}.png` 由 §5 最终构建重拍。结论：**逐条一致；另有 1 条已裁决差别（Mac popover vs Windows 独立窗口）**。
