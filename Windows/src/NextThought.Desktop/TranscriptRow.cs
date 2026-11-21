@@ -55,6 +55,18 @@ public partial class TranscriptRow : ObservableObject
         (Voice is { } voice ? UiText.Format(" · 说话人 %lld", voice + 1) : "") +
         (IsEcho ? UiText.T(" · 可能回声") : "");
 
+    /// <summary>
+    /// E12/Mac SpeakerTag: once names or the "this is me" mark are set, the voice part shows the
+    /// name (or 我) instead of 说话人 N. Clearing the edits restores the plain label.
+    /// </summary>
+    public void ApplySpeakerLabel(string? name, bool isMe)
+    {
+        var voicePart = Voice is { } voice
+            ? " · " + (isMe ? UiText.T("我") : string.IsNullOrWhiteSpace(name) ? UiText.Format("说话人 %lld", voice + 1) : name.Trim())
+            : "";
+        Label = clock + " · " + UiText.T(speakerKey) + voicePart + (IsEcho ? UiText.T(" · 可能回声") : "");
+    }
+
     private string BuildTranslation() =>
         TranslationRaw.Length == 0 ? "" : UiText.T(directionKey) + TranslationRaw;
 }

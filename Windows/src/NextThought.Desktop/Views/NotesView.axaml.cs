@@ -92,6 +92,19 @@ public partial class NotesView : UserControl
         catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>E12/Mac SpeakerStrip: tap a person above the transcript to open the speaker editor.</summary>
+    private void OpenSpeakerStrip_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppState state) return;
+            if (sender is Button { Tag: SpeakerPersonRow person }) state.SelectSpeakerPersonCommand.Execute(person);
+            else state.OpenSpeakerEditorCommand.Execute(null);
+            new SpeakerEditorWindow { DataContext = state }.Show(TopLevel.GetTopLevel(this) as Window);
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
     /// <summary>E22: AddToGlossarySheet from a transcript line (or a find hit).</summary>
     private async void AddTranscriptToGlossary_Click(object? sender, RoutedEventArgs e)
     {

@@ -30,6 +30,51 @@ public partial class AppState
     [ObservableProperty] private string myVoiceStatus = "";
     [ObservableProperty] private bool myVoiceHasProfile;
     [ObservableProperty] private bool myVoiceModelAvailable;
+    [ObservableProperty] private bool myVoiceIsWorking;
+
+    // ---- E12/Mac MyVoiceSettings + MyVoiceSetupPanel surface ----------------------------
+
+    public int MyVoiceTakeIndex => Math.Min(myVoiceTakes.Count + 1, VoicePrompts.Length);
+    public int MyVoiceTotalTakes => VoicePrompts.Length;
+
+    public string MyVoiceTakeHint =>
+        UiText.Format("第 %lld / %lld 句，点“开始”后用平时开会的声音读出来", MyVoiceTakeIndex, MyVoiceTotalTakes);
+
+    public string MyVoiceRecordLabel => MyVoiceRecording
+        ? UiText.T("正在听…")
+        : MyVoiceIsWorking ? UiText.T("处理中…") : UiText.T("开始");
+
+    public bool MyVoiceCanStart => MyVoiceSetupVisible && !MyVoiceRecording && !MyVoiceIsWorking && MyVoiceModelAvailable;
+    public bool MyVoiceCanEnroll => !Recording && MyVoiceModelAvailable;
+    public bool MyVoiceMeetingRunning => Recording;
+    public bool MyVoiceModelMissing => !MyVoiceModelAvailable;
+    public bool MyVoiceOldModel => myVoiceProfile is { } profile && profile.Model != SpeakerEmbedder.ModelId;
+
+    public string MyVoiceSummaryLine => MyVoiceHasProfile
+        ? UiText.T("已录入") + " · " + (myVoiceProfile?.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd") ?? "")
+        : UiText.T("还没有录入");
+
+    partial void OnMyVoiceRecordingChanged(bool value) => NotifyMyVoiceUi();
+    partial void OnMyVoiceSetupVisibleChanged(bool value) => NotifyMyVoiceUi();
+    partial void OnMyVoiceIsWorkingChanged(bool value) => NotifyMyVoiceUi();
+    partial void OnMyVoiceHasProfileChanged(bool value) => NotifyMyVoiceUi();
+    partial void OnMyVoiceStatusChanged(string value) => NotifyMyVoiceUi();
+    partial void OnMyVoiceMessageChanged(string value) => OnPropertyChanged(nameof(HasMyVoiceMessage));
+
+    public bool HasMyVoiceMessage => MyVoiceMessage.Length > 0;
+
+    private void NotifyMyVoiceUi()
+    {
+        OnPropertyChanged(nameof(MyVoiceTakeIndex));
+        OnPropertyChanged(nameof(MyVoiceTakeHint));
+        OnPropertyChanged(nameof(MyVoiceRecordLabel));
+        OnPropertyChanged(nameof(MyVoiceCanStart));
+        OnPropertyChanged(nameof(MyVoiceCanEnroll));
+        OnPropertyChanged(nameof(MyVoiceMeetingRunning));
+        OnPropertyChanged(nameof(MyVoiceModelMissing));
+        OnPropertyChanged(nameof(MyVoiceOldModel));
+        OnPropertyChanged(nameof(MyVoiceSummaryLine));
+    }
 
     private string MyVoiceFile => Path.Combine(Paths.Root, "Voiceprint", "me.json");
 
@@ -93,16 +138,21 @@ public partial class AppState
                 return;
             }
             var pcm = trimmed.Select(value => (short)Math.Clamp((int)Math.Round(value * 32768), short.MinValue, short.MaxValue)).ToArray();
-            using var embedder = new SpeakerEmbedder(Paths);
-            var vector = embedder.Embed(pcm);
-            if (vector is null)
+            MyVoiceIsWorking = true;
+            try
             {
-                MyVoiceMessage = "没听清，再读一次。";
-                return;
+                using var embedder = new SpeakerEmbedder(Paths);
+                var vector = embedder.Embed(pcm);
+                if (vector is null)
+                {
+                    MyVoiceMessage = "没听清，再读一次。";
+                    return;
+                }
+                myVoiceTakes.Add(vector);
+                if (myVoiceTakes.Count >= VoicePrompts.Length) FinishMyVoiceSetup();
+                else MyVoicePrompt = VoicePrompts[myVoiceTakes.Count];
             }
-            myVoiceTakes.Add(vector);
-            if (myVoiceTakes.Count >= VoicePrompts.Length) FinishMyVoiceSetup();
-            else MyVoicePrompt = VoicePrompts[myVoiceTakes.Count];
+            finally { MyVoiceIsWorking = false; NotifyMyVoiceUi(); }
         }
         catch (Exception ex) { MyVoiceMessage = "录入失败：" + ex.Message; }
         finally { MyVoiceRecording = false; }

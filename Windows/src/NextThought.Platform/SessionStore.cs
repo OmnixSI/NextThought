@@ -259,6 +259,60 @@ public sealed class SessionStore(AppPaths paths)
         try { await AppendAsync(Path.Combine(Folder(session), "voices.jsonl"), new SessionVoiceTag(line, voice), ct).ConfigureAwait(false); }
         finally { gate.Release(); }
     }
+
+    /// <summary>
+    /// E12/Mac setVoiceName + setMeVoice: the name and the "this is me" mark live in meta.json
+    /// (voiceNames / meVoices), so a renamed archive stays readable on the Mac too.
+    /// </summary>
+    public async Task SetVoiceLabelAsync(Guid session, int voice, string? name, bool? isMe = null,
+        CancellationToken ct = default)
+    {
+        if (voice is < 0 or > 31) throw new ArgumentOutOfRangeException(nameof(voice));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var meta = ReadMeta(session);
+            var names = meta.VoiceNames is null ? new Dictionary<string, string>() : new(meta.VoiceNames);
+            if (name is null) names.Remove(voice.ToString());
+            else names[voice.ToString()] = name.Trim();
+            meta.VoiceNames = names.Count == 0 ? null : names;
+            if (isMe is { } flag)
+            {
+                var voices = new SortedSet<int>(meta.MeVoices ?? []);
+                if (flag) voices.Add(voice); else voices.Remove(voice);
+                meta.MeVoices = voices.Count == 0 ? null : voices.ToArray();
+            }
+            await WriteMetaAsync(meta, ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>
+    /// E12/Mac mergeVoice: every tagged line of voice <paramref name="from"/> moves to
+    /// <paramref name="into"/> (a later voice tag wins), and the name and the me mark come along.
+    /// </summary>
+    public async Task MergeVoicesAsync(Guid session, int from, int into, CancellationToken ct = default)
+    {
+        if (from == into) return;
+        if (from is < 0 or > 31 || into is < 0 or > 31) throw new ArgumentOutOfRangeException(nameof(from));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var meta = ReadMeta(session);
+            var data = LoadCore(session);
+            var voiceFile = Path.Combine(Folder(session), "voices.jsonl");
+            foreach (var line in data.Lines.Where(line => line.Voice == from))
+                await AppendAsync(voiceFile, new SessionVoiceTag(line.Id, into), ct).ConfigureAwait(false);
+            var names = SpeakerLabels.Merged(meta.VoiceNames, from, into);
+            meta.VoiceNames = names;
+            var me = new SortedSet<int>(meta.MeVoices ?? []);
+            if (me.Remove(from)) me.Add(into);
+            meta.MeVoices = me.Count == 0 ? null : me.ToArray();
+            await WriteMetaAsync(meta, ct).ConfigureAwait(false);
+            return;
+        }
+        finally { gate.Release(); }
+    }
     public async Task SaveSummaryAsync(SessionMeta meta, string markdown, string model, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);

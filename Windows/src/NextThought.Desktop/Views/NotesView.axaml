@@ -234,7 +234,7 @@
       </TabItem>
 
       <TabItem Header="{loc:Tr 转写}">
-        <Grid RowDefinitions="Auto,Auto,*">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                       Margin="{DynamicResource D4Margin_22_12_22_0}">
             <Button Content="{loc:Tr 校正原话}" Command="{Binding OpenCorrectedTranscriptCommand}"
@@ -244,8 +244,31 @@
             <TextBlock Text="{Binding NotesJumpNotice}" Classes="caption" FontSize="11" VerticalAlignment="Center"
                        Foreground="{DynamicResource Caution}" IsVisible="{Binding HasNotesJumpNotice}" />
           </StackPanel>
+          <!-- E12/Mac SpeakerStrip：按声音区分出的人；点一个打开说话人编辑器 -->
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_22_8_22_0}"
+                IsVisible="{Binding SpeakerStripVisible}">
+            <ItemsControl Name="TranscriptSpeakerStrip" Grid.Column="0" ItemsSource="{Binding SpeakerPeople}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SpeakerPersonRow">
+                  <Button Classes="quiet" Tag="{Binding}" Click="OpenSpeakerStrip_Click" ToolTip.Tip="{Binding Tooltip}"
+                          Margin="{DynamicResource D4Margin_0_0_6_4}" Padding="{DynamicResource D4Padding_10_3}">
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                      <TextBlock Text="{Binding Mark}" FontSize="10" />
+                      <TextBlock Text="{Binding DisplayLabel}" Classes="caption" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Grid.Column="1" Text="{loc:Tr 按声音区分}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+          </Grid>
           <!-- TranscriptFindField：查找转写，听错的写法也会找出来 -->
-          <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
                 Margin="{DynamicResource D4Margin_22_8_22_0}">
             <TextBox Grid.Column="0" Text="{Binding TranscriptFindQuery}" PlaceholderText="{Binding TranscriptFindPlaceholder}" />
             <TextBlock Grid.Column="1" Text="{Binding TranscriptFindCountText}" Classes="caption" VerticalAlignment="Center" />
@@ -253,7 +276,7 @@
                     Command="{Binding ClearTranscriptFindCommand}" IsVisible="{Binding HasTranscriptFindQuery}" />
           </Grid>
           <!-- 命中面板（含 MisheardMark 小字：匹配到听错的写法：…） -->
-          <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12_10}"
+          <Border Grid.Row="3" Classes="card" Padding="{DynamicResource D4Padding_12_10}"
                   Margin="{DynamicResource D4Margin_22_8_22_0}" IsVisible="{Binding HasTranscriptFindHits}">
             <ScrollViewer MaxHeight="170" VerticalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding TranscriptFindHits}">
@@ -274,7 +297,7 @@
               </ItemsControl>
             </ScrollViewer>
           </Border>
-          <ListBox Grid.Row="2" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
+          <ListBox Grid.Row="4" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
                    Background="Transparent" Margin="{DynamicResource D4Margin_22_0_22_16}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="local:TranscriptRow">
