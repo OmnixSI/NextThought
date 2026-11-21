@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "结构化纪要视图渲染：鱼骨图 + 窄版鱼骨树 + 观点对照",
+      "passed": true,
+      "detail": "鱼骨图/鱼骨树/观点对照三块已生成"
+    }
+  ]
+}
