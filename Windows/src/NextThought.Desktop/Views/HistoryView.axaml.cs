@@ -352,12 +352,30 @@ public partial class HistoryView : UserControl
         dialog.Content = panel;
         await dialog.ShowDialog(owner);
     }
+    private readonly HashSet<ContextMenu> hookedRowMenus = [];
+
+    /// <summary>MeetingMenuItems: disable delete/regenerate/prepare-next while recording or busy.</summary>
+    private void HookRowMenus()
+    {
+        if (DataContext is not AppState) return;
+        foreach (var menu in this.GetVisualDescendants().OfType<Button>()
+                     .Select(button => button.ContextMenu).OfType<ContextMenu>())
+        {
+            if (!hookedRowMenus.Add(menu)) continue;
+            menu.Opening += RowMenu_Opening;
+        }
+    }
     private NotesView? embeddedMeeting;
 
     public HistoryView()
     {
         InitializeComponent();
-        Loaded += (_, _) => SyncEmbeddedMeeting();
+        Loaded += (_, _) =>
+        {
+            SyncEmbeddedMeeting();
+            HookRowMenus();
+        };
+        LayoutUpdated += (_, _) => HookRowMenus();
     }
 
     protected override void OnDataContextChanged(EventArgs e)

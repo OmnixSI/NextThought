@@ -3,8 +3,12 @@ using NextThought.Core;
 namespace NextThought.Desktop;
 
 /// <summary>E15: one notes evidence row with its support state.</summary>
-public sealed record SessionEvidenceRow(SessionEvidenceReference Reference)
+public sealed record SessionEvidenceRow(SessionEvidenceReference Reference, string ContextText = "", bool Located = false)
 {
+    /// <summary>Mac MeetingEvidenceSidebar: ±2 transcript lines around the cited line, ▸ on it.</summary>
+    public bool HasContext => ContextText.Length > 0;
+    public string MissingText => UiText.T("此原话无法定位。已有笔记仍保留，请查看完整转写核实。");
+    public bool HasMissing => Reference.LineId is not null && !Located;
     public string Title => Reference.Title;
     public string Claim => Reference.Claim;
     public string Location => Reference.Location ?? "";

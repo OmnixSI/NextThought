@@ -18,9 +18,9 @@
       "detail": "行 2"
     },
     {
-      "step": "归档概览（选中会议）",
+      "step": "右栏内嵌会议页（MeetingPage）",
       "passed": true,
-      "detail": "E1 自检会议一"
+      "detail": "NotesView=内嵌"
     },
     {
       "step": "系列作用域：标题/列表/面包屑",
@@ -31,6 +31,11 @@
       "step": "返回所有记录",
       "passed": true,
       "detail": "会话 2"
+    },
+    {
+      "step": "深色下内嵌会议页",
+      "passed": true,
+      "detail": "NotesView=内嵌"
     }
   ]
 }

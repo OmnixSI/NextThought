@@ -73,8 +73,16 @@
                       <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{Binding Claim}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding ContextText}" Classes="caption" FontSize="10"
+                               TextWrapping="Wrap" Foreground="{DynamicResource Secondary}"
+                               IsVisible="{Binding HasContext}" />
+                    <TextBlock Text="{Binding MissingText}" Classes="caption" FontSize="10"
+                               TextWrapping="Wrap" Foreground="{DynamicResource Caution}"
+                               IsVisible="{Binding HasMissing}" />
                     <Button Classes="quiet" Content="{loc:Tr 在完整转写中查看}" Tag="{Binding}"
                             Click="FindEvidence_Click" HorizontalAlignment="Left" />
+                      <Button Classes="quiet" Content="{loc:Tr 标为重点}" Tag="{Binding}"
+                              IsVisible="{Binding HasContext}" Click="MarkEvidenceHighlight_Click" />
                   </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

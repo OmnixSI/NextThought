@@ -12,11 +12,13 @@
 | 3 | 说明 | 长文案「下面是 ScreenCaptureKit 截取的整个屏幕…实际范围取决于会议软件和共享方式。」secondary | 同（Mac 原句 loc key、body secondary、换行） | 一致 |
 | 4 | 截图 | shareTestImage = captureDisplay(hidingAppWindows:false)（含本应用浮窗），等比适配、maxHeight 420、圆角 8 | 同（ScreenCapture.VirtualScreen() 整屏含自身浮窗；Uniform、MaxHeight 420、圆角 8） | 一致 |
 | 5 | 关闭 | 右下「关闭」primary、默认动作、清空 shareTestImage | 同（primary IsDefault、ClearShareTestImage） | 一致 |
-| 6 | 入口 | 设置「共享可见性测试」按钮 → runShareVisibilityTest | Windows 入口待接（settings R 组由 settings-parity 收尾） | 部分 |
-| 7 | QRCodeView | QRCoder 内容 + padding 6、白底圆角 8、等比；Mac 用于配对地址（SettingsView.swift:547） | `Views/Controls/QrCodeView.cs` 同（自检截图 qr-code-light.png） | 实现一致 |
+| 6 | 入口 | 设置「共享可见性测试」按钮 → runShareVisibilityTest | 提词与教练页「屏幕共享」下的「共享可见性测试」按钮打开本窗口（`RunShareVisibilityTestAsync` + `ShowDialog`） | 一致 |
+| 7 | QRCodeView | QRCoder 内容 + padding 6、白底圆角 8、等比；Mac 用于配对地址（SettingsView.swift:547） | 配对卡使用 `Controls/QrCodeView`（168×168、Text=CompanionLink、白底圆角 8） | 一致 |
 
 ## 差异 / 未解决
 
-1. **入口按钮**：窗口与状态就绪；需 settings-parity 在设置页加一行「共享可见性测试」绑定 `RunShareVisibilityTestAsync` 并打开 `ShareTestWindow`（Lead 协调，避免我动 settings R 组）。
-2. **QRCodeView 落位**：Mac 配对卡片用 168×168 QRCodeView，Windows 现有配对卡 `CompanionQr` 图片是同一内容；待 settings-parity 换用 QRCodeView。
-3. 断连显示器会话下整屏抓取可能纯白，自检只校验图像尺寸/存在性。
+无。入口与 QRCodeView 落位都在 E13/E28 完成；断连显示器下整屏抓取可能纯白属于抓取环境限制，自检只校验图像尺寸与存在性。
+
+## 结论
+
+逐条一致。

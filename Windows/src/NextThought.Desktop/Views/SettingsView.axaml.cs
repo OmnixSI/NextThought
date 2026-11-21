@@ -441,47 +441,71 @@ public partial class SettingsView : UserControl
             main.MoveTeleprompterTo(placement);
     }
 
-    /// <summary>E28: one editor per skill, with create/delete/install-demo.</summary>
+    /// <summary>
+    /// E28 / Mac SkillSettings rows: icon (globe for 所有系列, doc otherwise), name, summary or
+    /// character count, "N 个系列在用", the 所有系列 / 启用 toggles (saved immediately like
+    /// library.update), 编辑 (opens the SkillEditorWindow sheet) and 删除.
+    /// </summary>
     private void BuildSkillRows()
     {
         if (DataContext is not AppState state) return;
-        SkillEditorPanel.Children.Clear();
+        SkillListPanel.Children.Clear();
         foreach (var skill in state.EditableSkills)
         {
-            var card = new Avalonia.Controls.Border
+            var row = new Avalonia.Controls.Grid
             {
-                BorderBrush = Avalonia.Media.Brush.Parse("#33ECEBE8"),
-                BorderThickness = new Avalonia.Thickness(0, 0, 0, 0.5),
-                Padding = new Avalonia.Thickness(0, 6, 0, 6)
+                ColumnDefinitions = new Avalonia.Controls.ColumnDefinitions("Auto,*,Auto"),
+                Margin = new Avalonia.Thickness(0, 4, 0, 4)
             };
-            var stack = new Avalonia.Controls.StackPanel { Spacing = 4 };
-            var header = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            var name = new Avalonia.Controls.TextBox { Text = skill.Name, Width = 160, FontSize = 11, Watermark = UiText.T("名称") };
-            var summary = new Avalonia.Controls.TextBox { Text = skill.Summary, Watermark = UiText.T("一句话说明（可选）"), Width = 260, FontSize = 11 };
+            var icon = new Avalonia.Controls.TextBlock
+            {
+                Text = (Avalonia.Application.Current?.FindResource(skill.Global ? "IconGlobe" : "IconDocPlaintext") as string) ?? "",
+                FontFamily = (Avalonia.Application.Current?.FindResource("IconFont") as Avalonia.Media.FontFamily) ?? Avalonia.Media.FontFamily.Default,
+                FontSize = 14,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Opacity = skill.Enabled ? 1 : 0.4
+            };
+            Avalonia.Controls.Grid.SetColumn(icon, 0);
+            var text = new Avalonia.Controls.StackPanel { Spacing = 1, Margin = new Avalonia.Thickness(8, 0, 8, 0) };
+            text.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = skill.Name, FontSize = 12, FontWeight = Avalonia.Media.FontWeight.Medium,
+                Opacity = skill.Enabled ? 1 : 0.5
+            });
+            var used = state.SeriesUsingSkill(skill.Id);
+            var sub = skill.Summary.Length > 0 ? skill.Summary : UiText.Format("%lld 字 · 单个技能最多使用约 6000 字", skill.Content.Length);
+            text.Children.Add(new Avalonia.Controls.TextBlock { Text = sub, FontSize = 10.5, Opacity = 0.6 });
+            text.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = used == 0 ? UiText.T("还没有系列使用") : UiText.Format("%lld 个系列在用", used),
+                FontSize = 10.5, Opacity = 0.45
+            });
+            Avalonia.Controls.Grid.SetColumn(text, 1);
+            var actions = new Avalonia.Controls.StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                Spacing = 8,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            var global = new Avalonia.Controls.CheckBox { Content = UiText.T("所有系列"), IsChecked = skill.Global, FontSize = 11 };
+            global.IsCheckedChanged += (_, _) =>
+            {
+                state.SaveSkillEdit(skill with { Global = global.IsChecked == true });
+                BuildSkillRows();
+            };
             var enabled = new Avalonia.Controls.CheckBox { Content = UiText.T("启用"), IsChecked = skill.Enabled, FontSize = 11 };
-            var global = new Avalonia.Controls.CheckBox { Content = UiText.T("所有系列都使用这个技能"), IsChecked = skill.Global, FontSize = 11 };
-            header.Children.Add(name); header.Children.Add(summary); header.Children.Add(enabled); header.Children.Add(global);
-            var content = new Avalonia.Controls.TextBox
+            enabled.IsCheckedChanged += (_, _) =>
             {
-                Text = skill.Content, AcceptsReturn = true, Height = 70, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                FontSize = 11
+                state.SaveSkillEdit(skill with { Enabled = enabled.IsChecked == true });
+                BuildSkillRows();
             };
-            var length = new Avalonia.Controls.TextBlock
+            var edit = new Avalonia.Controls.Button { Content = UiText.T("编辑"), FontSize = 11 };
+            edit.Click += async (_, _) =>
             {
-                Text = UiText.Format("%lld 字 · 单个技能最多使用约 6000 字", skill.Content.Length),
-                FontSize = 11, Opacity = 0.6
-            };
-            content.TextChanged += (_, _) =>
-                length.Text = UiText.Format("%lld 字 · 单个技能最多使用约 6000 字", content.Text?.Length ?? 0);
-            var actions = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            var save = new Avalonia.Controls.Button { Content = UiText.T("保存"), FontSize = 11 };
-            save.Click += (_, _) =>
-            {
-                state.SaveSkillEdit(skill with
-                {
-                    Name = name.Text ?? "", Summary = summary.Text ?? "", Content = content.Text ?? "",
-                    Enabled = enabled.IsChecked == true, Global = global.IsChecked == true
-                });
+                if (TopLevel.GetTopLevel(this) is not Window owner) return;
+                var edited = await SkillEditorWindow.EditAsync(owner, skill);
+                if (edited is null) return;
+                state.SaveSkillEdit(edited);
                 BuildSkillRows();
             };
             var remove = new Avalonia.Controls.Button { Content = UiText.T("删除"), FontSize = 11 };
@@ -494,24 +518,28 @@ public partial class SettingsView : UserControl
                 state.DeleteSkill(skill.Id);
                 BuildSkillRows();
             };
-            actions.Children.Add(save); actions.Children.Add(remove);
-            stack.Children.Add(header); stack.Children.Add(content); stack.Children.Add(length); stack.Children.Add(actions);
-            card.Child = stack;
-            SkillEditorPanel.Children.Add(card);
+            actions.Children.Add(global); actions.Children.Add(enabled); actions.Children.Add(edit); actions.Children.Add(remove);
+            Avalonia.Controls.Grid.SetColumn(actions, 2);
+            row.Children.Add(icon); row.Children.Add(text); row.Children.Add(actions);
+            var line = new Avalonia.Controls.Border
+            {
+                BorderBrush = Avalonia.Media.Brush.Parse("#33ECEBE8"),
+                BorderThickness = new Avalonia.Thickness(0, 0, 0, 0.5),
+                Child = row
+            };
+            SkillListPanel.Children.Add(line);
         }
     }
 
-    private void NewSkill_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void NewSkill_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;
         state.AddSkill();
         BuildSkillRows();
-    }
-
-    private void InstallDemoSkill_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (DataContext is not AppState state) return;
-        state.InstallDemoSkill();
+        var skill = state.EditableSkills.LastOrDefault();
+        if (skill is null || TopLevel.GetTopLevel(this) is not Window owner) return;
+        var edited = await SkillEditorWindow.EditAsync(owner, skill);
+        if (edited is not null) state.SaveSkillEdit(edited);
         BuildSkillRows();
     }
 }

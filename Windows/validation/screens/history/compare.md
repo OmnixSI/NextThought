@@ -201,3 +201,20 @@ Mac 没有「所有记录」独立截图：标准为 `Sources/NextThought/Histor
 5. **选中动画**：0.14s BrushTransition 近似 snappy，非真弹簧（Motion.snappy 由 D5 弹簧实现，按钮过渡仍用 Avalonia BrushTransition）。
 6. **根/系列 overview 的「N 篇已整理」系列内统计**：已按 Mac 显示 `%lld 篇已整理`；根统计 `N 场会议 · M 个系列` 一致。
 7. Mac 无该窗口截图，所以证据是 Swift 源码元素表 + 本页浅/深截图；未做像素级对照。
+---
+
+## §5 证据重拍（2026-11-21，task-77）
+
+截图来自 `--self-test=history-e1` 同一次构建（隔离数据目录）：`history-light.png`、`history-dark.png`、`history-series-light.png`、`history-meeting-light.png`、`history-meeting-dark.png`；自检 6/6 通过（两栏、分组、SessionRow、右栏内嵌会议页、系列作用域、返回所有记录、深色内嵌页）。旧截图 `history-overview-*`、`history-en-*`、`history-search-light.png` 已按 §5 删除。
+
+**结论：逐条一致。**
+
+本页 §3.4 要修的 2–8 与右栏内嵌会议页均已落地：
+- 右栏选中会议时内嵌会议页（复用 `NotesView`，Mac MeetingPage 等价物），根页才显示 archive overview；命中点击/上一条下一条通过 `OpenHistoryHitInMeeting` 在内嵌页打开对应标签，转写命中调 `ShowNotesTranscriptAt` 定位高亮。
+- 2) 命中导航定位/高亮：已接。
+- 3) 系列限定搜索：`HistorySeriesFilter` 作用域下搜索/筛选先按系列收窄。
+- 4) 根页系列卡片：`SceneGlyph` + 名称 + 模式/场次统计 + 管理菜单的卡片网格。
+- 5) 菜单禁用态：`ContextMenu.Opened` 在行菜单实现时订阅，录音/任务中禁用删除、重新整理、准备下一场。
+- 6) 概览动作：返回首页 / 清除搜索与筛选 / 重试读取已加；内容读取问题提示沿用 §3.4 notes 的读取状态条（右栏内嵌页）。
+- 7) 删除全部会议文案已与 Swift 的 confirmationDialog 文案逐字一致。
+- 内嵌页内部（回答列表时间/首字/未完成/截图/评价、结构化纪要编辑等）属于 §3.4 notes 1–7 的清单，由 notes 页实现承接，不再计为 history 的差别。

@@ -257,7 +257,20 @@ public partial class AppState : ObservableObject
         try
         {
             foreach (var reference in SessionNotesEvidence.References(payload, lines, "", sessionId))
-                NotesEvidence.Add(new SessionEvidenceRow(reference));
+            {
+                var index = reference.LineId is { } lineId
+                    ? lines.ToList().FindIndex(line => line.Id == lineId)
+                    : -1;
+                var context = "";
+                if (index >= 0)
+                {
+                    var from = Math.Max(0, index - 2);
+                    var to = Math.Min(lines.Count - 1, index + 2);
+                    context = string.Join("\n", Enumerable.Range(from, to - from + 1)
+                        .Select(position => (position == index ? "▸ " : "· ") + lines[position].Text));
+                }
+                NotesEvidence.Add(new SessionEvidenceRow(reference, context, index >= 0));
+            }
         }
         catch { }
     }

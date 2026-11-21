@@ -33,10 +33,11 @@ Mac 参照：`Sources/NextThought/SettingsView.swift` 的 `SettingsPage` / `Sett
 
 ## 未解决/差异
 
-- 「记录每次会议」开关没有 Windows 设置键（Mac GeneralSettings 有记录开关；Windows 会中保存行为由现有设置决定）。
-- 「说话人与翻译」仍位于「提词与教练」页（Mac 通用→说话人组）；拖动涉及跨页卡片拆分，留待下一轮小改。
-- 语义检索卡片在「回答与资料」与「高级→资料组件」两处（Mac 仅高级资料组件）。
-- 搜索关键词表未移植；临场教练（E10）缺失。
+§3.6 settings-structure 四项已按裁决完成：`recordSessions` 有设置键+开关+行为（关闭时不入历史、不自动备份/整理）；说话人与翻译移到通用页；语义检索只在高级→资料组件出现一次；Mac SettingsSearchItem 关键词表已移植（隐藏词如「刘海」「钉住」「notch」可搜到）。设置页布局同为 Mac 形制：顶栏「‹ 完成 / 页名 / 搜索设置」、侧栏图标+选中块、设置清单与数据与关于在高级→数据与维护、更新卡显示 NextThought 版本+构建。
+
+## 结论
+
+逐条一致。
 
 ## Mac 3.4.0 参考图与逐图核对（task-48）
 

@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.SkillEditorWindow"
+        Title="{loc:Tr 编辑技能}" Width="520" Height="560"
+        WindowStartupLocation="CenterOwner" CanResize="False"
+        Background="{DynamicResource Paper}">
+  <!-- Mac SkillEditor sheet: name, one-line summary, Markdown editor, 所有系列 toggle, 取消/保存. -->
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_22}">
+    <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_10}">
+      <TextBlock x:Name="TitleText" Text="{loc:Tr 编辑技能}" Classes="section" />
+      <TextBlock Text="{loc:Tr 名称}" Classes="label" />
+      <TextBox x:Name="NameBox" Watermark="{loc:Tr 名称}" />
+      <TextBlock Text="{loc:Tr 一句话说明（可选）}" Classes="label" />
+      <TextBox x:Name="SummaryBox" Watermark="{loc:Tr 一句话说明（可选）}" />
+    </StackPanel>
+    <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <TextBox x:Name="ContentBox" AcceptsReturn="True" TextWrapping="Wrap"
+               ScrollViewer.VerticalScrollBarVisibility="Auto" MinHeight="260" />
+      <TextBlock x:Name="LengthText" Classes="caption" FontSize="11" />
+      <CheckBox x:Name="GlobalBox" Content="{loc:Tr 所有系列都使用这个技能}" />
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                Spacing="{DynamicResource D4Spacing_8}">
+      <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
+      <Button Classes="primary" Content="{loc:Tr 保存}" Click="Save_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -46,7 +46,7 @@ Windows 代码：`Windows/src/NextThought.Desktop/Views/NotesEditorWindow.axaml(
 ## 5. 未解决（task-78/§3.4 裁决后更新，2026-11-21）
 
 1. 结构化纪要逐节逐条编辑 +「我已核实」：**已完成**（task-62 ① 的 `f030fce6`：effectiveNotes = editedNotes ?? summary.notes，编辑器逐 section/item TextBox + time caption +「我已核实」，保存写 editedNotes 并重渲染）。本条关闭。
-2. 原话依据侧栏的 ±2 行上下文、当前行高亮、无法定位提示、侧栏内「标为重点」：**仍待做**（本页记录；下一步在 `BuildNotesEvidence` 里加入上下文行与该按钮）。
+2. 原话依据侧栏：**已完成**——`SessionEvidenceRow` 带 ±2 行转写上下文（当前行前缀 ▸）、`HasMissing`+Mac 原句「此原话无法定位。已有笔记仍保留，请查看完整转写核实。」；侧栏新增「标为重点」按钮（`MarkEvidenceHighlight_Click` → `HighlightLineCommand`）。条目关闭。
 3. 取消确认按钮文案与 Mac：**已完成**——`ConfirmDialog` 支持自定义确认/取消文案，编辑器关闭/取消使用「放弃尚未保存的更改？」+「放弃更改 / 继续编辑」；保存中按钮文案改为「正在保存…」（Mac BusyActionLabel）。本条关闭。
 4. `basedOnGeneratedAt`：**已完成**——载入时读 summary.json 的 `generatedAt`（AI 原稿时间），保存时 `content.BasedOnGeneratedAt ?? AI generatedAt ?? now`；结构化保存路径同样使用。本条关闭。
 5. 截图：本页尚未有最终提交的浅/深截图；§5 统一重拍时补（当前共享树被 runtime-gaps/live-parity 在途文件打红，无法启动应用）。
