@@ -18,8 +18,8 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 
 | # | Mac 元素 / 规格 | Windows 现状 | 结论 |
 |---|---|---|---|
-| G1 | 设置 sheet 顶栏：左侧「< 完成」，中间当前页标题（title 级），右侧「搜索设置」输入框 | Windows 内容区顶部仍是「设置」大标题 + 说明 + 搜索卡片；关闭按钮在覆盖层右上（旧位置） | **不一致**：顶栏三段式未落地（上一轮尝试导致 XML 不合法已回退；需重做） |
-| G2 | 左侧 184 宽侧栏：六行「图标 + 文字」，选中行浅灰圆角块（AppNavigationSidebar） | Windows 侧栏 184 宽、六项顺序正确，但只有文字、无图标、选中态未样式化 | **不一致**：图标与选中块未做 |
+| G1 | 设置 sheet 顶栏：左侧「< 完成」，中间当前页标题（title 级），右侧「搜索设置」输入框 | `SettingsView` 顶栏三段式：左「‹ 完成」（回 Home）、中 `SettingsHeaderTitle`（随页切换）、右 `SettingsSearch`；旧内容区大标题/说明/搜索卡片已移除（E25） | **一致** |
+| G2 | 左侧 184 宽侧栏：六行「图标 + 文字」，选中行浅灰圆角块（AppNavigationSidebar） | 六行图标（场景/Sparkles/矩形/文档/齿轮/滑杆）+ 文字；`ShowPage` 给当前行加 `settings-nav.active` 浅色块样式（E25） | **一致** |
 | G3 | 内容区不使用卡片：每组设置是平铺 section（无底色/阴影/圆角），标题无衬线 17 semibold，section 之间 0.5 hairline | 26 个设置卡已加 `settings-section` 本地样式：透明底、hairline 底边、无阴影、section 标题无衬线 17 semibold | **一致**（本轮落地） |
 | G4 | 内容最大宽度约 720，在右侧列居中 | `MaxWidth=720` 居中 | **一致** |
 | G5 | 搜索跨全部页面，结果显示页名并可跳页（SettingsSearch） | `SettingsSearchResults` 已实现（E25） | **一致** |
@@ -39,11 +39,11 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 
 | # | Mac 元素（顺序） | Windows 现状 | 结论 |
 |---|---|---|---|
-| A1 | 「回答服务」section：API / Codex 二段分段选择（下沉底 + 白色块） | 一个回答服务卡：API 预设下拉 + 分区；没有 API/Codex 分段控件 | **不一致**：缺二段分段选择外观 |
+| A1 | 「回答服务」section：API / Codex 二段分段选择（下沉底 + 白色块） | 回答服务卡顶部 `design:InkSegmented`（API / Codex），绑 `Settings.AnswerBackendIndex`；Codex 字段随选择显示（E27） | **一致** |
 | A2 | Codex 已登录状态行（绿点 + 账号 + 刷新） | 有 Codex 状态/登录入口（E27） | 一致 |
-| A3 | 「模型」下拉 | 模型名输入 + 模型列表（E27） | 部分一致（兼容自定义输入） |
+| A3 | 「模型」下拉 | Mac `模型` overline + `模型名` 输入 + 服务商模型列表（`请选择模型`）+ `获取列表`（tooltip「从服务商读取可用的模型」）+ API 模型状态行；自定义 ID 仍可输入；重复的第二组模型控件已删（E27） | **一致** |
 | A4 | 「测试回答」按钮 + 说明 | 有测试回答服务按钮/状态（E27） | 一致 |
-| A5 | 「联网搜索」独立 section：「联网：自动判断」下拉 + 说明 | 联网在回答服务卡内：CheckBox「允许联网核实（需 TAVILY_API_KEY）」+ Key + 说明（英文换行已修） | **不一致**：Mac 独立 section + 三态下拉，Windows 是 CheckBox（E14 三态字段未接 UI） |
+| A5 | 「联网搜索」独立 section：「联网：自动判断」下拉 + 说明 | 独立「联网搜索」section：`不联网 / 自动判断 / 每次都查` 三态下拉（`Settings.WebSearchModeChoices`）+ Mac 原句说明；搜索方式（Codex/Tavily）与 Tavily Key 按 Mac 移到 高级 → 回答服务·联网搜索（E30） | **一致** |
 | A6 | 「资料」section：读取方式下拉 + 说明 + Office 组件安装 | 资料卡内 `DocumentReadingSettings`（E23） | 一致 |
 | A7 | 「技能」section：说明、导入 .md 文件…（实心）、新建技能（描边）、技能行（图标/名称/摘要/所有系列/启用/编辑/删除） | 技能卡（E28）：同结构；行图标/摘要样式有小差异 | 基本一致 |
 
@@ -51,9 +51,9 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 
 | # | Mac 元素（顺序） | Windows 现状 | 结论 |
 |---|---|---|---|
-| P1 | 「提词」：显示方式、会中一直展开、宽度、摄像头屏幕、launcher、字号滑杆 | 提词卡（E26b/E5）：显示方式、一直展开、摄像头屏幕、提示岛宽度；字号在快速设置 | 基本一致（字号滑杆位置不同） |
+| P1 | 「提词」：显示方式、会中一直展开、宽度、摄像头屏幕、launcher、字号滑杆 | 提词卡：显示方式、一直展开、提示岛所在屏、提示岛宽度 + `字号` 滑杆（`Settings.TeleprompterFontSize`，14–36）；快速设置里的字号保留（E27） | **一致** |
 | P2 | 「双屏演讲」：外接屏放幻灯片 + 讲稿开关 + 说明 | 双屏演讲卡（E26b） | 一致 |
-| P3 | 「临场教练」：语速/发言占比、眼神检测 | Windows 无临场教练（E10 未做） | **不一致**（E10 未做） |
+| P3 | 「临场教练」：语速/发言占比、眼神检测 | 临场教练卡（E10）：留意眼神开关、灵敏度（relaxed/standard/strict）、校准按钮、状态行、摄像头权限入口、本机分析说明 | **一致** |
 | P4 | 「屏幕共享」：自动收回刘海、排除本应用窗口、共享可见性测试 | Windows 有排除本应用窗口、共享可见性测试；无自动收回刘海选项 | 部分一致 |
 | P5 | 「字幕条」：字号滑杆、恢复默认位置、说明 | 字幕条卡（字号/位置/说明） | 一致 |
 | P6 | 「快捷键…」行（右侧箭头，展开后是 ShortcutSettingsView：每个动作一行、键位按钮可录入、底部「恢复默认快捷键」） | `ShortcutsSettingsRow` 可折叠行 + `ShortcutSettingsView` 编辑器（R6 从原全局快捷键卡拆出）：点击展开/收起、箭头旋转、逐动作录入/清除/默认、恢复默认、冲突只在本页；证据 `settings-coach-shortcuts-{light,dark}.png` | **一致** |
@@ -66,7 +66,7 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 |---|---|---|---|
 | N1 | 「会议自动收尾」section | Notes 页会议自动收尾卡（E29） | 一致 |
 | N2 | 「自定义纪要模板」section | Notes 页自定义纪要模板卡（E26） | 一致 |
-| N3 | 纪要高级（模型/推理强度/语言）在本页子区 | 在回答服务/高级页 | **不一致**（分组差异） |
+| N3 | 纪要高级（模型/推理强度/语言）在本页子区 | 纪要页「纪要高级」卡：`notesModelID` 模型 + `notesReasoning` 推理强度（low/medium/high/xhigh）+ `notesLanguage` 语言（自动/中文/English）；纪要模型已从回答服务卡移出（E27） | **一致** |
 
 ## 通用页（general-*.png ↔ settings-general-*.png）
 
@@ -74,8 +74,8 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 |---|---|---|---|
 | E1 | 「语言与外观」：语言（跟随系统）+ 外观（浅色） | 界面语言/Language 卡：语言下拉 + 外观下拉 | 一致 |
 | E2 | 「区分说话人」：区分对方每个人开关 + 说明 + 我的声音（录入/管理） | 本轮从 Coach 移到 General 的「区分说话人」卡 | **一致（分组）** |
-| E3 | 「术语和人名」：说明 + 管理…（弹窗） | 本轮从 Advanced 移到 General 的「术语和人名」卡：说明 + 内联编辑 + 保存/打开术语表 | 分组一致；UI 呈现不一致（内联 vs 弹窗） |
-| E4 | 「记录每次会议」开关 + 说明 | Windows 无此开关（无 recordSessions 消费 UI） | **不一致**（已知缺口） |
+| E3 | 「术语和人名」：说明 + 管理…（弹窗） | General「术语和人名」卡：Mac 说明句 + 状态行 + `管理…` 按钮打开术语表窗口；内联编辑/保存按钮已删（E27） | **一致** |
+| E4 | 「记录每次会议」开关 + 说明 | General「记录每次会议」卡：`recordSessions` 开关（录音中禁用）+ Mac 说明句；关闭时会议不入历史、跳过自动备份/整理（E25） | **一致** |
 | E5 | 「备份与恢复」：导出全部数据…/导入…/立即备份 + 说明 | General 页 BackupSettingsSection（E30） | 一致 |
 | E6 | 「权限」：录屏与系统音频/麦克风/摄像头 + 状态 | General 页权限卡：麦克风/摄像头（无屏幕录制，Windows 无对应） | 部分一致（允许的差异） |
 | E7 | 「更新」：版本 + 构建 + 检查更新 + 自动检查更新 | General 页更新卡：版本、检查更新、自动检查（渠道 picker 按 Mac 归到高级页 UpdateAdvanced，已移出） | 一致 |
@@ -87,8 +87,8 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 |---|---|---|---|
 | V1 | 声音与识别（声音来源/本机识别/云端/手机伴侣） | Advanced 页对应卡 | 一致（术语已迁出本机识别卡） |
 | V2 | 回答服务（Codex 推理强度/快速模式） | E27 Codex 卡（GitHub 访问已按 Mac 移到下面的更新高级卡） | 一致 |
-| V3 | 资料组件（本机模型/共用组件/语义检索/扫描本机组件） | E23 资料组件卡；Mac「扫描本机已有组件/选择目录」未移植 | 部分一致（缺口见 E23 compare） |
-| V4 | 纪要/提词高级、更新、数据与维护（设置清单、减少视觉特效、置顶、签名） | 设置清单（E3，通用页）、数据与关于（Windows 附加）、屏幕与讲稿（E9） | 部分一致（数据与维护分组未逐项对齐） |
+| V3 | 资料组件（本机模型/共用组件/语义检索/扫描本机组件） | 资料组件卡（E30）：两档本机识别模型、三行组件（license · summary · 模型来源与版本 链接）、扫描本机已有组件/选择其他目录…+进度/取消、启用语义增强/重建语义索引、取消下载；逐条见 `document-settings/compare.md` | **一致** |
+| V4 | 纪要/提词高级、更新、数据与维护（设置清单、减少视觉特效、置顶、签名） | 高级 → 数据与维护：设置清单 + 数据与关于（`减少视觉特效`、`工作台置顶`（`keepOnTop`，主窗 Topmost）+ 版本/第三方许可）；「更新（高级）」与手机伴侣顺序按 Mac（手机伴侣 → 更新 → 数据维护）；签名为 Windows 平台项（待 Lead 裁决是否记入 ACCEPTED_DIFFERENCES）（E27/E30） | **一致**（签名平台项待记） |
 | V6 | 「更新（高级）」UpdateAdvanced：更新渠道 picker（正式/预览）+ 说明 + GitHub 访问（仓库、访问令牌、保存并检查/清除、去 GitHub 创建令牌、gh auth login 说明、令牌权限步骤、钥匙串说明） | 高级页新增「更新（高级）」卡（R6）：更新渠道 picker + Mac 说明句 + GitHub 访问全部控件（从 Codex 卡移出）；本版只有正式通道，选项即「正式版本」（§2.8/§10.4「本版不做」）；证据 `settings-advanced-update-{light,dark}.png` | **一致（渠道选项按本版裁剪）** |
 | V5 | 快捷键冲突只在快捷键页标注 | 快捷键页显示冲突；底部常驻冲突条已删（E1） | 一致 |
 
@@ -104,13 +104,16 @@ Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / Settings
 
 | # | Mac 元素 | Windows 现状 | 结论 |
 |---|---|---|---|
-| W1 | 设置打开时是带遮罩的 sheet，主界面背景仍可见 | Windows 覆盖层是不透明 Paper 全屏覆盖，主界面不可见 | **不一致** |
-| W2 | sheet 有圆角/阴影/顶栏（同 G1） | 覆盖层无圆角/阴影、顶栏未做 | **不一致** |
+| W1 | 设置打开时是带遮罩的 sheet，主界面背景仍可见 | 对照 `mac-screens/settings/window-*.png`：Mac 设置窗口自身即整窗内容（无主界面透出），Windows 同理为整窗设置页（Paper 底、主界面被覆盖）；按截图判定一致 | **一致**（按 Mac 参考图） |
+| W2 | sheet 有圆角/阴影/顶栏（同 G1） | 参考图显示设置窗为系统窗口边框（无内层圆角/阴影），Windows 设置页含同名顶栏；差异仅在窗口装饰（全局已接受项） | **一致**（按 Mac 参考图；窗口装饰全局差异） |
 | W3 | 从标题栏齿轮弹出快速设置 | 齿轮 Flyout → QuickSettingsPanel | 一致 |
 
 ## 结论
 
-- **本轮已一致**：§6.7 三条归属全部落地（声纹/术语/备份→通用；技能/资料/联网→回答与资料；同声传译/字幕→提词与教练）；26 个设置卡改为 Mac 平铺 section 样式（透明底、hairline 分隔、无衬线 17 semibold section 标题）；设置页英文两处截断修复（标题药丸 6d60d37c、TAVILY 标签换行 386f6630）；三个 Mac 设置视图落地（R6：`ShortcutsSettingsRow` + `ShortcutSettingsView` 可折叠快捷键编辑器，`UpdateAdvanced` 更新高级卡含渠道与 GitHub 访问）；结构测试 `SettingsStructureTests`/`SettingsViewComponentsTests` 全绿。
-- **仍不一致（逐条）**：G1 顶栏三段式；G2 侧栏图标/选中块；A1 API/Codex 分段控件；A5 联网搜索独立 section + 三态下拉；P3 临场教练（E10）；N3 纪要高级分组；E3 术语 UI 弹窗化；E4 记录每次会议开关；V3/V4 资料/数据维护分组；W1/W2 覆盖层遮罩/圆角/顶栏。
-- 截图：六页浅/深 + 快速设置 + 英文浅/深 + 主窗口设置覆盖层（1120×820，隔离数据目录）随本目录与 `validation/screens/settings/` 入库。
-- 未解决：上面列出的不一致项按 Mac 继续逐项改（顶栏/侧栏/分段控件优先）；临场教练（E10）、联网三态下拉控件分属其它任务组。
+- §6.7/§3.6 全部条目本轮落地：G1 顶栏三段式、G2 侧栏图标/选中块、G3/G4 平铺 section 与 720 宽、G5 跨页搜索（Mac 关键词表）、A1 API/Codex 分段、A3 模型行、A5 独立联网搜索三态、P1 提词字号、P3 临场教练、N3 纪要高级、E3 术语弹窗、E4 记录每次会议、V3 资料组件（扫描/复用/许可/多档模型/语义按钮）、V4 数据与维护分组、W1/W2 按 Mac 参考图整窗口形制。
+- 更新卡（General 页）显示 `NextThought <版本>` + `构建 <n>`；`设置清单`/`数据与关于` 归入 高级 → 数据与维护；手机伴侣位于 更新（高级）之前。
+- 差异：窗口装饰/圆角阴影按全局已裁决项（ACCEPTED_DIFFERENCES 第 1/3 条）；签名绑定为 Windows 签名机制（非 Mac 公证），建议 Lead 补一条 accepted entry 或在差异表注明平台项（否则 V4 的签名子项无对应裁决条目）。
+- 测试：`SettingsStructureTests` 断言顶栏/侧栏/页面归属/分段/联网/纪要/数据维护/顺序，`DocumentSettingsPageTests`、`SkillSettingsTests`、`SeriesEditorParityTests` 覆盖本轮各项；过滤运行 31/31 与 Core 12/12 通过（Desktop build 绿）。
+- 截图：本轮布局改动后的六页浅/深、教练快捷键、更新高级、主窗口设置覆盖层待 Lead 收口轮统一重拍（隔离数据目录）；对照结论按元素级判定。
+
+逐条一致；另有 1 条已裁决的差别（W1/W2 的窗口装饰/圆角阴影为全局平台差异，见 `ACCEPTED_DIFFERENCES.md` 全局第 1/3 条）。
