@@ -176,6 +176,15 @@ public class AIHeading : ContentControl
 /// <summary>DesignSystem.swift InkSegmented: sunken track, raised white selected thumb.</summary>
 public class InkSegmented : ListBox
 {
+    private readonly Avalonia.Threading.DispatcherTimer thumbTimer =
+        new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private Rect thumbFrom;
+    private Rect thumbTo;
+    private Rect thumb;
+    private bool thumbReady;
+    private DateTimeOffset thumbStarted;
+    private bool animating;
+
     public InkSegmented()
     {
         SelectionMode = SelectionMode.Single;
@@ -186,6 +195,74 @@ public class InkSegmented : ListBox
             Text = value ?? "", FontSize = 13, FontWeight = FontWeight.Medium,
             VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center
         }, true);
+        SelectionChanged += (_, _) => UpdateThumb(animate: true);
+        LayoutUpdated += (_, _) => UpdateThumb(animate: false);
+        SizeChanged += (_, _) => UpdateThumb(animate: false);
+        thumbTimer.Tick += (_, _) => StepThumb();
+    }
+
+    /// <summary>
+    /// DesignSystem.swift InkSegmented: one raised thumb that slides between the items
+    /// (Motion.snappy, like the home scene capsule) instead of every item painting its own block.
+    /// </summary>
+    private void StepThumb()
+    {
+        var duration = Motion.Duration(Motion.Kind.Snappy);
+        var elapsed = DateTimeOffset.UtcNow - thumbStarted;
+        var progress = duration <= TimeSpan.Zero ? 1 : Math.Clamp(elapsed.TotalMilliseconds / duration.TotalMilliseconds, 0, 1);
+        var eased = Motion.Easing(Motion.Kind.Snappy).Ease(progress);
+        thumb = new Rect(
+            thumbFrom.X + (thumbTo.X - thumbFrom.X) * eased,
+            thumbFrom.Y + (thumbTo.Y - thumbFrom.Y) * eased,
+            thumbFrom.Width + (thumbTo.Width - thumbFrom.Width) * eased,
+            thumbFrom.Height + (thumbTo.Height - thumbFrom.Height) * eased);
+        InvalidateVisual();
+        if (progress >= 1)
+        {
+            animating = false;
+            thumbTimer.Stop();
+        }
+    }
+
+    private void UpdateThumb(bool animate)
+    {
+        if (SelectedIndex < 0) return;
+        if (ContainerFromIndex(SelectedIndex) is not Control item || item.Bounds.Width <= 0) return;
+        var origin = item.TranslatePoint(new Point(0, 0), this);
+        if (origin is not { } point) return;
+        var target = new Rect(point.X, point.Y, item.Bounds.Width, item.Bounds.Height);
+        if (target == thumbTo && (thumbReady || animating)) return;
+        thumbFrom = thumbReady ? thumb : target;
+        thumbTo = target;
+        if (!animate || !thumbReady || Motion.Reduce)
+        {
+            thumb = target;
+            thumbReady = true;
+            animating = false;
+            thumbTimer.Stop();
+            InvalidateVisual();
+            return;
+        }
+        thumbStarted = DateTimeOffset.UtcNow;
+        animating = true;
+        thumbTimer.Start();
+    }
+
+    public override void Render(DrawingContext context)
+    {
+        base.Render(context);
+        var track = new Rect(Bounds.Size).Deflate(new Thickness(2));
+        if (track.Width <= 0 || track.Height <= 0) return;
+        var sunken = Application.Current?.TryFindResource("Sunken", out var value) == true && value is IBrush brush
+            ? brush : Brushes.Transparent;
+        var raised = Application.Current?.TryFindResource("SurfaceRaised", out var value2) == true && value2 is IBrush brush2
+            ? brush2 : Brushes.White;
+        var hairline = Application.Current?.TryFindResource("Hairline", out var value3) == true && value3 is IBrush brush3
+            ? brush3 : Brushes.Gray;
+        context.DrawRectangle(sunken, null, new RoundedRect(track, 8));
+        if (!thumbReady) return;
+        var pen = new Pen(hairline, 0.5);
+        context.DrawRectangle(raised, pen, new RoundedRect(thumb, 6));
     }
 }
 

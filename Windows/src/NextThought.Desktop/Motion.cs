@@ -101,3 +101,9 @@ public sealed class MotionHoverEasing : Easing
 {
     public override double Ease(double progress) => MotionPlan.EasedProgress(MotionKind.Hover, progress);
 }
+
+/// <summary>D5: the Mac <c>Motion.snappy</c> spring (response 0.28, dampingFraction 0.78).</summary>
+public sealed class MotionSnappyEasing : Easing
+{
+    public override double Ease(double progress) => MotionPlan.EasedProgress(MotionKind.Snappy, progress);
+}
