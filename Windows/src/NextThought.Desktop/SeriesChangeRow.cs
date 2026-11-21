@@ -10,8 +10,10 @@ namespace NextThought.Desktop;
 /// </summary>
 public sealed partial class SeriesChangeRow : ObservableObject
 {
-    public SeriesChangeRow(WorkspaceSeriesChangeCandidate candidate, IReadOnlyList<WorkspaceSeriesItem> items)
+    public SeriesChangeRow(WorkspaceSeriesChangeCandidate candidate, IReadOnlyList<WorkspaceSeriesItem> items,
+        bool stale = false)
     {
+        staleOverride = stale;
         Candidate = candidate;
         MatchingItems = items
             .Where(item => item.Kind == candidate.Kind)
@@ -35,8 +37,11 @@ public sealed partial class SeriesChangeRow : ObservableObject
     public string SourceLine => HasSourceQuote
         ? UiText.Format("依据：“%@” · %@", SourceQuote, Candidate.Location ?? "")
         : "";
-    /// <summary>Mac checks the reviewed evidence revisions; Windows only sees the stored proposal.</summary>
-    public bool IsStale => Candidate.SourceMissing || string.IsNullOrEmpty(Candidate.TranscriptSourceRevision);
+    private readonly bool staleOverride;
+
+    /// <summary>Mac checks the reviewed evidence revisions against the current transcript.</summary>
+    public bool IsStale => staleOverride || Candidate.SourceMissing
+        || string.IsNullOrEmpty(Candidate.TranscriptSourceRevision);
     public bool IsCurrent => !IsStale;
 
     public IReadOnlyList<SeriesTargetRow> MatchingItems { get; }

@@ -30,7 +30,7 @@ public partial class AppState
         ? new MaterialStore(Paths).SourcePath(material)
         : "";
     public string MaterialReviewExtractedPath => Library.SelectedMaterial is { } material
-        ? Path.Combine(Paths.Root, "Materials", material.Id, "document.json")
+        ? Path.Combine(Paths.Root, "Materials", material.Id, "extracted.txt")
         : "";
     public bool MaterialReviewHasOriginal => MaterialReviewSourcePath.Length > 0 && File.Exists(MaterialReviewSourcePath);
 
@@ -77,12 +77,22 @@ public partial class AppState
         catch (Exception ex) { SetStatus(ex.Message, true); }
     }
 
-    /// <summary>MaterialReviewSheet: 打开完整文本 — Windows keeps the extraction in document.json.</summary>
+    /// <summary>MaterialReviewSheet: 打开完整文本 — a readable .txt with the whole extraction.</summary>
     [RelayCommand]
     private void OpenMaterialExtracted()
     {
-        if (!File.Exists(MaterialReviewExtractedPath)) return;
-        try { OpenExternal(MaterialReviewExtractedPath); }
+        if (Library.SelectedMaterial is not { } material) return;
+        try
+        {
+            var path = MaterialReviewExtractedPath;
+            if (!File.Exists(path))
+            {
+                var (text, _) = NextThought.Core.MaterialReviewPreview.Build(material.Blocks, int.MaxValue);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, text);
+            }
+            OpenExternal(path);
+        }
         catch (Exception ex) { SetStatus(ex.Message, true); }
     }
 

@@ -72,14 +72,14 @@ Windows 截图：`Windows/validation/screens/knowledge-review/`（自检 `knowle
 自检报告：`Windows/validation/screens/knowledge-review/knowledge-review-check.json`（12/12、exit 0）。
 新增测试 `MaterialReviewTests`（4 个）：备注按资料往返/空白删除、缺失或损坏文件读空、预览带页码定位并按 80k 截断、只有需人工处理的警告才标记 NeedsReview。
 
-## 6. 未解决 / 待补
+## 6. 未解决 / 待补（task-78/§3.4 裁决后更新，2026-11-21）
 
-1. 「收集本场候选」（知识候选）已实现 AppState 方法但页面无按钮（变更区域的「收集已核实的决定与行动」已接）；需确认按钮位置后再放。
-2. 过期判定为近似：Windows 没有 Mac 的 evidenceReviews 修订链（origin/claimRevision/transcriptSourceRevision 校验），只用 SourceMissing/TranscriptSourceRevision 缺失近似；「忽略过期建议」文案已按 Mac。
-3. 卡片无 Mac 的 AISoft 背景与卡内忙碌态（操作同步完成）；候选区整体容器视觉未完全照 Mac。
-4. 资料复核：无 QuickLook 内嵌原件预览；「打开完整文本」打开的是解析 JSON（Windows 无归档 Markdown 路径）；截断说明/80k 预览已对照。
-5. 无 Mac 对应视图截图（KnowledgeReviewSection/WorkspaceRecordsTab/MaterialReviewSheet 均无 docs 截图），本轮截图仅 Windows 自检取证；按口径状态最多「已实现、未验证」。
-6. 记录标签的排序跟随当前历史排序（Mac 按 startedAt 倒序），差异小但未逐项对齐。
+1. 「收集本场候选」按钮：已在 E18 增量上页面（`CollectKnowledgeLabel` + `CollectKnowledgeCandidates`），本页 1 关闭。
+2. 过期判定：改为**用现有修订号做真实判定**——`IsCandidateStale` 用 `SessionProjectionBuilder.TranscriptSourceRevision` 重算来源会议当前转写修订并与候选的 `transcriptSourceRevision` 比较，读取失败/来源缺失也算过期（不再只靠字段是否为空）。Mac 的 evidenceReviews 复核链仍无对应存储，这一点作为近似记录。
+3. AISoft 卡片背景已在 E18 增量对齐；候选卡的**卡内忙碌态**：Windows 的采纳/忽略是同步操作（无异步等待期），没有可展示的忙碌窗口，记为平台实现差异。
+4. 「打开完整文本」改为打开**可读文本**：首次点击时把完整提取（`MaterialReviewPreview.Build(blocks, int.MaxValue)`）写到 `Materials/<id>/extracted.txt` 并用系统默认程序打开，不再打开解析后的 `document.json`。无内嵌 QuickLook 原件预览（裁决：接受，用系统默认程序打开原件）。
+5. 截图：本页已有 `series-change-*.png` / `series-knowledge-*.png` / `material-review-*.png` 自检证据；§5 的最终整批重拍在全部页面完成后统一执行。
+6. 记录标签排序：已改为按 `StartedAt` 倒序（与 Mac 一致），不再跟随历史页当前排序。
 
 ## task-62 / E18 闭环：知识复核与资料复核（2026-11-21，阶段 4 §6.7）
 

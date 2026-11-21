@@ -75,7 +75,7 @@ public partial class AppState
         foreach (var candidate in series.SeriesChangeCandidates
                      .Where(candidate => candidate.Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending)
                      .OrderByDescending(candidate => candidate.CreatedAt))
-            SeriesChangeRows.Add(new SeriesChangeRow(candidate, series.SeriesItems));
+            SeriesChangeRows.Add(new SeriesChangeRow(candidate, series.SeriesItems, IsCandidateStale(candidate)));
         OnPropertyChanged(nameof(HasSeriesChanges));
         OnPropertyChanged(nameof(SeriesChangesHeader));
     }
@@ -226,14 +226,37 @@ public partial class AppState
         SeriesRecords.Clear();
         if (SelectedSeries is { } row && workspace.Find(row.Id) is { } series)
         {
-            foreach (var id in series.SessionIds)
+            foreach (var meeting in series.SessionIds
+                         .Select(id => History.FirstOrDefault(item => SameSessionId(item.Meta.Id, id)))
+                         .Where(meeting => meeting is not null)
+                         .OrderByDescending(meeting => meeting!.Meta.StartedAt))
             {
-                var meeting = History.FirstOrDefault(item => SameSessionId(item.Meta.Id, id));
-                if (meeting is not null) { SeriesMeetings.Add(meeting); SeriesRecords.Add(meeting); }
+                SeriesMeetings.Add(meeting!);
+                SeriesRecords.Add(meeting!);
             }
         }
         OnPropertyChanged(nameof(HasSeriesRecords));
         OnPropertyChanged(nameof(SeriesRecordsEmptyText));
+    }
+
+    /// <summary>
+    /// Mac accepts a proposal only while the reviewed evidence still matches the transcript. We do
+    /// not keep Mac's evidenceReview chain, so this compares the stored transcriptSourceRevision
+    /// with the session's current one (and treats a missing source as stale).
+    /// </summary>
+    private bool IsCandidateStale(WorkspaceSeriesChangeCandidate candidate)
+    {
+        if (candidate.SourceMissing || string.IsNullOrEmpty(candidate.TranscriptSourceRevision)) return true;
+        if (!Guid.TryParse(candidate.SourceSessionId, out var sessionId)) return true;
+        try
+        {
+            var data = Sessions.Load(sessionId);
+            var content = SessionUserContentStore.Load(Sessions.Folder(sessionId));
+            var corrections = content.Corrections([], data.Lines);
+            var current = SessionProjectionBuilder.TranscriptSourceRevision(data.Meta, data.Lines, corrections);
+            return !string.Equals(current, candidate.TranscriptSourceRevision, StringComparison.Ordinal);
+        }
+        catch { return true; }
     }
 
     /// <summary>WorkspaceRecordsTab: this series' meetings, newest first.</summary>
