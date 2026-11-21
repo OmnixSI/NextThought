@@ -18,13 +18,14 @@
 | 5 | 转写/语言 | 校正/原始；双语/仅原文/译文 | 同 | 一致 |
 | 6 | 说明行 | info 图标 + caption：字幕格式显示源文本、文档格式显示分页预览 | 同（文案按 Windows 预览实现改写，语义一致） | 一致 |
 | 7 | 归档错误块 | caution 三角形 +「归档有缺失或读取错误，导出已暂停。」+ 各问题；8% caution 底，圆角 8 | 同（`ReadIssuePanel`，单条问题汇总裁剪） | 一致 |
-| 8 | 过期提示 | derived notes 过期 / 旧归档无来源版本，两套文案 + 图标 | 未显示：Windows 归档未跟踪 derived content status（见差异） | 不一致 |
+| 8 | 过期提示 | derived notes 过期 / 旧归档无来源版本，两套文案 + 图标 | 用 `summary.json` 源修订复算 `SessionDerivedContentStatus`；stale=caution 三角「纪要或手记可能已过期；导出预览已附上核对提示。」/ unknown=问号「旧纪要未记录来源版本；导出预览会说明无法确认是否过期。」 | 一致 |
 | 9 | 字幕警告 | 估算结束时间 N 段、过期译文 N 条（caution、图标行） | 同（`EstimatedWarning`/`StaleTranslationWarning`） | 一致 |
 | 10 | 预览 | 文档格式 → PDF 分页预览；字幕格式 → 源文本，11 等宽，sunken 底 + hairline，min260/max430 | 字幕格式同；文档格式显示源文本而非分页（无 PDF 视图控件，见差异） | 部分 |
 | 11 | 底部 | 本地状态文字 + 「导出…」主按钮、默认动作、无内容/错误时禁用 | 同（回车触发、`IsEnabled` 联控） | 一致 |
 
 ## 差异 / 未解决
 
-1. 文档格式（Markdown/DOCX/PDF）的**分页预览**未实现：Windows 无 PDF 渲染控件，预览区显示同一投影的源文本；导出文件本身与 Mac 一致（分页由 PdfWriter/DOCX 生成）。
-2. Mac 的 derived-content 过期提示依赖 `projection.derivedContentStatus`；Windows 归档数据层暂无该状态，提示块保留但隐藏（`StaleNotice`）。
+1. 文档格式（Markdown/DOCX/PDF）的**分页预览**未实现：Windows 无 PDF 渲染控件，预览区显示同一投影的源文本；按 decisions §3.4 归第二批（`Windows.Data.Pdf`），导出文件本身与 Mac 一致（分页由 PdfWriter/DOCX 生成）。
+2. ~~Mac 的 derived-content 过期提示依赖 `projection.derivedContentStatus`~~：本轮已用归档源修订复算并在对话框单独提示（stale/unknown 两套文案，见第 8 项）。
 3. 截图取 SRT（源文本）以避开分页预览差异。
+4. E19 收尾（2026-11-21）：用户手记 Markdown 已追加（我的笔记/重点标记）；Word styles/numbering 与行内链接「文字 (URL)」、行内代码等宽按 Mac 移植；读取问题仍禁用导出；`--self-test=session-export` passed（30/30，证据 `session-export-check.json` 与 `session-export-sheet-light.png` 已在本目录）。
