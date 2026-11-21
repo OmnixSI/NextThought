@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1287;
+    public const int Count = 1289;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1207,6 +1207,8 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["选择持续读取的区域"] = "Choose the area to keep reading",
+        ["框选演示内容；后续画面均读取该区域。"] = "Select the demo content; every later frame reads that area.",
         ["双屏演讲：主窗口已由你叫回，本场会议不再自动隐藏。"] = "Two-screen presenting: you brought the main window back, so it will not be hidden automatically for the rest of this meeting.",
         ["交付之前，先把话说清楚。"] = "Say it clearly before the meeting.",
         ["下周的评审，我们只带一个版本。"] = "One version for next week's review.",

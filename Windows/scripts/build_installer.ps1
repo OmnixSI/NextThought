@@ -4,8 +4,8 @@ param(
     [switch]$Unsigned,
     [string]$CertificateThumbprint,
     [string]$SignToolPath,
-    [string]$InstallId = 'NextThought.Windows.Preview',
-    [string]$ShortcutGroup = 'NextThought Windows Preview',
+    [string]$InstallId = 'NextThought.Desktop',
+    [string]$ShortcutGroup = 'NextThought',
     [string]$OutputDirectory,
     [string]$OutputName,
     [switch]$FailBeforeActivation
@@ -13,18 +13,18 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid version.' }
-if ($InstallId -notmatch '^NextThought\.Windows\.Preview(?:\.QA[A-Za-z0-9_-]+)?$') { throw 'Invalid installation identity.' }
+if ($InstallId -notmatch '^NextThought\.Desktop(?:\.QA[A-Za-z0-9_-]+)?$') { throw 'Invalid installation identity.' }
 if ($ShortcutGroup -notmatch '^NextThought[A-Za-z0-9 ._-]{0,70}$') { throw 'Invalid shortcut group.' }
 if ($Unsigned -and $CertificateThumbprint) { throw 'Choose unsigned preview or a real certificate, not both.' }
 if (-not $Unsigned -and -not $CertificateThumbprint) { throw 'A real signing certificate is required. Pass -Unsigned explicitly for a validation preview.' }
 $payloadRoot = [IO.Path]::GetFullPath($Payload)
 $manifest = Get-Content -LiteralPath (Join-Path $payloadRoot 'release-manifest.json') -Raw | ConvertFrom-Json
-if ($manifest.product -ne 'NextThought.Windows.Preview' -or $manifest.version -ne $Version) { throw 'Release manifest does not match the installer.' }
+if ($manifest.product -notin @('NextThought', 'NextThought.Desktop') -or $manifest.version -ne $Version) { throw 'Release manifest does not match the installer.' }
 if ($Unsigned -and $manifest.signing -ne 'unsigned-preview') { throw 'The manifest signing status must match the installer.' }
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $root 'artifacts' }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
-if (-not $OutputName) { $OutputName = 'NextThought-Windows-preview-' + $Version + '-setup-' + $(if ($Unsigned) {'unsigned'} else {'signed'}) }
+if (-not $OutputName) { $OutputName = 'NextThought-' + $Version + '-windows-x64-setup' }
 if ($OutputName -notmatch '^[A-Za-z0-9._-]+$') { throw 'Invalid output name.' }
 & (Join-Path $PSScriptRoot 'bootstrap_installer.ps1')
 $compiler = Join-Path $root '.tools\inno-7.1.1\ISCC.exe'
@@ -38,7 +38,7 @@ if ($CertificateThumbprint) {
     $arguments += '--define=SigningCommand=1'
     $arguments += ('--signtool=ntsign=$q' + [IO.Path]::GetFullPath($SignToolPath) + '$q sign /sha1 ' + $CertificateThumbprint + ' /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $f')
 }
-$arguments += (Join-Path $root 'installer\NextThought.iss')
+$arguments += (Join-Path $root 'installer\NextThought.Desktop.iss')
 & $compiler @arguments
 if ($LASTEXITCODE -ne 0) { throw ('Installer compilation failed: ' + $LASTEXITCODE) }
 $setup = Join-Path $OutputDirectory ($OutputName + '.exe')

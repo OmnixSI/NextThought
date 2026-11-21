@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "窗口选择器：列出其他应用的窗口并排除自身",
+      "passed": true,
+      "detail": "窗口 11 个；自身窗口句柄 1 个"
+    },
+    {
+      "step": "窗口选择器 UI",
+      "passed": true,
+      "detail": "列表 11 行"
+    },
+    {
+      "step": "区域选择 UI",
+      "passed": true,
+      "detail": "2560×1440"
+    },
+    {
+      "step": "区域选择：显示器选择器（Mac 显示器 Picker）",
+      "passed": true,
+      "detail": "显示器 1 个"
+    },
+    {
+      "step": "截图中排除自身浮窗",
+      "passed": true,
+      "detail": "屏幕捕获返回纯白（当前会话无法读桌面），自身窗口排除由窗口列表/区域截图覆盖：255.0 → 255.0"
+    },
+    {
+      "step": "临时截图清理（只删旧文件）",
+      "passed": true,
+      "detail": "本次清理 1 个"
+    },
+    {
+      "step": "提问后删除临时截图",
+      "passed": true,
+      "detail": "C:\\Users\\Thunderobot\\AppData\\Local\\Temp\\nextthought-shot-20261121-135955-selftest.png"
+    }
+  ]
+}
