@@ -400,7 +400,8 @@
                 <Button Classes="pill" Tag="{Binding}" Click="SpeakerChip_Click" MinHeight="{DynamicResource LvMinHeight_24}"
                         Margin="{DynamicResource D4Margin_0_0_4_0}" ToolTip.Tip="{loc:Tr 点名字改名、合并或标成我}">
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                    <Ellipse Width="6" Height="6" Fill="{DynamicResource InkBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding MarkGlyph}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                               VerticalAlignment="Center" Foreground="{DynamicResource InkBrush}" />
                     <TextBlock Text="{Binding DisplayLabel}" FontSize="12" />
                   </StackPanel>
                 </Button>
@@ -429,7 +430,8 @@
                     Margin="{DynamicResource LvMargin_0_0_0_16}" PointerPressed="TranscriptRow_PointerPressed">
                 <!-- SpeakerLabel: 对方 / 我, with the 问题 capsule below a detected question. -->
                 <StackPanel MinWidth="40" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Top">
-                  <TextBlock Text="{Binding SpeakerName}" Classes="speaker" Classes.me="{Binding SpeakerIsMe}" />
+                  <TextBlock Text="{Binding SpeakerName}" Classes="speaker" Classes.me="{Binding SpeakerIsMe}"
+                             IsVisible="{Binding ShowSpeakerLabel}" />
                   <Border IsVisible="{Binding IsQuestion}" HorizontalAlignment="Left" Padding="{DynamicResource D4Padding_7_2}"
                           CornerRadius="{DynamicResource LvCapsuleRadius}"
                           Background="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintSoftBrush}">

@@ -34,7 +34,19 @@ public sealed class SpeakerPersonRow
     public int Lines { get; }
     public bool IsMe { get; }
 
-    /// <summary>Mac SpeakerMark: person for the user, circle/square/triangle/diamond otherwise.</summary>
+    /// <summary>Mac SpeakerMark: person for the user, circle/square/triangle/diamond otherwise. These
+    /// are the bundled Fluent System Icons glyphs (IconPersonFill / IconCircle / IconSquare /
+    /// IconTriangle / IconDiamond in Styles/Icons.axaml), not geometry characters.</summary>
+    public string MarkGlyph => Number switch
+    {
+        1 => "\uF2BC", // circle_24_regular
+        2 => "\uF292", // square_24_regular
+        3 => "\uF03A5", // triangle_24_regular
+        0 => "\uF5BE", // person_24_regular
+        _ => "\uE4BC" // diamond_24_regular
+    };
+
+    /// <summary>Legacy geometry mark, kept for callers that only compare the shape.</summary>
     public string Mark => Number switch { 1 => "●", 2 => "■", 3 => "▲", 0 => "○", _ => "◆" };
 
     public string DisplayLabel => IsMe ? UiText.T("我") : Label;
