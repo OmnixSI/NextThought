@@ -1,6 +1,6 @@
 # 设置对照（SETTINGS_PARITY）
 
-Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_parity.py` 从 Swift 源码（UserDefaults/AppStorage/SceneSettings key/`Sources/NextThoughtCore/Backup.swift` 的 exportedKeys 并集）提取，当前 **113 / 113**；其中「已实现、未验证」**101** 项、「本版不做」**12** 项。
+Mac 六页设置共 **114** 个偏好键。本表由 `Windows/scripts/settings_parity.py` 从 Swift 源码（UserDefaults/AppStorage/SceneSettings key/`Sources/NextThoughtCore/Backup.swift` 的 exportedKeys 并集）提取，当前 **114 / 114**；其中「已实现、未验证」**101** 项、「未做」**1** 项、「本版不做」**12** 项。
 
 复算命令（在仓库根目录运行）：
 
@@ -9,7 +9,7 @@ python Windows/scripts/settings_parity.py          # 校验键集、默认值与
 python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences.g.cs 与本表
 ```
 
-测试锁定这些数字：`Windows/tests/NextThought.Core.Tests/SettingsParityDefaultsTests.cs` 逐个断言类型、默认值与取值范围；`Windows/tests/NextThought.Tests/SettingsParityTableTests.cs` 断言本表 113 行与注册表一致，并断言 `SettingsStore` 写出的 settings.json 使用 Mac 键名且默认值逐个相同。
+测试锁定这些数字：`Windows/tests/NextThought.Core.Tests/SettingsParityDefaultsTests.cs` 逐个断言类型、默认值与取值范围；`Windows/tests/NextThought.Tests/SettingsParityTableTests.cs` 断言本表行数与注册表一致，并断言 `SettingsStore` 写出的 settings.json 使用 Mac 键名且默认值逐个相同。
 
 | 键名 | 默认类型 | 默认值 | Mac 设置视图 | Windows 状态 |
 |---|---|---|---|---|
@@ -118,6 +118,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | `teleprompterFontSize` | Real | 22 | 设置 → 提词与教练 → 提词·字号（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.TeleprompterFontSize（Mac 默认 22，范围 14–36）；WindowLayout 启动从 settings 读取、改动回写 settings.json；行为：TeleprompterWindow 字号（Views/TeleprompterWindow.axaml.cs）；设置页控件待 E29；接入任务：E29（设置页控件；提词浮窗已接入） |
 | `teleprompterHideBackground` | Bool | false | 设置 → 提词与教练 → 提词（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.TeleprompterHideBackground；SettingsStore 读写；行为：TeleprompterWindow 隐藏背景只留文字/边框/按钮（C15） |
 | `teleprompterOpacity` | Real | 1.0 | 设置 → 高级 → 提词·不透明度（SettingsPresenter.swift CueAdvanced） | 已实现、未验证｜AppSettings.TeleprompterOpacity（Mac 默认 1.0，范围 0.35–1）；WindowLayout 启动从 settings 读取、改动回写 settings.json；行为：TeleprompterWindow 不透明度（Views/TeleprompterWindow.axaml.cs 保留 0.35 下限）；设置页控件待 E29；接入任务：E29（设置页控件；提词浮窗已接入） |
+| `textZoom` | Real | 1（档位 0.9 / 1 / 1.1 / 1.2 / 1.3 / 1.45） | 全局文字缩放（DesignSystem.swift TextZoom；菜单 Ctrl + / − / 0） | 未做｜Mac 3.4.0 新增：TextZoom 六档全局缩放，Ctrl + / − / 0，提词岛与回答浮窗保留自己的大小按钮（J7）；Windows 尚未实现缩放，本键还没有读写路径与行为消费者 |
 | `transcriptionBackend` | String | "zipformer" | 设置 → 高级 → 声音与识别·引擎（SettingsAdvanced.swift SoundAdvanced） | 已实现、未验证｜MacPreferenceMap↔AppSettings.CloudStt（zipformer=本地、cloud=CloudStt 云端；apple 在 Windows 无对应——允许的差异「系统语音识别」不显示）；SettingsStore 读写；行为：AppState.Audio；允许的差异：apple（系统语音识别）在 Windows 不显示 |
 | `updateChannel` | String | "stable" | 设置 → 高级 → 更新·更新渠道（SettingsView.swift UpdateAdvanced） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "stable"）；缺口：Windows 更新渠道在 AppState.Update 的运行时选择（UpdateChannels 列表）里，未落盘读取该键；接入任务：E25 |
 | `updateRepository` | String | "OmnixSI/NextThought" | 设置 → 高级 → 更新 → GitHub 访问·仓库（SettingsView.swift GitHubAccessSection） | 已实现、未验证｜MacPreferenceMap↔AppSettings.UpdateRepository（E27 GitHub 访问区：仓库输入 + 访问令牌存 DPAPI 凭据，Mac github.token）；SettingsStore 读写；缺口：Windows 更新源仍由 UpdateFeedPolicy 固定仓库，更新客户端未读取该设置（等待 F 组更新任务）；接入任务：E25 |

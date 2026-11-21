@@ -1,3 +1,14 @@
+## 2026-11-21 · 0.5.145 → 0.9.0 收尾 · 阶段 0：合并 Mac v3.4.0 基准、重建跟踪文件
+改动：
+- **合并 Mac v3.4.0**：`origin/main`（`f015e8c6`，v3.4.0）合入 `windows/parity`（merge commit `fce653c7`，无冲突）。`Sources/`、`Tests/`、`Resources/` 现为 3.4.0 内容，仍只读；Mac Core 测试从 592 增至 **604**（新增 LiveNotesTests、UtteranceTextTests、SpeakerClustering 增补）。
+- **版本引用**：`Windows/UPSTREAM`（`f015e8c6` / v3.4.0 / 发布版本 0.9.0）、`FIX_TASKS.md` 顶部、`FEATURE_PARITY.md` 顶部改为 v3.4.0（`f015e8c6`）；PR #32 标题与说明同步。
+- **重新生成**：`scan_views.py` 对 3.4.0 源码重扫 → `VIEW_PARITY.md` **281** 行（3.4.0 新增 `LineSpeakerMenu`、`LineEditSheet`、`FeaturePicker`、`FeatureReset`、实时纪要/Home 相关等 8 个视图）；`settings_parity.py` 对 3.4.0 源码重算 → **114** 个 Mac 偏好键（3.4.0 新增 `textZoom`，Windows 尚未实现，状态「未做」，脚本新增 `todo` 状态支持且不写入生成的注册表）。
+- **状态纠正（任务书 §3.4）**：B24（时区）、A6（UUID 大写）、A11（修订号）、A15（夹具校验）、A16（备份往返/win-export）、C5–C9（提词岛）、C1/C12（视图未做）、全部 D 组与 E 组（第 6 节点名页面：首页/会中/提词岛/准备/纪要/系列/设置/引导/所有记录/术语表/导出/备份复核/字幕条/提词浮窗/编辑器等）改回「未做」，并在未解决列写明复核原因；注：它们要按 3.4.0 重做逐元素对照与本机实测后才可再升级。
+- **新增任务组**：`FIX_TASKS.md` 增加 J1–J9（3.4.0 差异，§7）、K1–K16（本机实测，§9）、R1–R8（发布，§10），均初始「未做」。当前 181 行：**未做 88、已实现、未验证 92、已验证 0、本版不做 1**。
+- **基线**（东八区，阶段 0 结束时）：`verify.ps1 -SkipScreenshots` PASS；`NextThought.Core.Tests` **1668/1668**；`NextThought.Tests` **535/535**。UTC 时区下尚有任务书 §4.6 点名的 3 项待修（B24，改回「未做」）。
+证据：本提交；`VIEW_PARITY.md`（281 行）、`SETTINGS_PARITY.md`（114 键：101 已实现、12 本版不做、1 未做）、`FIX_TASKS.md`。
+未解决：Stage 1 数据层（4.1–4.7）先写失败测试再改；Stage 2+ 界面与 J/K/R 全部未开始。
+
 ## 2026-11-21 · 0.5.145 · 第五波：外部材料接入 —— A11/A12/A15/A16/D1 收尾
 改动（人与代理在 `windows/parity` 上的提交）：
 - **Mac 外部材料到位**（人推 `b1031e9e`、`1956ed7f`、`99c1c94c`）：`Windows/tests/Fixtures/mac/`（A15 夹具 24 文件，Mac 上由 `MacCodec emit` 用 NextThoughtCore 真实类型生成，含 `revisions.json` A11 期望值与 README 环境/哈希/格式差异）、`Windows/tests/Fixtures/mac-backup/`（A16 备份夹具 zip：all-scenarios 全量 + 三个系列导出 + Backups 恢复点链 + data/ + session-export 输出 + SHA-256 清单）、`Windows/validation/mac-screens/`（93 张 Mac 3.4.0 浅/深参考截图）。

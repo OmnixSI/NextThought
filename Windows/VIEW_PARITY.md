@@ -1,6 +1,6 @@
 # Windows / Mac 视图对照（VIEW_PARITY）
 
-由 `Windows/scripts/scan_views.py` 从 `Sources/NextThought/` 扫描生成，共 **273** 个 `: View` 类型。
+由 `Windows/scripts/scan_views.py` 从 `Sources/NextThought/` 扫描生成，共 **281** 个 `: View` 类型。
 状态只用第 4 节四态；没有实机人工对照，因此没有「已验证」。
 页面级对应文件按 Mac 页面文件映射；子视图只有在 `IMPLEMENTED` 表里真正移植并出过截图的才写「已实现、未验证」，其余保持「未做」。
 
@@ -51,6 +51,7 @@
 | `Sources/NextThought/LiveTranslation.swift` | `LiveTranslationHosts` | E11 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/translation/` |
 | `Sources/NextThought/LiveTranslation.swift` | `LiveTranslationToggle` | E11 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/translation/` |
 | `Sources/NextThought/LiveTranslation.swift` | `TranslationLaneHost` | E11 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/translation/` |
+| `Sources/NextThought/SpeakerViews.swift` | `LineSpeakerMenu` | E12 | — | 未做 | — |
 | `Sources/NextThought/SpeakerViews.swift` | `MeEditor` | E12 | Views/SpeakerEditorWindow.axaml | 已实现、未验证 | `Windows/validation/screens/speakers/` |
 | `Sources/NextThought/SpeakerViews.swift` | `MyVoiceSettings` | E12 | Views/MyVoiceWindow.axaml | 已实现、未验证 | `Windows/validation/screens/speakers/` |
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerEditor` | E12 | Views/SpeakerEditorWindow.axaml | 已实现、未验证 | `Windows/validation/screens/speakers/` |
@@ -83,6 +84,7 @@
 | `Sources/NextThought/NotesPageView.swift` | `AIHeadingText` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `ConfirmBadge` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `CorrectedTranscript` | E15 | Views/CorrectedTranscriptView.axaml | 已实现、未验证 | `Windows/validation/screens/CorrectedTranscript/` |
+| `Sources/NextThought/NotesPageView.swift` | `LineEditSheet` | E15 | Views/NotesView.axaml | 未做 | — |
 | `Sources/NextThought/NotesPageView.swift` | `MeetingPage` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesBody` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
 | `Sources/NextThought/NotesPageView.swift` | `NotesItemEditSheet` | E15 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/notes/` |
@@ -122,6 +124,8 @@
 | `Sources/NextThought/PrepareView.swift` | `CheckCard` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `CheckRow` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `Chip` | E2 | — | 未做 | — |
+| `Sources/NextThought/PrepareView.swift` | `FeaturePicker` | E2 | — | 未做 | — |
+| `Sources/NextThought/PrepareView.swift` | `FeatureReset` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `FileRow` | E2 | — | 未做 | — |
 | `Sources/NextThought/PrepareView.swift` | `MaterialsActions` | E2 | Views/PrepareView.axaml | 已实现、未验证 | `Windows/validation/screens/prepare/` |
 | `Sources/NextThought/PrepareView.swift` | `MaterialsBlock` | E2 | — | 未做 | — |
@@ -234,6 +238,7 @@
 | `Sources/NextThought/LiveSessionView.swift` | `EvidenceDetails` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `EvidenceLine` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveComposer` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
+| `Sources/NextThought/LiveSessionView.swift` | `LiveNotesColumn` | E4 | Views/LiveView.axaml | 未做 | — |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveSessionView` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `LiveTopBar` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `NotesOnlyColumn` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
@@ -252,6 +257,9 @@
 | `Sources/NextThought/LiveSessionView.swift` | `WebSources` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `WebStatusLine` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveWindowController.swift` | `LiveWindowMenu` | E4 | — | 未做 | — |
+| `Sources/NextThought/MeetingStatsViews.swift` | `HomeStats` | E4 | — | 未做 | — |
+| `Sources/NextThought/MeetingStatsViews.swift` | `SeriesStatsLine` | E4 | — | 未做 | — |
+| `Sources/NextThought/MeetingStatsViews.swift` | `StatFigure` | E4 | — | 未做 | — |
 | `Sources/NextThought/AssistantView.swift` | `AnswerBody` | E5 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/AssistantView.swift` | `AnswerEvidenceDetails` | E5 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/AssistantView.swift` | `AnswerFooter` | E5 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
@@ -280,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | — | 未做 | — |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**273** 个视图；已有 Windows 页面 **150** 个，其余 **123** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **150** 个，其余 **131** 个待做。
