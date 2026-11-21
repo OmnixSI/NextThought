@@ -770,8 +770,9 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
         // GlossaryView.swift: the scope is the 全局 / 当前系列 segmented control, not a second list.
-        Assert.Contains("GlossaryScopeSeriesLabel", xaml);
-        Assert.Contains("ScopeSeries_Click", xaml);
+        // E22 now uses the design-system InkSegmented (items set in code-behind) instead of hand-made buttons.
+        Assert.Contains("ScopeSeg", xaml);
+        Assert.Contains("InkSegmented", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("AddGlossaryToSeries", state);
     }
