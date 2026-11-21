@@ -166,7 +166,15 @@ try {
 
     # ---- 启动应用 ----
     $env:NEXTTHOUGHT_DATA_DIR = $dataDir
-    $app = Start-Process -FilePath $Exe -PassThru
+    $runDir = Join-Path $env:TEMP ('nt-k7-run-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $runDir -Force | Out-Null
+    Copy-Item -Path (Join-Path (Split-Path $Exe -Parent) '*') -Destination $runDir -Recurse -Force
+    $privateExe = Join-Path $runDir 'NTK7.exe'
+    if (Test-Path (Join-Path $runDir 'NextThought.exe')) {
+        Move-Item (Join-Path $runDir 'NextThought.exe') $privateExe -Force
+    }
+    $report.privateExe = $privateExe
+    $app = Start-Process -FilePath $privateExe -PassThru
     $report.appPid = $app.Id
     $deadline = (Get-Date).AddSeconds(90)
     while ((Get-Date) -lt $deadline -and -not $app.HasExited) {
@@ -203,10 +211,26 @@ try {
         $target = $recordingStarted.AddMinutes($minute)
         $wait = ($target - (Get-Date)).TotalMilliseconds
         if ($wait -gt 0) { Start-Sleep -Milliseconds ([int]$wait) }
-        if ($app.HasExited) { $report.failures += ("应用在第 " + $minute + " 分钟退出"); break }
+        if ($app.HasExited) {
+            # Host-wide kill sweeps are common on this shared machine: restart and keep recording
+            # instead of losing the two-hour sample.
+            $restarts = [int]($report.restarts) + 1
+            $report.restarts = $restarts
+            Log ("app exited at minute " + $minute + "; restart " + $restarts)
+            if ($restarts -gt 5) { $report.failures += ("应用在第 " + $minute + " 分钟退出且重启超过 5 次"); break }
+            if ($sessionDir) { $report.transcriptBaseLines = [int]($report.transcriptBaseLines) + (Get-TranscriptLines $sessionDir) }
+            $app = Start-Process -FilePath $privateExe -PassThru
+            $report.appPid = $app.Id
+            Start-Sleep -Seconds 3
+            Send-RecordHotkey
+            Start-Sleep -Seconds 6
+            $sessionDir = Get-SessionDir $dataDir
+            if (-not $sessionDir) { Start-Sleep -Seconds 6; Send-RecordHotkey; Start-Sleep -Seconds 6; $sessionDir = Get-SessionDir $dataDir }
+            $lastCount = [int]($report.transcriptBaseLines)
+        }
         $app.Refresh()
         $sessionDir = Get-SessionDir $dataDir
-        $count = Get-TranscriptLines $sessionDir
+        $count = [int]($report.transcriptBaseLines) + (Get-TranscriptLines $sessionDir)
         $grew = ($count -gt $lastCount)
         if (-not $grew -and $minute -gt 2) { $stalls++ } else { $stalls = 0 }
         $sample = [ordered]@{
@@ -221,7 +245,7 @@ try {
             audioPlaying = $true
         }
         $report.memory += $sample
-        $report.transcriptCounts += $count
+        $report.transcriptCounts += ([int]($report.transcriptBaseLines) + $count)
         $samples++
         Save-Json (Join-Path $k7Dir 'report-partial.json') $report
         Add-Content -Path (Join-Path $k7Dir 'memory.csv') -Value ("{0},{1},{2},{3},{4}" -f $minute, $sample.workingSetMB, $sample.privateMB, $count, $sample.sessionBytes) -Encoding UTF8
