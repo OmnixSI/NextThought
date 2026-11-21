@@ -61,7 +61,7 @@ public sealed class AssistantParityTests
         var panel = Read("Views", "Assistant", "AnswerHistoryPanel.axaml");
         Assert.Contains("{Binding AnswerHistoryRows}", panel);
         Assert.Contains("{loc:Tr 回到最新}", panel);
-        Assert.Contains("{loc:Tr 历史回答}", panel);
+        Assert.Contains("{loc:Tr 回答记录}", panel);
         Assert.Contains("Classes.active=\"{Binding Shown}\"", panel);
     }
 

@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.PartialBubbles"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+    <Border Classes="card" Padding="{DynamicResource D4Padding_10_8}" HorizontalAlignment="Left" MaxWidth="320"
+            BorderBrush="{DynamicResource Hairline}" BorderThickness="1"
+            IsVisible="{Binding SystemPartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                   Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SystemPartial}" FontSize="13" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card" Padding="{DynamicResource D4Padding_10_8}" HorizontalAlignment="Right" MaxWidth="320"
+            BorderBrush="{DynamicResource Hairline}" BorderThickness="1"
+            IsVisible="{Binding MicrophonePartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="{StaticResource IconWaveform}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                   Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding MicrophonePartial}" FontSize="13" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1116;
+    public const int Count = 1134;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1128,5 +1128,23 @@ internal static class UiTextWindowsEnglish
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
         ["语义模型路径无效。"] = "The semantic model path is invalid.",
+        ["当前问题与候选"] = "Current question & candidates",
+        ["回答记录"] = "Answer history",
+        ["合并回主窗口"] = "Merge back into the main window",
+        ["问题置信度"] = "Question confidence",
+        ["对话在左 · 回答在右（默认）"] = "Conversation left · answer right (default)",
+        ["回答在左 · 对话在右"] = "Answer left · conversation right",
+        ["讲稿在左 · 回答在右（演讲 / 答辩）"] = "Script left · answer right (talk / defense)",
+        ["单栏上下排列（小屏）"] = "Single column, stacked (small screen)",
+        ["只看回答"] = "Answer only",
+        ["回答过的问题会按时间列在这里，点一下就能回看当时的回答。"] = "Answered questions are listed here by time; click one to review that answer.",
+        ["未在采集"] = "Not capturing",
+        ["左侧灰色为对方（系统声音），右侧彩色为我（麦克风）"] = "Gray on the left is the other side (system audio); the colored right side is me (microphone)",
+        ["识别为问题的句子会标出；把鼠标移到任意一句上可以「回答这句」"] = "Sentences recognized as questions are marked; hover one to answer it",
+        ["原始音频不保存；转写与回答保存在「记录」里"] = "Raw audio is not saved; transcripts and answers are kept in Records",
+        ["自动滚动到最新（点击暂停）"] = "Auto-scroll to the newest (click to pause)",
+        ["已暂停自动滚动（点击恢复）"] = "Auto-scroll paused (click to resume)",
+        ["自动滚动到最新"] = "Auto-scroll to the newest",
+        ["已暂停自动滚动"] = "Auto-scroll paused",
     };
 }

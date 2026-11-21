@@ -37,3 +37,22 @@
 - 独立窗口里的「实时对话」是紧凑列表，不是 Mac 的气泡布局；窗口尺寸 question 比 Mac 高 40。
 - Mac 的「合并回主窗口」按钮文案在 Windows 用「关闭」（关闭即合并，行为一致）。
 - 模块布局的拖动改列/拖拽调权重未做（模型支持 place/weight，UI 只提供预设与弹出/合并）。
+
+
+## E5 补全段（task-42 收尾）
+
+本次补齐上一节列出的五个缺口：
+
+1. **模块预设菜单文案**：`LiveView.axaml` 的五个预设按钮改为 Mac `AssistantLayout.Preset.title` 原句（对话在左 · 回答在右（默认）/ 回答在左 · 对话在右 / 讲稿在左 · 回答在右（演讲 / 答辩）/ 单栏上下排列（小屏）/ 只看回答）；模块菜单标题同时改为 Mac `AssistantModule.title`（问题 → 当前问题与候选，历史回答 → 回答记录，另两项原本已对）。这些句子在 Mac 源码里是裸字面量、不在 xcstrings，因此英文用 Windows 替换表条目（UiTextWindows，共 18 条，Count 1116→1134）。
+2. **回答历史空态说明句**：`Views/Assistant/AnswerHistoryPanel.axaml` 在无记录时显示 Mac 原句「回答过的问题会按时间列在这里，点一下就能回看当时的回答。」；有记录时才显示列表（`IsVisible` 绑定 `HasSessionAnswerHistory`）。
+3. **置信度条阈值换色**：`DetectionStrip.axaml.cs` 按 Mac ConfidenceBar 阈值更新填充色——≥0.6 绿（Ready）、≥0.4 橙（Caution）、否则次级灰（Tertiary）；ToolTip 显示 Mac「问题置信度 N%」，随 `CandidateConfidence` 变化刷新。
+4. **独立模块窗口「实时对话」气泡布局**：新建四个 Mac 同名控件 `Views/Assistant/ConversationPanel`、`ConversationBubble`、`EmptyConversationHint`、`PartialBubbles`；`DetachedModuleWindow` 的实时对话改为该 `ConversationPanel`：标题「实时对话」+ 条数 + 跟随/暂停跟随按钮（自动滚到最新）、转写状态行、我的气泡靠右着色（AiSoft）、对方靠左（TranscriptBubble）、问题气泡带「问题」徽标+时间、悬停对方句显示「回答这句」（填问题并立即回答）、回声行灰显、空态 Mac 原句、两条部分转写虚线气泡。
+5. **question 模块窗口高度**：`DetachedModuleWindow` 尺寸改回 Mac `DetachedModules.defaultSize`——question 520×160（原 200），conversation 420×560、answer 560×480、history 380×460、insights 440×520 保持；窗口标题也设为 Mac 模块标题（原来 Question/History 标题是旧中文）。
+
+点按记录（`--demo --self-test=assistant-ui`，2026-11-21 09:35 跑）：passed=true，22 项检查通过；独立窗口截图重拍为 `module-answer/history/question.png`（question 窗口已是 520×160）。自测进程在打印 `assistant-ui-check: passed` 后没有自行退出（需手动结束），已记录为未解决项。
+
+未解决：
+- 「合并回主窗口」按钮文案按 Mac，但窗口仍用 `Close` 走关闭-合并路径（行为一致）。
+- 气泡着色用现有 AiSoft / TranscriptBubble token 近似 Mac 的 accent/primary 透明度（0.16/0.08/0.06 未新增主题资源）。
+- 回声行的「是我说的」按钮没有搬：Windows 没有把回声句重新纳入转写的对应 API（Mac markNotEcho），只显示灰显行。
+- `--self-test=assistant-ui` 结束后进程不自动退出（本次靠手动结束），未在代码里改自测关闭路径。

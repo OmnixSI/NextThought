@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
+             x:Class="NextThought.Desktop.Views.Assistant.ConversationPanel"
+             x:DataType="local:AppState">
+  <Border Classes="card" Padding="{DynamicResource D4Padding_10}">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="{DynamicResource D4Spacing_8}">
+      <!-- Mac ConversationPanel header: 实时对话, entry count, follow toggle. -->
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+          <TextBlock Text="{StaticResource IconBubbleLeftAndBubbleRight}" FontFamily="{StaticResource IconFont}" FontSize="13"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <TextBlock Text="{loc:Tr 实时对话}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding Transcript.Count}" Classes="caption" FontSize="11"
+                   Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+        <Button Grid.Column="3" x:Name="FollowButton" Classes="quiet" FontSize="11" Click="Follow_Click" />
+      </Grid>
+
+      <!-- Mac TranscriptStatusLine: 未在采集 while not running. -->
+      <TextBlock Grid.Row="1" Text="{Binding LiveListeningStatus}" Classes="caption" FontSize="11"
+                 Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" />
+
+      <ScrollViewer Grid.Row="2" x:Name="ConversationScroll" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+          <assistant:EmptyConversationHint IsVisible="{Binding !HasTranscript}" />
+          <ItemsControl ItemsSource="{Binding Transcript}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:TranscriptRow">
+                <assistant:ConversationBubble />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <assistant:PartialBubbles />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Border>
+</UserControl>

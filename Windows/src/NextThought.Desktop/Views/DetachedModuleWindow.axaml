@@ -17,8 +17,8 @@
         <TextBlock x:Name="ModuleTitle" FontSize="12" FontWeight="SemiBold"
                    Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
       </StackPanel>
-      <Button Grid.Column="1" Classes="chip" Content="{loc:Tr 关闭}" FontSize="11" Click="Dock_Click"
-              ToolTip.Tip="{loc:Tr 独立窗口}" />
+      <Button Grid.Column="1" Classes="chip" Content="{loc:Tr 合并回主窗口}" FontSize="11" Click="Dock_Click"
+              ToolTip.Tip="{loc:Tr 合并回主窗口}" />
     </Grid>
 
     <Grid Grid.Row="1" Margin="{DynamicResource D4Margin_8_0_8_8}">
@@ -35,22 +35,7 @@
         <assistant:AnswerHistoryPanel />
       </ScrollViewer>
       <!-- 实时对话 -->
-      <Grid x:Name="ConversationPanel" IsVisible="False" RowDefinitions="*,Auto">
-        <ListBox ItemsSource="{Binding Transcript}" Background="Transparent">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="local:TranscriptRow">
-              <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_4}">
-                <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{DynamicResource Tertiary}" />
-                <TextBlock Text="{Binding Text}" FontSize="13" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Translation}" FontSize="11" Foreground="{DynamicResource Ai}"
-                           IsVisible="{Binding HasTranslation}" TextWrapping="Wrap" />
-              </StackPanel>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-        <TextBlock Grid.Row="1" Text="{Binding MicrophonePartial}" Classes="caption" IsVisible="False" />
-      </Grid>
-      <!-- 建议回答 -->
+      <assistant:ConversationPanel x:Name="ConversationPanel" IsVisible="False" />
       <ScrollViewer x:Name="AnswerPanel" IsVisible="False" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="{DynamicResource D4Spacing_8}">
           <assistant:ScreenshotCard />

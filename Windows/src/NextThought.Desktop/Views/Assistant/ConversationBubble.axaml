@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.ConversationBubble"
+             x:DataType="local:TranscriptRow">
+  <Grid x:Name="Root" Margin="{DynamicResource D4Margin_0_0_0_8}" PointerEntered="Root_PointerEntered"
+        PointerExited="Root_PointerExited">
+    <!-- Mac ConversationBubble.echoLine: suspected echo of the other side, dimmed with 是我说的. -->
+    <StackPanel x:Name="EchoLine" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                HorizontalAlignment="Right" IsVisible="False">
+      <TextBlock Text="{StaticResource IconSpeakerWave2}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                 Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+      <TextBlock x:Name="EchoText" FontSize="11.5" Foreground="{DynamicResource Tertiary}" MaxLines="1"
+                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- Mac ConversationBubble.bubble: a bubble on the left for the other side, right for me. -->
+    <StackPanel x:Name="Bubble" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" IsVisible="False">
+      <StackPanel x:Name="BubbleColumn" Spacing="{DynamicResource D4Spacing_3}">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}">
+          <StackPanel x:Name="QuestionBadge" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}"
+                      IsVisible="False">
+            <TextBlock Text="{StaticResource IconQuestionmarkBubble}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                       Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 问题}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource Ai}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock x:Name="TimeText" FontSize="9.5" FontFamily="{StaticResource MonoFamily}"
+                     Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border x:Name="BubbleBorder" CornerRadius="{DynamicResource D4CornerRadius_14}"
+                Padding="{DynamicResource D4Padding_10_8}" MaxWidth="380">
+          <TextBlock x:Name="BodyText" FontSize="13" LineHeight="18" TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
+      <Button x:Name="AnswerThisButton" Classes="chip" Content="{loc:Tr 回答这句}" FontSize="11"
+              VerticalAlignment="Bottom" IsVisible="False" Click="AnswerThis_Click" />
+    </StackPanel>
+  </Grid>
+</UserControl>

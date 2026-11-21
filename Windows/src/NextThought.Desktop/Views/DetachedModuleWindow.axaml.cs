@@ -34,6 +34,7 @@ public partial class DetachedModuleWindow : Window
     private void ApplyModule()
     {
         ModuleTitle.Text = UiText.T(TitleFor(module));
+        Title = UiText.T(TitleFor(module));
         ModuleIcon.Text = Application.Current?.TryFindResource(IconFor(module), out var icon) == true
             ? icon as string ?? ""
             : "";
@@ -52,7 +53,7 @@ public partial class DetachedModuleWindow : Window
         };
         Height = module switch
         {
-            AssistantModule.Question => 200,
+            AssistantModule.Question => 160,
             AssistantModule.History => 460,
             AssistantModule.Conversation => 560,
             AssistantModule.Insights => 520,
@@ -64,9 +65,9 @@ public partial class DetachedModuleWindow : Window
     public static string TitleFor(AssistantModule module) => module switch
     {
         AssistantModule.Conversation => "实时对话",
-        AssistantModule.Question => "问题",
+        AssistantModule.Question => "当前问题与候选",
         AssistantModule.Answer => "建议回答",
-        AssistantModule.History => "历史回答",
+        AssistantModule.History => "回答记录",
         _ => "屏幕与讲稿"
     };
 

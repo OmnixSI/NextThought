@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.EmptyConversationHint"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_10_0_10}">
+    <TextBlock Text="{loc:Tr 开始记录后，参与者的发言会实时出现在这里。}" FontSize="12" TextWrapping="Wrap" />
+    <TextBlock Text="{loc:Tr 左侧灰色为对方（系统声音），右侧彩色为我（麦克风）}" FontSize="11"
+               Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+    <TextBlock Text="{loc:Tr 识别为问题的句子会标出；把鼠标移到任意一句上可以「回答这句」}" FontSize="11"
+               Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+    <TextBlock Text="{loc:Tr 原始音频不保存；转写与回答保存在「记录」里}" FontSize="11"
+               Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>
