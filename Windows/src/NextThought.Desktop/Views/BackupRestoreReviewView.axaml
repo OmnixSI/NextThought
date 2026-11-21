@@ -5,6 +5,25 @@
              x:Class="NextThought.Desktop.Views.BackupRestoreReviewView"
              x:DataType="local:BackupReviewModel"
              Background="{DynamicResource Paper}">
+  <UserControl.Styles>
+    <!-- Mac SecondaryButtonStyle: a hairline-bordered surface button, 32 pt tall. -->
+    <Style Selector="Button.secondary">
+      <Setter Property="Height" Value="32" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.secondary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    </Style>
+  </UserControl.Styles>
   <DockPanel Margin="24">
     <StackPanel DockPanel.Dock="Bottom" Spacing="16" Margin="0,16,0,0">
       <CheckBox Content="{loc:Tr 同时导入偏好设置}" IsChecked="{Binding ApplySettings, Mode=TwoWay}" IsEnabled="{Binding !Busy}" />
@@ -16,7 +35,7 @@
           <TextBlock Text="{loc:Tr 正在恢复，请保留此窗口…}" Classes="caption" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-          <Button Content="{loc:Tr 取消}" Click="Cancel_Click" IsEnabled="{Binding !Busy}" />
+          <Button Content="{loc:Tr 取消}" Classes="secondary" Click="Cancel_Click" IsEnabled="{Binding !Busy}" />
         </StackPanel>
         <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 应用所选内容}" Click="Apply_Click" IsEnabled="{Binding !Busy}" />
       </Grid>
