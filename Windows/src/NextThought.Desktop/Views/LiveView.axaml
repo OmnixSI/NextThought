@@ -297,7 +297,7 @@
     <!-- ===== Body: flat transcript column │ hairline │ right column (Mac HSplitView) ===== -->
     <Grid Grid.Row="3" ColumnDefinitions="11*,1,9*">
       <!-- 左栏: 实时对话 (Mac TranscriptColumn) — flat, no card, no shadow. -->
-      <Grid x:Name="LiveTranscriptColumn" Grid.Column="0" RowDefinitions="Auto,Auto,*,Auto">
+      <Grid x:Name="LiveTranscriptColumn" Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_16_24_0}">
           <TextBlock Text="{loc:Tr 实时对话}" Classes="overline" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="quiet" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
@@ -312,12 +312,43 @@
                              Margin="{DynamicResource LvMargin_16_12_16_0}"
                              IsVisible="{Binding LiveShowsInsightsPanel}" />
 
-        <ListBox Name="TranscriptList" Grid.Row="2" ItemsSource="{Binding Transcript}" Background="Transparent" SelectionMode="Single"
+        <!-- J6/Mac SpeakerStrip: one capsule per recognised person, "我是哪个？" until one is the
+             user, and the hint. Tapping a capsule opens the speaker editor. -->
+        <StackPanel x:Name="LiveSpeakerStrip" Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    Margin="{DynamicResource LvMargin_24_8_24_0}" IsVisible="{Binding LiveSpeakerStripVisible}">
+          <ItemsControl ItemsSource="{Binding SpeakerPeople}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SpeakerPersonRow">
+                <Button Classes="pill" Tag="{Binding}" Click="SpeakerChip_Click" MinHeight="{DynamicResource LvMinHeight_24}"
+                        Margin="{DynamicResource D4Margin_0_0_4_0}" ToolTip.Tip="{loc:Tr 点名字改名、合并或标成我}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource InkBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding DisplayLabel}" FontSize="12" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button x:Name="LiveWhoAmIButton" Classes="pill" MinHeight="{DynamicResource LvMinHeight_24}"
+                  Click="WhoAmI_Click" IsVisible="{Binding LiveAsksForMe}"
+                  ToolTip.Tip="{loc:Tr 还没认出你的声音：点一下，选出哪个是你}">
+            <TextBlock Text="{loc:Tr 我是哪个？}" FontSize="12" Foreground="{DynamicResource Secondary}" />
+          </Button>
+          <TextBlock Text="{Binding LiveSpeakerStripHint}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                     TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <ListBox Name="TranscriptList" Grid.Row="3" ItemsSource="{Binding Transcript}" Background="Transparent" SelectionMode="Single"
                  Margin="{DynamicResource LvMargin_24_16_24_8}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="local:TranscriptRow">
               <Grid Classes="transcript-row" ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_12}"
-                    Margin="{DynamicResource LvMargin_0_0_0_16}">
+                    Margin="{DynamicResource LvMargin_0_0_0_16}" PointerPressed="TranscriptRow_PointerPressed">
                 <!-- SpeakerLabel: 对方 / 我, with the 问题 capsule below a detected question. -->
                 <StackPanel MinWidth="40" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Top">
                   <TextBlock Text="{Binding SpeakerName}" Classes="speaker" Classes.me="{Binding SpeakerIsMe}" />
@@ -368,7 +399,7 @@
 
         <!-- Footer: the utterances still being recognised, follow banner, candidate strip and
              the status row with the privacy lock. -->
-        <StackPanel Grid.Row="3">
+        <StackPanel Grid.Row="4">
           <!-- PartialLines (Mac): the two lanes still being recognised, shown in the secondary
                colour at the end of the transcript. -->
           <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource LvMargin_24_0_24_4}"

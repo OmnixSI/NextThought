@@ -112,6 +112,19 @@ public partial class MainWindow
             Check(livePage is not null, "the live page is mounted");
             Check(livePage?.FindControl<RadioButton>("LiveNotesTab") is not null,
                 "the right column has the 实时纪要 tab");
+            // J6: the Mac SpeakerStrip and the per-row speaker names.
+            Check(livePage?.FindControl<StackPanel>("LiveSpeakerStrip") is not null,
+                "the live page has the Mac speaker strip");
+            Check(state.LiveSpeakerStripVisible == (state.SpeakerPeople.Count > 0),
+                "the speaker strip follows the recognised people");
+            Check(state.LiveAsksForMe ==
+                  (state.SpeakerPeople.Count > 0 && state.SpeakerPeople.All(person => !person.IsMe)),
+                "我是哪个？ follows Mac asksForMe");
+            state.RefreshLiveSpeakerNames();
+            Check(state.Transcript.All(row => row.SpeakerName.Length > 0),
+                "every live transcript row has a speaker name");
+            Check(livePage?.FindControl<Button>("LiveWhoAmIButton") is not null,
+                "the live page has the 我是哪个？ capsule");
             Check(livePage?.SelectRightTabForCheck("live-notes") == true, "实时纪要 tab can be selected");
             await Task.Delay(250);
             await PumpAsync();

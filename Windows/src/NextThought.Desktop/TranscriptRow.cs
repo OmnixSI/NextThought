@@ -25,27 +25,32 @@ public partial class TranscriptRow : ObservableObject
         Date = line.Date;
         IsEcho = line.SuspectedEcho == true;
         Voice = line.Voice;
+        IsMeVoice = line.Speaker == "me";
+        SpeakerName = DefaultSpeakerName;
     }
 
     public Guid Id { get; }
     public string Speaker { get; }
     public DateTimeOffset Date { get; }
     [ObservableProperty] private bool isEcho;
-    public int? Voice { get; }
+    [ObservableProperty] private int? voice;
     [ObservableProperty] private string label;
     [ObservableProperty] private string text;
     [ObservableProperty] private string translation;
     [ObservableProperty] private bool isHighlighted;
+    [ObservableProperty] private string speakerName;
+    [ObservableProperty] private bool isMeVoice;
     public string TranslationRaw { get; }
     public bool HasTranslation => Translation.Length > 0;
     public bool IsSystem => Speaker == "remote";
 
     /// <summary>
-    /// E4/§6.5 Mac SpeakerLabel: the live transcript's speaker column is just 对方 / 我 / 现场.
+    /// E4/§6.5 Mac SpeakerLabel: the live transcript's speaker column is just 对方 / 我 / 现场 —
+    /// or the person's name once J6/E12 told the voices apart (Mac SpeakerTag).
     /// The timestamp and the old 「系统声音 · 麦克风」 wording are not part of the Mac live page
     /// (they stay on <see cref="Label"/> for the transcript views that still show them).
     /// </summary>
-    public string SpeakerName => Speaker switch
+    private string DefaultSpeakerName => Speaker switch
     {
         "remote" => UiText.T("对方"),
         "room" => UiText.T("现场"),
@@ -53,7 +58,28 @@ public partial class TranscriptRow : ObservableObject
     };
 
     /// <summary>对方 uses the secondary colour, 我 the ink colour (Mac SpeakerLabel).</summary>
-    public bool SpeakerIsMe => Speaker != "remote" && Speaker != "room";
+    public bool SpeakerIsMe => IsMeVoice || (Speaker != "remote" && Speaker != "room");
+
+    /// <summary>
+    /// J6/Mac SpeakerTag: the live column shows the recognised voice's name (or 我 when the voice is
+    /// marked as the user); unnamed voices keep 对方 / 我 / 现场.
+    /// </summary>
+    public void ApplyLiveIdentity(string? name, bool isMe)
+    {
+        IsMeVoice = isMe;
+        SpeakerName = isMe
+            ? UiText.T("我")
+            : name is { Length: > 0 } && Speaker != "me" ? name : DefaultSpeakerName;
+        OnPropertyChanged(nameof(SpeakerIsMe));
+        OnPropertyChanged(nameof(IsQuestion));
+    }
+
+    /// <summary>J6: one line moved to another voice by hand (Mac assignLine).</summary>
+    public void MoveToVoice(int? target)
+    {
+        Voice = target;
+        Label = BuildLabel();
+    }
 
     /// <summary>E4/QuestionMark: the detector sees a question in this line (remote speakers only).</summary>
     public bool IsQuestion => Speaker != "me" && !IsEcho && QuestionDetector.LooksLikeQuestion(Text);

@@ -42,6 +42,17 @@
 | 2.12 | 状态行 `TranscriptStatus`：高 36、`padding horizontal 24`、caption 12 secondary；音源（Zoom · 后端工程师二面）、识别引擎、· 麦克风、· N 句回声已忽略、遗漏段（caution）、麦克风未开（caution）、最右 lock 图标 tooltip 隐私说明 | `AudioSourceText` + `LiveAudioEngineLabel` + `LiveMicrophoneSuffix`（`LiveUsesMicrophone`）+ `EchoDroppedText` + `DroppedSegmentsText`（Caution）+ `LiveMicOffText`（Caution）+ 右 `IconLock` tooltip 隐私说明；高 36 | 一致 |
 | 2.13 | 旧 Windows 说明行「系统声音与麦克风分别处理；只在本机保存文字。」 | 已删除 | 一致（Mac 无此句） |
 
+## 2.1 J6：说话人（Mac `SpeakerStrip` + `LineSpeakerMenu`，本轮接线）
+
+| # | Mac 元素 | Windows | 结论 |
+| --- | --- | --- | --- |
+| 2.1.1 | 转写上方 `SpeakerStrip`：每个已区分声音一个 24 高胶囊（说话人标记 + 名字/「我」） | `LiveSpeakerStrip`（`SpeakerPeople` 胶囊，24 高，`SpeakerChip_Click` 打开说话人编辑器），`LiveSpeakerStripVisible = SpeakerPeople.Count > 0` | 一致（胶囊用现有 E12 说话人编辑器承载改名/合并/标成我，Mac 是 popover） |
+| 2.1.2 | 还没认出「我」时虚线胶囊「我是哪个？」+ tooltip；点开列出各声音「N 句」 | `LiveWhoAmIButton`（`LiveAsksForMe` 时显示，`WhoAmI_Click` 打开说话人编辑器） | 基本一致（虚线边框 Avalonia Border 不支持 dashed，用普通胶囊） |
+| 2.1.3 | 右侧提示「点名字改名、合并或标成我」 | `LiveSpeakerStripHint` caption | 一致 |
+| 2.1.4 | 每句右键 `LineSpeakerMenu`：这句是谁说的 → 我 / 新说话人 / 每个已识别的人；另有回答这句、标记重点 | `TranscriptRow_PointerPressed`：右键弹出 回答这句 / 标记或取消重点 / 这句是谁说的（我 / 新说话人 / 每个人），点击走 `AssignLiveLineSpeakerAsync` | 一致 |
+| 2.1.5 | 说话人列显示声音名字（Mac `SpeakerTag`/`SpeakerLayout`） | `TranscriptRow.ApplyLiveIdentity`：`SpeakerName` 显示名字或「我」，`SpeakerIsMe` 决定墨色 | 一致 |
+| 2.1.6 | 改说话人只追加 `voices.jsonl` tag + 写 `meta.json` 的 voiceNames/meVoices，原始转写不动 | `SessionSpeakerEdits.AssignLine` → `Sessions.AppendVoiceTagAsync` + `Sessions.SetVoiceLabelAsync`；测试断言 `SessionSpeakerEdits.AssignLine` 不改变传入 lines 序列化字节（`SpeakerAssignmentLeavesTheRecognisedTranscriptUntouched`） | 一致 |
+
 ## 3. 右栏：实时纪要 / 问答 / 我的笔记（Mac `RightColumn`）
 
 | # | Mac 元素 | Windows | 结论 |
@@ -138,6 +149,7 @@ Windows 截图批次（`validation/screens/current/live-*.png`）只直接覆盖
 13. 深色模式下回答正文偏暗（几乎与卡片同色）：`Views/MarkdownText.cs` 的 `ResourceLookup.ByKey` 用 `Application.Current.TryFindResource` 解析 `InkBrush`，取到浅色主题值，没随 `ActualThemeVariant` 切换（实测 `dark.png` 正文像素 (35,35,34)、卡片底 (26,26,24)、左栏普通文字 (247,247,247)）。这是 §6.1 `MarkdownText` 组件缺陷，已报 Lead/§6.1 owner 修；本页用 `views:MarkdownText BaseFontSize=18`，组件修好后即正确。
 14. 本轮浅/深截图在独立 worktree（HEAD `7b7f8202` + 本任务文件）构建，因为共享工作区当时被提词岛任务的 WIP 文件卡住；截图里的标题栏/底部状态条是当时 HEAD 的 shell（§5.2/§5.4 由其他任务继续重做），不属于会中页元素。会中页本身来自本任务代码。
 15. 演示数据与 Mac 截图的数据差异（非布局差异）：Mac 截图底部有一句未定稿「如果删除缓存失败了怎么办」（Windows demo 的 partial 为空、显示在候选条），Mac 状态行音源是「Zoom · 后端工程师二面」而 demo 没有会议软件源（显示「所选系统输出设备混音 · 麦克风 · 在设置中调整」），回声计数 demo 为 0（Mac 1）。partial 行/候选条渲染已实现（自检断言 `SystemPartial`/`MicrophonePartial` 绑定存在）。
+16. J6 说话人：Mac 用 popover 编辑一个人，Windows 打开既有 `SpeakerEditorWindow`（E12 实现）；「我是哪个？」的虚线胶囊用普通胶囊（Avalonia Border 无 dashed 边），其余一致。演示数据没有 voice tag，所以截图里不出现说话人条（与 Mac live-light 截图相同），接线由结构测试与自检断言覆盖。
 
 ## 9. 截图与运行证据
 

@@ -8,7 +8,7 @@
 
 - 生成时间：2026-11-21
 - 生成方式：`python Windows/scripts/localization_scan.py --write`
-- Windows 独有/改写文案：**1171** 句（下表逐条）
+- Windows 独有/改写文案：**1204** 句（下表逐条）
 - Mac 共享文案：2,607 条，由生成的字符串表提供，文案逐字相同
 
 ## 1. 系统名词替换（允许与 Mac 不同）
@@ -1221,6 +1221,39 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 | 1171 | 每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。 | One action=key per line; saving re-registers immediately. Modifiers may include Ctrl/Alt/Shift/Win, and keys may be A–Z, 0–9, F1–F24, Left/Right/Up/Down/PageUp/PageDown/Space/Backslash. | — |  |
 
 
+| 1172 | 上一页 | Previous | — | LiveView.axaml（面板翻页提示） |
+| 1173 | 下一句： | Next: | — | InsightsPanel.axaml |
+| 1174 | 依据： | Based on: | — | LiveView.axaml |
+| 1175 | 听众可能会问（点一下提前准备回答） | Questions the audience may ask (tap to prepare an answer) | — | InsightsPanel.axaml |
+| 1176 | 展开识别的文字 | Show recognised text | — | InsightsPanel.axaml |
+| 1177 | 已讲 | Spoken | — | InsightsPanel.axaml |
+| 1178 | 已识别 · 是否用于回答见“本次依据” | Recognised · see “Based on” for whether it was used | — | InsightsPanel.axaml |
+| 1179 | 打开“屏幕感知”后，每隔几秒在本机识别屏幕文字：跟随你讲到 PPT 的哪一页并给出这一页的讲稿提示；屏幕上出现题目或代码时，判断是否和对话相关并纳入回答。屏幕在本机识别；相关文字与必要的当前画面会提供给回答引擎。 | With screen awareness on, the text on screen is recognised on this device every few seconds: it follows the slide you are on and offers talking points for that page. When a question or code appears on screen, it decides whether it relates to the conversation and includes it in answers. The screen is read on this device; the relevant text and, when needed, the current frame are provided to the answer engine. | — | InsightsPanel.axaml |
+| 1180 | 打开屏幕感知 | Turn on screen awareness | — | InsightsPanel.axaml |
+| 1181 | 收起 | Collapse | — | InsightsPanel.axaml |
+| 1182 | 正在根据这一页和你的资料写讲稿提示… | Writing talking points for this page from the slide and your materials… | — | InsightsPanel.axaml |
+| 1183 | 结束并整理纪要 | End and write notes | — | LiveView.axaml |
+| 1184 | 屏幕：%@ | Screen: %@ | — | AppState.Insights.cs |
+| 1185 | 题目 | Question | — | AppState.Insights.cs |
+| 1186 | 代码 | Code | — | AppState.Insights.cs |
+| 1187 | 文档 | Document | — | AppState.Insights.cs |
+| 1188 | 聊天 | Chat | — | AppState.Insights.cs |
+| 1189 | 视频通话 | Video call | — | AppState.Insights.cs |
+| 1190 | %lld 秒前 | %lld s ago | — | AppState.Insights.cs |
+| 1191 | 已讲 %lld/%lld | Spoken %lld/%lld | — | AppState.Insights.cs |
+| 1192 | 第 %lld / %lld 页 | Page %lld / %lld | — | AppState.Insights.cs |
+| 1193 | 实时纪要没有开 | Live notes are off | — | AppState.LivePage.cs |
+| 1194 | 还没有连接回答服务，写不了实时纪要 | No answer service is connected, so live notes cannot be written | — | AppState.LivePage.cs |
+| 1195 | 有了内容就开始整理 | It will start once there is something to summarise | — | AppState.LivePage.cs |
+| 1196 | 说上几句之后，这里会出现这场会的要点：在谈什么、定了什么、谁要做什么。 | After a few sentences this will show the meeting so far: what is being discussed, what was decided, who is doing what. | — | AppState.LivePage.cs |
+| 1197 | 这场没有开实时纪要。结束后仍会整理完整纪要；想边开边看要点，点右上角开启。 | Live notes are off for this meeting. Full notes are still written at the end; to see key points as you go, turn it on in the top right. | — | AppState.LivePage.cs |
+| 1198 | 已开启实时纪要：大约每 45 秒整理一次。 | Live notes are on: they update about every 45 seconds. | — | AppState.LivePage.cs |
+| 1199 | 正在更新实时纪要… | Updating live notes… | — | AppState.LivePage.cs |
+| 1200 | 已把这一句算作我说的。 | This line now counts as mine. | — | AppState.LivePage.cs |
+| 1201 | 新说话人 | New speaker | — | AppState.Speakers.cs |
+| 1202 | 先开始记录，再改这一句的说话人。 | Start recording before changing who said this line. | — | AppState.LivePage.cs |
+| 1203 | 这一句改成了%@。 | This line now belongs to %@. | — | AppState.LivePage.cs |
+| 1204 | 说话人修改失败： | Could not change the speaker:  | — | AppState.LivePage.cs |
 ## 2.1 J3/J4 新增文案（首页统计、系列命名与开下一场）
 
 | 中文 | 英文 | Mac 原文 | 位置 |

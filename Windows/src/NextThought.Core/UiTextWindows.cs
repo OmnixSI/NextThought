@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1171;
+    public const int Count = 1204;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1204,5 +1204,40 @@ internal static class UiTextWindowsEnglish
         ["技能可用于所有系列，或在系列中按系列选择。"] = "Skills can apply to all series, or be chosen per series.",
         ["技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。"] = "A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab.",
         ["开下一场"] = "Start next meeting",
+        ["上一页"] = "Previous",
+        ["下一句："] = "Next:",
+        ["依据："] = "Based on:",
+        ["听众可能会问（点一下提前准备回答）"] = "Questions the audience may ask (tap to prepare an answer)",
+        ["展开识别的文字"] = "Show recognised text",
+        ["已讲"] = "Spoken",
+        ["已识别 · 是否用于回答见“本次依据”"] = "Recognised · see “Based on” for whether it was used",
+        ["打开“屏幕感知”后，每隔几秒在本机识别屏幕文字：跟随你讲到 PPT 的哪一页并给出这一页的讲稿提示；屏幕上出现题目或代码时，判断是否和对话相关并纳入回答。屏幕在本机识别；相关文字与必要的当前画面会提供给回答引擎。"] = "With screen awareness on, the text on screen is recognised on this device every few seconds: it follows the slide you are on and offers talking points for that page. When a question or code appears on screen, it decides whether it relates to the conversation and includes it in answers. The screen is read on this device; the relevant text and, when needed, the current frame are provided to the answer engine.",
+        ["打开屏幕感知"] = "Turn on screen awareness",
+        ["收起"] = "Collapse",
+        ["正在根据这一页和你的资料写讲稿提示…"] = "Writing talking points for this page from the slide and your materials…",
+        ["结束并整理纪要"] = "End and write notes",
+        ["屏幕：%@"] = "Screen: %@",
+        ["题目"] = "Question",
+        ["代码"] = "Code",
+        ["文档"] = "Document",
+        ["聊天"] = "Chat",
+        ["视频通话"] = "Video call",
+        ["%lld 秒前"] = "%lld s ago",
+        ["已讲 %lld/%lld"] = "Spoken %lld/%lld",
+        ["第 %lld / %lld 页"] = "Page %lld / %lld",
+        ["实时纪要没有开"] = "Live notes are off",
+        ["还没有连接回答服务，写不了实时纪要"] = "No answer service is connected, so live notes cannot be written",
+        ["有了内容就开始整理"] = "It will start once there is something to summarise",
+        ["说上几句之后，这里会出现这场会的要点：在谈什么、定了什么、谁要做什么。"] = "After a few sentences this will show the meeting so far: what is being discussed, what was decided, who is doing what.",
+        ["这场没有开实时纪要。结束后仍会整理完整纪要；想边开边看要点，点右上角开启。"] = "Live notes are off for this meeting. Full notes are still written at the end; to see key points as you go, turn it on in the top right.",
+        ["已开启实时纪要：大约每 45 秒整理一次。"] = "Live notes are on: they update about every 45 seconds.",
+        ["正在更新实时纪要…"] = "Updating live notes…",
+        ["已把这一句算作我说的。"] = "This line now counts as mine.",
+        ["新说话人"] = "New speaker",
+
+        ["先开始记录，再改这一句的说话人。"] = "Start recording before changing who said this line.",
+        ["这一句改成了%@。"] = "This line now belongs to %@.",
+        ["说话人修改失败："] = "Could not change the speaker: ",
+
     };
 }
