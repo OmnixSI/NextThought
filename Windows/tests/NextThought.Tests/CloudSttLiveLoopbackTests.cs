@@ -125,6 +125,10 @@ public sealed class CloudSttLiveLoopbackTests
                 var buffer = new byte[16 * 1024];
                 // Wait for the client configuration message so the receive loop is running.
                 await socket.ReceiveAsync(buffer, CancellationToken.None);
+                // Wait for the first audio frame as well: StartAsync returns right after it starts the
+                // receive loop, so sending the fragments before the test attached Updated would lose
+                // the update (the CI failure this test used to hit).
+                await socket.ReceiveAsync(buffer, CancellationToken.None);
                 var cuts = new[] { 0, 15_000, 30_000, bytes.Length };
                 for (var index = 0; index < 3; index++)
                 {
@@ -152,9 +156,11 @@ public sealed class CloudSttLiveLoopbackTests
         var received = new TaskCompletionSource<CloudTranscriptUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
         session.Updated += update => { if (update.IsFinal) received.TrySetResult(update); };
         session.Failed += message => received.TrySetException(new InvalidOperationException("session failed: " + message));
-        var final = await received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        // Let the server know the handlers are attached before it sends the large message.
+        await session.SendAsync(new short[1600]);
+        var final = await received.Task.WaitAsync(TimeSpan.FromSeconds(20));
         await session.StopAsync();
-        var serverException = await serverError.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var serverException = await serverError.Task.WaitAsync(TimeSpan.FromSeconds(20));
         await server;
         Assert.Null(serverException);
         Assert.Equal(3, fragments);
