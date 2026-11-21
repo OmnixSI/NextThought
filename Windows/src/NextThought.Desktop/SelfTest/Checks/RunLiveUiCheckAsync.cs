@@ -126,6 +126,34 @@ public partial class MainWindow
             }
             state.ClearScreenshotPreview();
             Check(!state.HasLiveScreenshot, "取消 clears the screenshot preview");
+
+            // ---- E6: answer language choice, bilingual pair layout, question turn -------------
+            var english = AnswerLanguage.Fields("en", true, DemoScript.LiveQuestion);
+            Check(english.Answer == "English" && english.Gloss == "\u7b80\u4f53\u4e2d\u6587",
+                "回答语言=English + 对照 asks for an English answer with a Chinese gloss");
+            var chinese = AnswerLanguage.Fields("zh", true, "Why use Redis?");
+            Check(chinese.Answer == "\u7b80\u4f53\u4e2d\u6587" && chinese.Gloss is null,
+                "回答语言=中文 turns the gloss off");
+            var auto = AnswerLanguage.Fields("auto", true, DemoScript.LiveQuestion);
+            Check(auto.Answer != null, "跟随问题 decides the language from the question");
+
+            var bilingual = "> \u95ee\uff1aWhat does the examiner want to know?\n\n" +
+                "The result holds even without ground-truth labels.\n" +
+                "> \u8bd1\uff1a\u6ca1\u6709\u771f\u5b9e\u6807\u7b7e\u4e5f\u6210\u7acb\u3002\n\n" +
+                "We compare it with a simpler baseline.\n" +
+                "> \u8bd1\uff1a\u6211\u4eec\u548c\u66f4\u7b80\u5355\u7684\u57fa\u7ebf\u6bd4\u8f83\u3002";
+            state.AnswerText = bilingual;
+            Check(state.IsBilingualAnswer, "a bilingual answer is detected");
+            Check(!BilingualAnswer.Spoken(bilingual).Contains('>'), "the spoken text drops the gloss lines");
+            Check(BilingualAnswer.Question(bilingual)?.StartsWith("What does") == true, "the asked question is read from the gloss");
+            Check(state.IslandHeadlineGloss.Length > 0 || state.IslandDetailGloss.Length > 0,
+                "the cue island carries the meaning under its line");
+            var shots = Path.Combine(Path.GetDirectoryName(outputPath)!, "live-shots");
+            Directory.CreateDirectory(shots);
+            await Task.Delay(250);
+            await PumpAsync();
+            CaptureVisual(this, Path.Combine(shots, "bilingual-answer.png"));
+            state.AnswerText = state.CurrentAnswerHistory.Count > 0 ? state.CurrentAnswerHistory[^1].Answer : DemoScript.LiveAnswer;
         }
         catch (Exception error)
         {

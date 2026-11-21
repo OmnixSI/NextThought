@@ -6,6 +6,7 @@
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              xmlns:views="using:NextThought.Desktop.Views"
              xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
+             xmlns:answer="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
   <UserControl.Styles>
@@ -372,8 +373,12 @@
                            IsVisible="{Binding DisplayedQuestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 <TextBlock Text="{Binding BilingualQuestionText}" Classes="caption" Foreground="{DynamicResource Ai}" TextWrapping="Wrap"
                            IsVisible="{Binding HasBilingualQuestion}" />
+                <!-- E6: a bilingual answer shows each sentence with its meaning under it (Mac
+                     BilingualAnswer layout); the question it answers is shown above. -->
+                <answer:BilingualAnswerText Text="{Binding DisplayedAnswerText}" BaseFontSize="17"
+                                            IsVisible="{Binding IsBilingualAnswer}" />
                 <views:MarkdownText Text="{Binding DisplayedAnswerText}" BaseFontSize="17" Margin="{DynamicResource D4Margin_0_0}"
-                                    IsVisible="{Binding HasDisplayedAnswer}" />
+                                    IsVisible="{Binding !IsBilingualAnswer}" />
                 <TextBlock Text="{Binding AnswerEmptyHint}" Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
                            IsVisible="{Binding !HasAnswerText}" />
                 <!-- Numbered web sources (Mac WebSources) -->

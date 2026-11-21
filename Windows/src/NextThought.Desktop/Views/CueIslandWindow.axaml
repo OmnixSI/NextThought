@@ -24,12 +24,23 @@
                    FontSize="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
         <TextBlock x:Name="SceneText" Grid.Row="0" Grid.Column="2" Text="{Binding SceneTitle}" Foreground="#7A7871" FontSize="10"
                    VerticalAlignment="Center" Margin="{DynamicResource D4Margin_12_0_0_0}" />
-        <TextBlock x:Name="HeadlineText" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding IslandHeadline}" Foreground="#ECEBE8"
-                   FontSize="13.5" LineHeight="20" Margin="{DynamicResource D4Margin_18_6_0_0}" MaxLines="2"
-                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
-        <TextBlock x:Name="DetailText" Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding IslandDetail}" Foreground="#B8B6AF"
-                   FontSize="11.5" LineHeight="17" Margin="{DynamicResource D4Margin_18_3_0_0}" MaxLines="2"
-                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="{DynamicResource D4Margin_18_6_0_0}">
+          <TextBlock x:Name="HeadlineText" Text="{Binding IslandHeadline}" Foreground="#ECEBE8"
+                     FontSize="13.5" LineHeight="20" MaxLines="2"
+                     TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+          <!-- E6/Mac CueRow.withGloss: the meaning of the sentence in small print. -->
+          <TextBlock x:Name="HeadlineGlossText" Text="{Binding IslandHeadlineGloss}" Foreground="#9FB4C7"
+                     FontSize="11" LineHeight="15" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                     IsVisible="{Binding HasIslandHeadlineGloss}" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="{DynamicResource D4Margin_18_3_0_0}">
+          <TextBlock x:Name="DetailText" Text="{Binding IslandDetail}" Foreground="#B8B6AF"
+                     FontSize="11.5" LineHeight="17" MaxLines="2"
+                     TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+          <TextBlock x:Name="DetailGlossText" Text="{Binding IslandDetailGloss}" Foreground="#8FA6B8"
+                     FontSize="10.5" LineHeight="15" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                     IsVisible="{Binding HasIslandDetailGloss}" />
+        </StackPanel>
         <!-- 同传上岛：对方那句话的译文（逐字更新，过期结果不会覆盖新句子）。 -->
         <StackPanel x:Name="TranslationPanel" Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_18_5_0_0}"
                     IsVisible="{Binding HasIslandTranslation}">

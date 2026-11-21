@@ -72,7 +72,14 @@ public partial class AppState
         if (!Settings.AutomaticAnswers || !Recording || Stopping) { automaticScheduler.Clear(); return; }
         if (Answering && !lastRequestAutomatic) return;
         var speaking = microphoneLevel >= .012 || now - lastMicrophoneSpeech < TimeSpan.FromMilliseconds(600);
-        if (automaticScheduler.Tick(now, speaking) is { } question) _ = AnswerAsync(question.FullText, true);
+        // E6/Mac answerTurnIfDue: in a 汇报/答辩 turn, answer what they said once they stop.
+        if (!Answering && TryAnswerQuestionTurn(now, replying: speaking)) return;
+        if (automaticScheduler.Tick(now, speaking) is { } question)
+        {
+            // E6: after my talk the answer covers the whole turn (QuestionTurn), not one line.
+            var answerText = QuestionTurnAnswerText(question.FullText);
+            _ = AnswerAsync(answerText, true);
+        }
     }
 
     private void ApplyCandidate(CandidateDecision decision)
@@ -116,6 +123,7 @@ public partial class AppState
             // F20: the plan may read the previous meeting's transcript when 带入上一场转写 is on;
             // keep that file read off the UI thread like the context snapshot below.
             await Task.Run(() => BeginPreparedMeeting(planSeries));
+            ResetQuestionTurn();
             var sceneDefaults = SceneDefaultsFor(SelectedMode);
             Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
             Settings.SelectedCueWidth = Settings.CueWidthChoices.FirstOrDefault(choice =>
@@ -278,6 +286,7 @@ public partial class AppState
             {
                 if (source == AudioSource.System) systemLevel = level; else microphoneLevel = level;
                 LevelText = UiText.Format("系统 %.0f · 麦克风 %.0f", systemLevel * 100, microphoneLevel * 100);
+                UpdateAudioLevels(systemLevel, microphoneLevel);
             });
             await Task.Run(() => capture.Start(settings));
             if (capture.LastError is { } captureError) throw new IOException(captureError);
@@ -349,6 +358,7 @@ public partial class AppState
             StopAutoEnd();
             Recording = Stopping = false;
             ListeningPaused = false;
+            ResetQuestionTurn();
             RefreshHistory(meta.Id);
             RaiseBusy();
         }
@@ -411,7 +421,9 @@ public partial class AppState
         _ = write.ContinueWith(task => Dispatcher.UIThread.Post(() => HandleAudioFailure("会议写入失败：" + task.Exception!.GetBaseException().Message)), TaskContinuationOptions.OnlyOnFaulted);
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
         NoteSpeechHeard(line);
-        TryFollowSlide(text);
+        // E6/Mac questionTurn.heard / .spoke: their sentences build the turn, a real reply ends it.
+        NoteQuestionTurn(line);
+        FollowSpeechForLine(line);
         OnPropertyChanged(nameof(StatsText));
         OnPropertyChanged(nameof(HasTranscript));
     }
@@ -507,7 +519,14 @@ public partial class AppState
         var clock = Stopwatch.StartNew();
         try
         {
-            if (!check) { DetectedQuestion = question; if (automatic) { } else QuestionInput = ""; AnswerText = ""; }
+            if (!check)
+            {
+                DetectedQuestion = question;
+                if (automatic) { } else QuestionInput = "";
+                AnswerText = "";
+                // E6/Mac ask(): this request covers everything heard so far in the turn.
+                MarkQuestionTurnAsked(QuestionTurnPartial);
+            }
             SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text =>
             {

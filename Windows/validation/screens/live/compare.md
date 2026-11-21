@@ -60,3 +60,28 @@
 - `--demo --self-test=live-ui`：**live-ui-check: passed**，report 里 40 项检查全 ok（顶栏计时/聆听状态、场景与系列名、模式切换、回答设置、问题标记、候选条、联网状态行与编号来源、证据行与详情、回答历史导航、输入框可提交性、截图预览、工具菜单开关）。
 - `--demo --self-test=startup`：**startup-check: passed**（2026-11-21 06:35:44，report passed=true）。
 - 行内「回答这句 / 高亮」按钮改为悬停才显示（与 Mac TranscriptLine 的 hover 行为一致）；候选条「回答这句」走 `AnswerLiveCandidate`（先把候选提为当前问题再立即回答）。
+
+## E6 回答语言 / 双语回答 / QuestionTurn
+
+### 元素对照
+
+| Mac | Windows | 结论 |
+| --- | --- | --- |
+| `AnswerLanguage.spoken(in:)`：英文问题夹中文术语仍是英文，中文问题带 "XL-MIMO" 仍是中文；`fields(choice:gloss:question:)` 生成 answer/gloss 语言 | `Core/AnswerLanguage.cs` 逐行移植；`AppState.Live.BuildAnswerPrompt` 已通过 `Settings.AnswerLanguage`/`Settings.AnswerGloss` 调用 `AnswerLanguage.Fields`，把 answer_language/gloss_language 放进 JSON | 一致（E4 已有菜单入口，本轮补测试与显示） |
+| 顶栏/工具菜单的「回答语言」（跟随问题/中文/English）+「英文回答附中文对照」 | LiveView 工具菜单 radio 按钮 + 复选框，`AnswerLanguage_Click`/`AnswerGloss_Click` 写设置并保存 | 一致 |
+| 双语回答格式：`> 问：`（被问的是什么，gloss 语言）+ 每句回答一行、紧随 `> 译：` | `AppState.LiveUi.IsBilingualAnswer` 检测 `BilingualAnswer`；答案区在有对照时改用 `Views/BilingualAnswerText`：顶部小字显示「问」的 gloss，之后每句正文下面用小一号次要色显示该句译文；无对照时仍用 MarkdownText | 一致（Mac 页面用 Markdown 原文引行显示；Windows 用逐句对照分组版式，和任务要求的逐句并排/分组一致） |
+| 提词岛双语：`CueRow.withGloss` 在每句下方小字显示译文；有对照时少显示几行 | CueIslandWindow 台词下方新增 `IslandHeadlineGloss` / `IslandDetailGloss` 小字行（`HasIsland*Gloss` 控制显隐）；`CueScript` 已把 gloss 挂到对应 CueLine | 一致；「有对照时少显示几行」的窗口裁剪未做 |
+| `QuestionTurn`：对方一轮发言（多句/陈述式疑问）合并为整轮回答；`worthAsking`/`isDue`/`asked`/`spoke` 结束轮次；`answersWholeTurns` 只在汇报/答辩、线上、演讲模式或我说够 300 词时开启；答案请求时 `questionTurn.asked(with: partialTranscript)` | 新增 `AppState.QuestionTurn.cs`：`questionTurn` 字段 + `AnswersWholeTurns`、`NoteQuestionTurn`（remote→Heard，我→Spoke+词数）、`TryAnswerQuestionTurn`（候选定时器每 tick 检查 IsDue，静音 ≥2s 或我开始回应，Requests<4、词数≤250）、`QuestionTurnAnswerText`（自动回答改用整轮文本）、`MarkQuestionTurnAsked`（每次 Ask 标记已覆盖词数）、开始/结束会议 Reset；`AppState.Live` 的 ReceiveTranscript/OnCandidateTimer/AnswerAsync/StartRecording/StopRecording 对应接线 | 一致（Mac 的 answerTurn 先记录 question 事件/Diagnostics 的完整链路未逐字复制，保留现有 Windows 候选与诊断） |
+
+### 点检记录（--demo --self-test=live-ui）
+
+1. `回答语言=English` + 对照 → `AnswerLanguage.Fields` 返回（English，简体中文）；`=中文` 关闭对照；`跟随问题` 由问题语言决定。
+2. 写入一条双语回答（英文句子 + `> 译：` 行）→ `IsBilingualAnswer=true`；`BilingualAnswer.Spoken` 去掉对照行；「问」gloss 可解析；提词岛小字译文取到第一条/第二条 CueLine 的 gloss。
+3. 双语页面截图：`bilingual-answer.png`（自检把主窗口当前答案区截到 `live-shots/`，可拷入本目录）。
+4. QuestionTurn：Core 单测覆盖 heard/spoke/gap/patience/worthAsking/asked/reset/limit/词数；AppState 接线由 AnswerLanguageParityTests 结构锁。
+
+### 未解决/已知差异
+
+- QuestionTurn 的整轮回答只在「汇报 / 答辩 + 线上 + 演讲模式或本场我说满 300 词」时启用（与 Mac answersWholeTurns 相同）；其他场景仍按候选句回答。
+- Mac 在 answerTurn 里额外记录 question 事件与 Diagnostics 明细，Windows 保留现有候选事件，「整轮」标记未写入归档 question 事件。
+- 提词岛有译文时少显示行数的裁剪未做；岛上「被问到的 gloss（BilingualAnswer.question）」当问题行已有双语回答时未单独展示。

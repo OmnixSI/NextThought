@@ -227,7 +227,9 @@ public partial class AppState
                      nameof(DisplayedAnswerText), nameof(DisplayedQuestionText), nameof(HasDisplayedAnswer),
                      nameof(DisplayedAnswerRecord), nameof(HistoryPositionText), nameof(HistoryCursorActive),
                      nameof(AnswerHistoryCountText), nameof(SessionAnswerHistory), nameof(HasSessionAnswerHistory),
-                     nameof(AnswerHistoryHasMultiple)
+                     nameof(AnswerHistoryHasMultiple), nameof(IsBilingualAnswer),
+                     nameof(IslandHeadlineGloss), nameof(IslandDetailGloss),
+                     nameof(HasIslandHeadlineGloss), nameof(HasIslandDetailGloss)
                  })
             OnPropertyChanged(name);
     }
@@ -256,6 +258,22 @@ public partial class AppState
     public string LiveSeriesName => CurrentSession is { } meta
         ? (meta.WorkspaceName is { Length: > 0 } name ? name : workspace.SeriesOfSession(meta.Id.ToString())?.Name ?? "")
         : "";
+
+    // ---- E6: bilingual answers and the cue island's meaning lines --------------------
+
+    /// <summary>True when the answer carries "> 问：" / "> 译：" gloss lines (Mac BilingualAnswer).</summary>
+    public bool IsBilingualAnswer => BilingualAnswer.IsBilingual(DisplayedAnswerText);
+
+    /// <summary>The meaning under the island's first line (Mac CueRow.withGloss).</summary>
+    public string IslandHeadlineGloss => IslandLines.Count > 0 ? IslandLines[0].Gloss : "";
+
+    public string IslandDetailGloss => IslandLines.Count > 1
+        ? string.Join(" ", IslandLines.Skip(1).Select(line => line.Gloss).Where(gloss => gloss.Length > 0))
+        : "";
+
+    public bool HasIslandHeadlineGloss => IslandHeadlineGloss.Length > 0;
+
+    public bool HasIslandDetailGloss => IslandDetailGloss.Length > 0;
 
     // ---- bottom composer (Mac LiveComposer) ----------------------------------------
 
