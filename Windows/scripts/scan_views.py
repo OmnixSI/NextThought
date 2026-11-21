@@ -227,8 +227,28 @@ IMPLEMENTED = {
     ("BackupRestoreReview.swift", "BackupRestoreReviewView"): ("Views/BackupRestoreReviewView.axaml", "backup-review"),
     ("ContentView.swift", "QRCodeView"): ("Views/Controls/QrCodeView.cs", "share-test"),
     ("ContentView.swift", "ShareTestSheet"): ("Views/ShareTestWindow.axaml", "share-test"),
+    ("HomeView.swift", "Chip"): ("Views/Home/StartComposer.axaml", "home"),
+    ("NotesPageView.swift", "LineEditSheet"): ("Views/NotesView.axaml.cs", "notes"),
+    ("NotesPageView.swift", "TemplateMenu"): ("Views/NotesView.axaml", "notes"),
+    ("SettingsView.swift", "SettingsSection"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "Note"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "AdvancedGroup"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "AdvancedOptions"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "CloudSettings"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "CompanionSection"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "ModelDownloadRow"): ("Views/ManagedModelRow.axaml", "document-settings"),
+    ("SettingsView.swift", "WebSearchSettings"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "WebSearchAdvanced"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "UpdateSettings"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("LiveSessionView.swift", "Chip"): ("Views/LiveView.axaml", "live"),
+    ("LiveSessionView.swift", "LiveNotesColumn"): ("Views/LiveView.axaml", "live"),
 
 }
+
+SKIPPED = {
+    ("SettingsView.swift", "SignatureStatus"): "Mac Gatekeeper 签名状态行；Windows 本版不签名、无对应信息（任务书 §2.8 平台差异）",
+}
+
 
 def task_map() -> dict[str, str]:
     result: dict[str, str] = {}
@@ -258,10 +278,14 @@ def main() -> None:
             tid = tasks.get(path.name) or fallback.get(path.name, "E4")
             windows = winmap.get(path.name, "—")
             explicit = IMPLEMENTED.get((path.name, name))
+            skipped = SKIPPED.get((path.name, name))
             if explicit is not None:
                 windows, shot_dir = explicit
                 status = "已实现、未验证"
                 shot = f"`Windows/validation/screens/{shot_dir}/`"
+            elif skipped is not None:
+                status = "本版不做"
+                shot = f"平台差异：{skipped}"
             else:
                 implemented = top_views.get(name) == path.name
                 status = "已实现、未验证" if implemented else "未做"
