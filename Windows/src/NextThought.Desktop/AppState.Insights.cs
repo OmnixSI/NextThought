@@ -297,6 +297,7 @@ public partial class AppState
                      nameof(ScreenTitleText), nameof(ScreenAgeText), nameof(LiveShowsInsightsPanel),
                      nameof(HasAnswerProgress), nameof(AnswerProgressCounterText), nameof(AnswerProgressMetricText),
                      nameof(NextAnswerPointText), nameof(AnswerProgressCoveredCount), nameof(AnswerProgressTotal),
+                     nameof(AnswerProgressIsDone), nameof(AnswerProgressBrush),
                      nameof(AnswerProgressPointTexts)
                  })
             OnPropertyChanged(name);
