@@ -31,7 +31,7 @@ public sealed class UiTextSourceTests
             Assert.False(string.IsNullOrWhiteSpace(pair.Value));
         });
         Assert.True(UiText.WindowsStringCount > 0);
-        Assert.True(UiText.MacStringCount >= 2607);
+        Assert.True(UiText.MacStringCount >= 2638);
     }
 
     [Theory]

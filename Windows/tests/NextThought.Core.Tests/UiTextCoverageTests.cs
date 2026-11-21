@@ -3,13 +3,13 @@ using Xunit;
 
 namespace NextThought.Core.Tests;
 
-/// <summary>G7: the generated table carries every Mac catalogue string (2,607).</summary>
+/// <summary>G7/G10: the generated table carries every Mac catalogue string (2,638, 3.4.0).</summary>
 public sealed class UiTextCoverageTests
 {
     [Fact]
     public void GeneratedTableHasEveryMacCatalogueString()
     {
-        Assert.Equal(2607, UiText.MacStringCount);
+        Assert.Equal(2638, UiText.MacStringCount);
     }
 
     [Fact]

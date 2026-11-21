@@ -7,7 +7,7 @@ namespace NextThought.Core;
 /// The Windows interface string table. Chinese is the source language: the catalogue key is the
 /// Mac original sentence (G8), so Chinese mode returns the key and English mode looks the key up.
 /// English translations come from two places: the generated Mac catalogue
-/// (<see cref="UiTextMacEnglish"/>, 2,607 entries) and the hand-written Windows-only wording table
+/// (<see cref="UiTextMacEnglish"/>, 2,638 entries) and the hand-written Windows-only wording table
 /// (<see cref="UiTextWindowsEnglish"/>, every sentence whose Windows wording differs from Mac — G10
 /// records each of these in <c>Windows/WORDING.md</c>).
 /// </summary>
