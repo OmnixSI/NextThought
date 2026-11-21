@@ -75,7 +75,7 @@ public sealed class WindowParityTests
         Assert.Contains("转写", xaml);
         Assert.Contains("语言", xaml);
         Assert.Contains("归档有缺失或读取错误，导出已暂停。", xaml);
-        Assert.Contains("没有可导出的内容。", xaml);
+        Assert.Contains("没有可导出的内容。", Read("Views", "SessionExportSheet.axaml.cs"));
         Assert.Contains("导出…", xaml);
         var code = Read("Views", "SessionExportSheet.axaml.cs");
         Assert.Contains("%lld 段结束时间为估算值", code);
@@ -108,7 +108,7 @@ public sealed class WindowParityTests
     public void TheWindowsSelfTestCoversTheFourWindows()
     {
         var check = Read("SelfTest", "Checks", "RunWindowsCheckAsync.cs");
-        foreach (var name in new[] { "subtitle", "teleprompter", "export", "backup" })
+        foreach (var name in new[] { "subtitle-bar", "teleprompter", "export", "backup-review" })
             Assert.Contains("\"" + name + "\"", check);
         Assert.Contains("windows-check", check);
     }
