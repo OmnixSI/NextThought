@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "phase": "verify",
+  "steps": [
+    {
+      "name": "shortcut-survives-restart",
+      "ok": true,
+      "detail": "Ctrl+Alt+F9 key=0x78"
+    },
+    {
+      "name": "sidebar-survives-restart",
+      "ok": true,
+      "detail": "True"
+    },
+    {
+      "name": "opacity-survives-restart",
+      "ok": true,
+      "detail": "0.5"
+    },
+    {
+      "name": "zoom-survives-restart",
+      "ok": true,
+      "detail": "1.2"
+    }
+  ]
+}
