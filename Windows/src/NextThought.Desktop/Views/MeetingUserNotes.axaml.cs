@@ -19,6 +19,7 @@ public partial class MeetingUserNotes : UserControl
     private void Highlight_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: MeetingHighlightRow row } || DataContext is not AppState state) return;
+        state.SelectNotesEvidenceForHighlight(row.Quote);
         state.OpenMeetingHighlightCommand.Execute(row);
     }
 }

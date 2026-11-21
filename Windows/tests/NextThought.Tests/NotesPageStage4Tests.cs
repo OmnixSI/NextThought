@@ -131,4 +131,18 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding NotesReadIssueText}", view);
         Assert.Contains("ShowNotesReadIssuesCommand", view);
     }
+
+    [Fact]
+    public void SelectingAHighlightLinksTheEvidence()
+    {
+        var state = Read("AppState.NotesEvidenceLink.cs");
+        Assert.Contains("SelectNotesEvidenceForHighlight", state);
+        Assert.Contains("SelectedNotesEvidenceText", state);
+        Assert.Contains("HasSelectedNotesEvidence", state);
+        var notes = Read("Views", "MeetingUserNotes.axaml.cs");
+        Assert.Contains("SelectNotesEvidenceForHighlight", notes);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasSelectedNotesEvidence}", view);
+        Assert.Contains("{Binding SelectedNotesEvidenceText}", view);
+    }
 }

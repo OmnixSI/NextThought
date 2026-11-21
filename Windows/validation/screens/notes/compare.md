@@ -87,7 +87,7 @@ Windows 截图：`Windows/validation/screens/notes/`（自检 `notes-ui` 生成�
 3. 「AI 新版本」行：**已完成**——会议页标题区 `HasAiNewVersion` 条（Mac 原句「AI 整理出了新版本。现在显示的仍是你改过的版本。」）+「查看新版」（打开编辑器并切 AI 原稿）与「保留我的修订」（`basedOnGeneratedAt` 记到新 AI 时间后关闭提示）；数据比较用 summary.json generatedAt vs basedOnGeneratedAt。
 4. 会议页回答列表缺时间/首 token/未完成/分答截图/评价徽标（这些在历史页归档概览有）。
 5. 转写 tab 内嵌版本切换/查找/逐行撤销未做（E17 的 CorrectedTranscriptView 窗口已实现，可从按钮进入）；跳转滚动为近似最近行。
-6. 个人笔记选中高亮时联动证据侧栏未做；标签名「个人笔记」与 Mac「我的笔记」用词不同。
+6. 个人笔记选中重点联动证据侧栏：**已完成**——点重点时 `SelectNotesEvidenceForHighlight` 在 `NotesEvidence` 里找同一句并显示「已定位证据」行（`HasSelectedNotesEvidence`/`SelectedNotesEvidenceText`）；标签名已在 E15 改为「我的笔记」。
 7. 会议信息缺不可用空状态、unqueued 丢失确认/重试保存；无 Mac v3.3 会议页深色截图（v3 只有 notes.png）。
 
 ## Mac 3.4.0 参考图与逐图核对（task-48）
