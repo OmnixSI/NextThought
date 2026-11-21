@@ -180,6 +180,29 @@
             <TextBlock Text="{StaticResource IconRectangleTopthirdInsetFilled}" FontFamily="{StaticResource IconFont}" FontSize="14" />
           </Button>
 
+          <!-- 会中窗口 (Mac LiveWindowMenu): small icon button with the three modes + the shortcut hint. -->
+          <Button x:Name="LiveWindowMenuButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                  ToolTip.Tip="{loc:Tr 会中窗口}">
+            <TextBlock Text="{StaticResource IconCaptionsBubble}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="230" Spacing="{DynamicResource D4Spacing_6}">
+                  <TextBlock Text="{loc:Tr 会中窗口}" Classes="overline" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 纪要窗口}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsNotes, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="notes" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 字幕条}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsSubtitles, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="subtitles" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 隐藏}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsHidden, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="hidden" />
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <TextBlock Text="{Binding ToggleLiveWindowHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
           <!-- More tools (Mac moreMenu). The model name is gone from the bar; 回答设置 is a
                section inside this menu. -->
           <Button x:Name="LiveMoreMenuButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
@@ -249,11 +272,7 @@
                   <Button Classes="quiet" Content="{loc:Tr 屏幕与讲稿}" Click="Insights_Click" FontSize="12" HorizontalAlignment="Left" />
                   <Button Classes="quiet" Content="{loc:Tr 说话人}" Click="Speakers_Click" FontSize="12" HorizontalAlignment="Left" />
                   <Button Classes="quiet" Content="{loc:Tr 补译}" Command="{Binding TranslateMissingCommand}" FontSize="12" HorizontalAlignment="Left" />
-                  <TextBlock Text="{loc:Tr 会中窗口}" Classes="caption" FontSize="11" />
-                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                    <Button Classes="quiet" FontSize="12" Content="{loc:Tr 纪要窗口}" Command="{Binding NavigateCommand}" CommandParameter="Live" />
-                    <Button Classes="quiet" FontSize="12" Content="{loc:Tr 字幕条}" Command="{Binding CycleLiveModeCommand}" />
-                  </StackPanel>
+
                   <Border Height="0.5" Background="{DynamicResource Hairline}" />
                   <Button Classes="quiet" Content="{loc:Tr 设置…}" Command="{Binding NavigateCommand}" CommandParameter="Settings" FontSize="12" HorizontalAlignment="Left" />
                 </StackPanel>
