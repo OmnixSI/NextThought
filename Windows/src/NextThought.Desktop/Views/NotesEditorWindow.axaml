@@ -70,9 +70,7 @@
                 <DataTemplate x:DataType="local:SessionEvidenceRow">
                   <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                      <Border Classes="chip">
-                        <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
-                      </Border>
+                      <c:MetricPill Text="{Binding Badge}" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{Binding Claim}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />

@@ -156,8 +156,8 @@
         <!-- RecordingTimer: on-air dot, elapsed, 正在聆听 / 已暂停 / 未在聆听. -->
         <StackPanel x:Name="LiveRecordingTimer" Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     VerticalAlignment="Center" Height="28">
-          <Ellipse Width="7" Height="7" Fill="{DynamicResource Seal}" VerticalAlignment="Center" IsVisible="{Binding IsLiveOnAir}" />
-          <Ellipse Width="7" Height="7" Fill="{DynamicResource Tertiary}" VerticalAlignment="Center" IsVisible="{Binding !IsLiveOnAir}" />
+          <components:StatusDot Tone="Live" IsVisible="{Binding IsLiveOnAir}" />
+          <components:StatusDot Tone="Idle" IsVisible="{Binding !IsLiveOnAir}" />
           <TextBlock Text="{Binding RecordingElapsedText}" FontFamily="{StaticResource MonoFamily}" FontSize="14" FontWeight="Medium"
                      VerticalAlignment="Center" />
           <TextBlock Text="{Binding LiveListeningStatus}" Classes="caption" VerticalAlignment="Center" />
@@ -202,7 +202,7 @@
                              IsChecked="{Binding !AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeRecord_Click" />
               </StackPanel>
             </Border>
-            <Ellipse x:Name="LiveAnswerEngineDot" Width="6" Height="6" Fill="{DynamicResource Caution}"
+            <components:StatusDot x:Name="LiveAnswerEngineDot" Tone="Caution" DotSize="6"
                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LvDotMargin}"
                      IsVisible="{Binding !AnswerEngineReady}" IsHitTestVisible="False"
                      ToolTip.Tip="{loc:Tr 还没有连接回答服务，听到问题也不会自动回答}" />

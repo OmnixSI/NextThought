@@ -417,7 +417,7 @@
                     <c:MetricPill Text="{Binding AutomaticLabel}" />
                     <c:MetricPill Text="{loc:Tr 未完成}" Foreground="{DynamicResource Caution}" IsVisible="{Binding !IsComplete}" />
                   </StackPanel>
-                  <TextBlock Text="{Binding AnswerText}" Classes="body" TextWrapping="Wrap" />
+                  <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" />
                   <TextBlock Text="{Binding MetaLine}" Classes="caption" />
                   <TextBlock Text="{Binding ScreenshotPath}" Classes="caption" FontSize="10"
                              IsVisible="{Binding HasScreenshot}" TextWrapping="Wrap" />
