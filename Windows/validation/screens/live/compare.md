@@ -172,3 +172,10 @@ Windows 截图批次（`validation/screens/current/live-*.png`）只直接覆盖
 - `live-notes-light.png` / `live-notes-dark.png`：同一 demo 会话下把右栏切到实时纪要，由 `--self-test=live-ui` 在 `live-shots/` 截取后拷入。
 - `--demo --self-test=live-ui`：**live-ui-check: passed**（2026-11-21 13:02，iso `NEXTTHOUGHT_DATA_DIR` 临时目录）；除原有 E4 项外新增 §6.5 断言：说话人列只有 对方/我、无时间戳；回声「是我说的」恢复且计数 -1；右栏三标签顺序与可选；实时纪要 Mac 状态/空态/按钮；`LiveShowsInsightsPanel` 规则；屏幕与讲稿面板嵌入左栏并截图 `insights-embedded-light.png`（E7 证据，拷入 `validation/screens/insights/`）；最后恢复 demo 状态。
 - 测试：`Windows/tests/NextThought.Tests` 的 `LiveSessionStage4Tests`（§6.5 结构 7+ 项）、`LivePageParityTests`（E4 9 项）、`InsightsPanelParityTests`（E7 8 项）与 `ThemeResourceTests`/`SceneComponentTests`/`AnswerLanguageParityTests`/`SelfTestStructureTests` 的相应断言；见提交说明。
+
+---
+
+## §3.3 live 9（归档保存状态行）— 2026-11-21
+
+**已修**（`F14:` `866161fc`、`672f22a6`）：`SessionStore.AppendRawAsync` + `IncrementMetaCountAsync`；`AppState.SaveStatus.cs` 接 `Core.SessionArchiveWriteQueue`，500 ms 定时逐条 flush，`Acknowledge`/`Fail` 与 `SaveStatus/SaveStatusText/SaveUnqueuedCount/CanAcknowledgeSaveLoss/RetryPersistence/AcknowledgeSaveLoss`；会议中转写/问题/回答/声纹四类写入改为 `EnqueueArchiveWrite`（JSONL 序列化 + `\n`），Stop/End/三种导出前 `FlushArchiveQueueAsync()`；LiveView 顶栏计时后显示「保存中」，受阻时警示文案 + 「重试保存」/「确认缺失并继续保存」。
+证据：`LiveSaveStatusTests` 结构断言；`live-ui` 截图待 §5 统一重拍批次（本轮不单独出图）。
