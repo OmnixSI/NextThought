@@ -503,6 +503,34 @@ extension AppState {
         }
     }
 
+    /// A sentence of a saved meeting rewritten by hand. The recognised text stays in the
+    /// record; the edit is a correction over the whole sentence, so it shows in the
+    /// corrected transcript, in search and exports, and in the notes the next time they
+    /// are organised. Saving the recognised text again takes the edit away.
+    func editLine(_ lineID: UUID, original: String, to text: String, in sessionID: UUID) {
+        guard !archive.summarizing.contains(sessionID) else { return }
+        let corrected = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !corrected.isEmpty else { return }
+        Task {
+            guard await archive.flush(sessionID: sessionID), !isPreparingForTermination, !archive.isTombstoned(sessionID),
+                  let detail = await archive.detail(sessionID),
+                  let index = detail.lines.firstIndex(where: { $0.id == lineID }) else { return }
+            // The proofreading fixes inside this sentence: the edit of the whole sentence
+            // stands in for them (and they come back when the edit is taken away).
+            let inside = (detail.effectiveNotes?.corrections ?? []).filter { $0.line == index && $0.original != original }
+            do {
+                _ = try await archive.updateUserContent(for: sessionID) { content in
+                    content.correctionDecisions.removeAll { $0.lineID == lineID }
+                    guard corrected != original else { return }
+                    for fix in inside {
+                        content.correctionDecisions.append(.init(lineID: lineID, original: fix.original, corrected: fix.corrected, reverted: true))
+                    }
+                    content.correctionDecisions.append(.init(lineID: lineID, original: original, corrected: corrected, reverted: false))
+                }
+            } catch { errorMessage = "这句的修改尚未保存：\(error.localizedDescription)" }
+        }
+    }
+
     /// "复制纪要": Markdown of the notes (or of the older summary).
     func copyNotes(_ detail: SessionDetail) {
         let text: String

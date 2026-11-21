@@ -212,6 +212,10 @@ final class AppState {
     /// Screen, slides and answer progress.
     let insights = LiveInsights()
     let coach = LiveCoach()
+    /// Notes kept while the meeting runs (实时纪要).
+    let liveNotes = LiveNotesEngine()
+    /// Changes when the features of the next meeting are chosen (they live in the defaults).
+    var meetingFeaturesRevision = 0
     @ObservationIgnored var screenWatchTask: Task<Void, Never>?
 
     // MARK: Questions and answers
@@ -714,12 +718,14 @@ final class AppState {
         if usesMicrophone, MicrophoneAccess.current() == .undetermined { await requestMicrophoneAccess() }
         microphoneAccess = .current()
         guard recordingReadiness.canStartRecording else { errorMessage = recordingReadinessMessage; return }
-        liveTranslation.beginMeeting()
-        speakers.beginMeeting(inPerson: isOfflineMeeting)
-        // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
-        // In the room people talk face to face: answers stay quiet unless asked for.
+        // What this meeting uses: chosen on the preparation page, else what the series
+        // used last time, else the scene's own defaults.
+        let features = meetingFeatures
+        liveTranslation.beginMeeting(allowed: features.translation)
+        speakers.beginMeeting(inPerson: isOfflineMeeting, wanted: features.speakers)
         let meetingMode = plannedMeeting?.effectiveMode ?? activeWorkspace.effectiveMode
-        automaticAnswers = answerEngineReady && SceneSettings.shared.liveMode(for: meetingMode) == .prompting && !isOfflineMeeting
+        automaticAnswers = answerEngineReady && features.answers
+        liveNotes.begin(enabled: features.liveNotes)
         documentPreparation.pauseForMeeting()
         Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()
@@ -802,6 +808,8 @@ final class AppState {
             isRunning = false
             meetingContextTask?.cancel(); meetingContextTask = nil
             speakers.endMeeting()
+        liveNotes.end()
+            liveNotes.end()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
                 rebuildContextIndex()

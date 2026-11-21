@@ -28,7 +28,7 @@ struct QuickSettingsPanel: View {
                     .frame(width: 132)
                     .onChange(of: state.teleprompterFontSize) { _, _ in state.saveAnswerSettings() }
                     .accessibilityLabel("提词字号")
-                Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+                Text("\(Int(state.teleprompterFontSize))").font(Font.zoomed(.caption).monospacedDigit()).foregroundStyle(Ink.secondary)
                     .frame(width: 22, alignment: .trailing)
             }
             Toggle("提词岛一直展开", isOn: $cue.alwaysOpen)
@@ -95,7 +95,7 @@ struct QuickSettingsPanel: View {
             Rectangle().fill(Ink.hairline).frame(height: 0.5).padding(.vertical, Space.s3)
             footer
         }
-        .font(.system(size: 13))
+        .font(.zoomed(size: 13))
         .padding(Space.s4)
         .frame(width: 360)
         .background(Ink.paper)
@@ -229,7 +229,7 @@ private struct QuickStatusRow: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: Space.s1) {
             HStack(spacing: Space.s3) {
-                Image(systemName: symbol).font(.system(size: 15)).foregroundStyle(Ink.secondary).frame(width: 22)
+                Image(systemName: symbol).font(.zoomed(size: 15)).foregroundStyle(Ink.secondary).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title).font(Typo.label)
                     HStack(spacing: 6) {

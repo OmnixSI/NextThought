@@ -43,24 +43,24 @@ struct SubtitleBarView: View {
                     // The other side is the default speaker and needs no label.
                     if display.speaker != .remote {
                         Text(display.speaker.displayName)
-                            .font(.system(size: max(12, fontSize * 0.5), weight: .medium))
+                            .font(.zoomed(size: max(12, fontSize * 0.5), weight: .medium))
                             .foregroundStyle(Ink.secondary)
                     }
                     Text(verbatim: display.primary)
-                        .font(.system(size: fontSize, weight: .medium))
+                        .font(.zoomed(size: fontSize, weight: .medium))
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if !display.secondary.isEmpty {
                     Text(verbatim: display.secondary)
-                        .font(.system(size: max(12, fontSize * 0.6)))
+                        .font(.zoomed(size: max(12, fontSize * 0.6)))
                         .foregroundStyle(Ink.secondary)
                         .lineLimit(1)
                         .multilineTextAlignment(.center)
                 }
             } else {
-                Text(verbatim: " ").font(.system(size: fontSize, weight: .medium))
+                Text(verbatim: " ").font(.zoomed(size: fontSize, weight: .medium))
             }
         }
         .padding(.horizontal, SubtitleBarController.cardPadding)
@@ -73,9 +73,9 @@ struct SubtitleBarView: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let left = max(0, Int(deadline.timeIntervalSince(context.date).rounded(.up)))
             HStack(spacing: Space.s3) {
-                Image(systemName: "moon.zzz").font(.system(size: max(13, fontSize * 0.6))).accessibilityHidden(true)
+                Image(systemName: "moon.zzz").font(.zoomed(size: max(13, fontSize * 0.6))).accessibilityHidden(true)
                 Text("好像没人说话了，\(left) 秒后结束记录")
-                    .font(.system(size: max(14, fontSize * 0.75), weight: .medium).monospacedDigit())
+                    .font(.zoomed(size: max(14, fontSize * 0.75), weight: .medium).monospacedDigit())
                     .contentTransition(.numericText(countsDown: true))
                     .animation(Motion.reduce ? nil : .default, value: left)
                     .lineLimit(1)

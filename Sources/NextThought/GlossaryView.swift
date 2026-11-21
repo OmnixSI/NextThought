@@ -19,7 +19,7 @@ struct GlossarySettingsEntry<Extra: View>: View {
         let series = state.activeWorkspace.glossary?.entries.count ?? 0
         SettingsSection(title: "术语和人名", icon: "character.book.closed") {
             Text("名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。")
-                .font(.system(size: 11.5)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.zoomed(size: 11.5)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Text(summary(global: global, series: series)).font(Typo.caption).foregroundStyle(Ink.secondary)
                 Spacer(minLength: 0)
@@ -122,8 +122,8 @@ struct GlossaryView: View {
                     .fixedSize()
             }
             HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(Ink.secondary)
-                TextField("查找", text: $filter).textFieldStyle(.plain).font(.system(size: 12.5))
+                Image(systemName: "magnifyingglass").font(.zoomed(size: 11)).foregroundStyle(Ink.secondary)
+                TextField("查找", text: $filter).textFieldStyle(.plain).font(.zoomed(size: 12.5))
             }
             .padding(.horizontal, 10).frame(height: Hit.minHeight).frame(maxWidth: 200)
             .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
@@ -178,7 +178,7 @@ struct GlossaryView: View {
             HStack(spacing: 6) {
                 Text(verbatim: entry.canonical).font(Typo.label).lineLimit(1)
                 if entry.kind == .person {
-                    Text("人名").font(.system(size: 10.5)).foregroundStyle(Ink.secondary)
+                    Text("人名").font(.zoomed(size: 10.5)).foregroundStyle(Ink.secondary)
                         .padding(.horizontal, 5).padding(.vertical, 1)
                         .background(Ink.sunken, in: Capsule())
                 }
@@ -258,7 +258,7 @@ struct GlossaryView: View {
         HStack(spacing: 4) {
             Text(verbatim: variant).font(Typo.caption)
             Button { draft.variants.removeAll { $0 == variant } } label: {
-                Image(systemName: "xmark").font(.system(size: 8, weight: .semibold))
+                Image(systemName: "xmark").font(.zoomed(size: 8, weight: .semibold))
             }
             .buttonStyle(TapButtonStyle(minWidth: 24, minHeight: 24)).foregroundStyle(Ink.secondary)
             .accessibilityLabel("移除")
@@ -397,7 +397,7 @@ struct GlossaryView: View {
 private extension View {
     /// A sunken single-line field, as in Settings.
     func fieldSurface() -> some View {
-        self.font(.system(size: 13))
+        self.font(.zoomed(size: 13))
             .padding(.horizontal, 10).frame(height: 32)
             .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
     }
@@ -415,7 +415,7 @@ struct MisheardMark: View {
         } icon: {
             Image(systemName: "text.magnifyingglass")
         }
-        .font(.system(size: 11)).foregroundStyle(Ink.secondary)
+        .font(.zoomed(size: 11)).foregroundStyle(Ink.secondary)
         .help("这是“术语和人名”里记下的听错写法，搜索时一并找出来")
     }
 }
@@ -428,14 +428,14 @@ struct TranscriptFindField: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(Ink.secondary)
-            TextField("在转写里查找（听错的写法也会找出来）", text: $query).textFieldStyle(.plain).font(.system(size: 12.5))
+            Image(systemName: "magnifyingglass").font(.zoomed(size: 11)).foregroundStyle(Ink.secondary)
+            TextField("在转写里查找（听错的写法也会找出来）", text: $query).textFieldStyle(.plain).font(.zoomed(size: 12.5))
             if let matches {
                 Text("\(matches) 句").font(Typo.caption).foregroundStyle(Ink.secondary)
             }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28)).font(.system(size: 11)).foregroundStyle(Ink.secondary)
+                    .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28)).font(.zoomed(size: 11)).foregroundStyle(Ink.secondary)
                     .accessibilityLabel("清空搜索")
             }
         }
@@ -470,7 +470,7 @@ struct AddToGlossarySheet: View {
             Text(verbatim: line).font(Typo.caption).foregroundStyle(Ink.secondary)
                 .lineLimit(4).textSelection(.enabled)
             Text("在这句里选中听错的词并复制（⌘C），再打开本窗口，会自动填入。")
-                .font(.system(size: 11)).foregroundStyle(Ink.secondary)
+                .font(.zoomed(size: 11)).foregroundStyle(Ink.secondary)
             VStack(alignment: .leading, spacing: Space.s1) {
                 Text("规范写法").overline()
                 TextField("正确的写法", text: $canonical).textFieldStyle(.roundedBorder)

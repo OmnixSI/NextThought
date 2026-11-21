@@ -157,7 +157,7 @@ scripts/dev/preview.sh shot home light /tmp/home.png   # render a demo page off 
 
 The documents below are written in Chinese.
 
-- [3.3.0 release notes](docs/releases/v3.3.0.md) · [Changelog](CHANGELOG.md) (full notes for every version)
+- [3.4.0 release notes](docs/releases/v3.4.0.md) · [Changelog](CHANGELOG.md) (full notes for every version)
 - [Development and releases](docs/DEVELOPMENT.md): project layout, building, signing, the release process and self-tests
 - [Document processing pipeline](docs/DOCUMENT-MARKDOWN-PIPELINE.md) · [Survey of on-device speech recognition models](docs/ASR-MODELS-2026-10.md)
 - Bug reports and feature requests: [Issues](../../issues/new/choose)

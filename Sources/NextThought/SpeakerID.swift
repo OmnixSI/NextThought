@@ -160,6 +160,13 @@ final class Voiceprints: @unchecked Sendable {
     }
 }
 
+/// Who a sentence is given to by hand.
+enum LineSpeaker: Equatable, Sendable {
+    case me
+    case voice(Int)
+    case someoneNew
+}
+
 /// Everything about one meeting's voices: the audio windows of the two channels and the grouping
 /// of voiceprints. It is dropped when the meeting ends, so voices are never carried to the next one.
 /// `clusterer` is only touched on `SpeakerTagger`'s queue.
@@ -260,13 +267,14 @@ final class SpeakerVoices {
     var isActive: Bool { meeting != nil }
 
     /// A new meeting: forget the voices of the last one.
-    func beginMeeting(inPerson: Bool) {
+    /// - Parameter wanted: the meeting tells people apart (chosen before it started).
+    func beginMeeting(inPerson: Bool, wanted: Bool = true) {
         names = [:]
         meVoices = []
         notMe = []
         lastFailure = nil
         let profile = MyVoice.shared.usableProfile
-        meeting = enabled && modelAvailable ? VoiceMeeting(inPerson: inPerson, profile: profile) : nil
+        meeting = enabled && wanted && modelAvailable ? VoiceMeeting(inPerson: inPerson, profile: profile) : nil
     }
 
     /// The meeting ended: drop its voices (sentences still being worked on keep their own reference
@@ -349,6 +357,39 @@ extension AppState {
         if let id { archive.setVoiceName(id, voice: voice, name: name) }
     }
 
+    /// Says who said one sentence. `sessionID` nil means the meeting in progress.
+    ///
+    /// Voices are told apart by sound and get it wrong now and then, and the saved
+    /// voiceprint does not always recognise the user across a room. One sentence can be
+    /// moved to the right person, to the user, or to someone new.
+    func assignLine(_ lineID: UUID, to target: LineSpeaker, in sessionID: UUID?) {
+        let live = sessionID == nil || sessionID == activeArchiveID
+        guard let id = sessionID ?? activeArchiveID else { return }
+        if live {
+            guard let index = entries.firstIndex(where: { $0.id == lineID }) else { return }
+            let voice: Int
+            switch target {
+            case let .voice(chosen): voice = chosen
+            case .me:
+                voice = speakers.meVoices.sorted().first ?? SpeakerLabels.newVoice(liveSpeakerLines, voiceNames: speakers.names, meVoices: speakers.meVoices)
+                markVoice(voice, isMe: true, in: nil)
+            case .someoneNew:
+                voice = SpeakerLabels.newVoice(liveSpeakerLines, voiceNames: speakers.names, meVoices: speakers.meVoices)
+                renameVoice(voice, to: String(localized: "新说话人"), in: nil)
+            }
+            entries[index].voice = voice
+            archive.appendVoice(sessionID: id, lineID: lineID, voice: voice)
+            return
+        }
+        Task {
+            guard await archive.assignVoice(id, lineID: lineID, to: target) else {
+                let reason = archive.persistenceBySession[id]?.lastFailure
+                errorMessage = "说话人修改尚未收到保存回执。" + (reason.map { "\n" + $0 } ?? "请查看会议归档状态并重试。")
+                return
+            }
+        }
+    }
+
     /// The user says voice `from` is voice `into`.
     func mergeVoices(_ from: Int, into: Int, in sessionID: UUID?) {
         let live = sessionID == nil || sessionID == activeArchiveID
@@ -404,6 +445,30 @@ extension SessionArchive {
         meta.meVoices = voices.isEmpty ? nil : voices.sorted()
         update(meta)
         notesRevision &+= 1
+    }
+
+    /// One sentence of a saved meeting goes to another person (a new tag wins over the old).
+    func assignVoice(_ id: UUID, lineID: UUID, to target: LineSpeaker) async -> Bool {
+        _ = await flush(sessionID: id)
+        guard let detail = await detail(id), var meta = sessions.first(where: { $0.id == id }) else { return false }
+        let mine = Set(meta.meVoices ?? [])
+        let voice: Int
+        switch target {
+        case let .voice(chosen): voice = chosen
+        case .me:
+            voice = mine.sorted().first ?? SpeakerLabels.newVoice(detail.lines, voiceNames: meta.voiceNames, meVoices: mine)
+            meta.meVoices = (mine.union([voice])).sorted()
+        case .someoneNew:
+            voice = SpeakerLabels.newVoice(detail.lines, voiceNames: meta.voiceNames, meVoices: mine)
+            var names = meta.voiceNames ?? [:]
+            names[String(voice)] = String(localized: "新说话人")
+            meta.voiceNames = names
+        }
+        guard appendLine(SessionVoiceTag(id: lineID, voice: voice), file: "voices.jsonl", session: id) else { return false }
+        update(meta)
+        let received = await flush(sessionID: id)
+        if received { notesRevision &+= 1 }
+        return received
     }
 
     /// Moves every line of voice `from` to `into` (new tags win over the old), and the name with it.

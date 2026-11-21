@@ -50,6 +50,8 @@ struct ContentView: View {
         // settings page included) is clickable along its whole row.
         .wideHitTargets()
         .foregroundStyle(Ink.ink)
+        // The text styles of the live page follow the app's text zoom (⌘+ / ⌘−).
+        .environment(\.dynamicTypeSize, TextZoom.shared.dynamicType)
         .preferredColorScheme(state.colorScheme)
         // A hard switch between light and dark flashes the whole window. The
         // animation on the appearance value makes the colors cross-fade.
@@ -222,7 +224,7 @@ private struct WindowPickerSheet: View {
                 Button { state.captureScreenshot(window) } label: {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(window.title).foregroundStyle(.primary).lineLimit(2)
-                        Text(window.owner).font(.caption).foregroundStyle(.secondary)
+                        Text(window.owner).font(.zoomed(.caption)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -242,9 +244,9 @@ private struct ShareTestSheet: View {
     @Environment(AppState.self) private var state
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("共享可见性测试").font(.headline)
+            Text("共享可见性测试").font(.zoomed(.headline))
             Text("下面是 ScreenCaptureKit 截取的整个屏幕，与 Zoom、Teams、Meet 等共享整屏时可能捕获的范围相近。如果能看到回答浮窗，整屏共享时其他参与者也可能看到；实际范围取决于会议软件和共享方式。")
-                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.zoomed(.callout)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let image = state.shareTestImage {
                 Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 420)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -262,7 +264,7 @@ struct QRCodeView: View {
             Image(nsImage: image).interpolation(.none).resizable().scaledToFit()
                 .padding(6).background(Color.white, in: RoundedRectangle(cornerRadius: 8))
         } else {
-            Image(systemName: "qrcode").font(.largeTitle)
+            Image(systemName: "qrcode").font(.zoomed(.largeTitle))
         }
     }
 

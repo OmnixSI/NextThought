@@ -182,7 +182,7 @@ private struct FishboneDiagram: View {
             if let at = cause.at { onJump(at) }
         } label: {
             Text(verbatim: cause.text)
-                .font(.system(size: FishboneGeometry.causeFont))
+                .font(.zoomed(size: FishboneGeometry.causeFont))
                 .foregroundStyle(Ink.ink)
                 .multilineTextAlignment(.leading)
                 .lineLimit(row.lines)
@@ -201,7 +201,7 @@ private struct FishboneDiagram: View {
             if let earliest { onJump(earliest) }
         } label: {
             Text(verbatim: category.name)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.zoomed(size: 12, weight: .semibold))
                 .foregroundStyle(Ink.ink)
                 .lineLimit(1).truncationMode(.tail)
                 .padding(.horizontal, Space.s2)
@@ -220,7 +220,7 @@ private struct FishboneDiagram: View {
             if let at = notes.headAt { onJump(at) }
         } label: {
             Text(verbatim: notes.head.isEmpty ? String(localized: "议题") : notes.head)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.zoomed(size: 13, weight: .semibold))
                 .foregroundStyle(Ink.ink)
                 .multilineTextAlignment(.center)
                 .lineLimit(4)
@@ -253,7 +253,7 @@ private struct FishboneTree: View {
         VStack(alignment: .leading, spacing: Space.s4) {
             HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                 Text(verbatim: notes.head.isEmpty ? String(localized: "议题") : notes.head)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.zoomed(size: 15, weight: .semibold))
                     .textSelection(.enabled)
                 StructuredTimeLink(at: notes.headAt, onJump: onJump)
             }
@@ -262,7 +262,7 @@ private struct FishboneTree: View {
                     Button { toggle(index) } label: {
                         HStack(spacing: Space.s2) {
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .semibold))
+                                .font(.zoomed(size: 9, weight: .semibold))
                                 .foregroundStyle(Ink.secondary)
                                 .rotationEffect(.degrees(folded.contains(index) ? 0 : 90))
                             Text(verbatim: category.name).font(Typo.label).foregroundStyle(Ink.ink)

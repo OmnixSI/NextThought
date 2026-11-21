@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import NextThoughtCore
 
 /// Dual-screen presenting: the slides are on the external display (the one that is
 /// shared), and the MacBook, with the camera, carries the speaker notes and NextThought.
@@ -43,6 +44,13 @@ final class PresenterMode {
     /// The mode is shaping the running meeting.
     private(set) var isActive = false
 
+    /// The user brought the page back during this meeting: it stays. Displays that come
+    /// and go (a projector re-syncing, PowerPoint switching mirroring as a slide show
+    /// starts) used to restart the mode each time, and each restart hid the page again:
+    /// twenty times in twelve minutes of one talk, under the pointer.
+    @ObservationIgnored private var pageWanted = false
+    @ObservationIgnored private var settling: Task<Void, Never>?
+
     /// What the mode changed, to put back afterwards.
     @ObservationIgnored private var saved: (screenWatch: Bool, target: String, region: [Double]?, follow: Bool)?
 
@@ -80,19 +88,36 @@ final class PresenterMode {
         island.model.presenting = true
         island.show()
         // The page would sit on top of the speaker notes; the island carries the meeting.
-        AppState.shared.liveWindow.set(.hidden)
+        if !pageWanted { AppState.shared.liveWindow.set(.hidden) }
         followSlides()
         Diagnostics.record("presenter.begin", ["screens": NSScreen.screens.count])
     }
 
-    /// The external display came or went during a meeting.
+    /// The page was shown or hidden from a menu, a shortcut or the Dock.
+    func pageModeChosen(_ mode: LiveWindowMode) {
+        guard isActive else { return }
+        pageWanted = mode == .notes
+    }
+
+    /// A meeting begins: nothing is remembered from the last one.
+    func meetingStarted() { pageWanted = false }
+
+    /// The external display came or went during a meeting. Acted on once the displays
+    /// have been the same for a moment: a reconfiguration passes through states with one
+    /// display, or none, on its way.
     func displaysChanged() {
         guard isEnabled, AppState.shared.isRunning else { return }
-        if slidesScreen == nil { end() } else if !isActive { begin() } else { followSlides() }
+        settling?.cancel()
+        settling = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(1_500))
+            guard !Task.isCancelled, let self, self.isEnabled, AppState.shared.isRunning else { return }
+            if self.slidesScreen == nil { self.end() } else if !self.isActive { self.begin() } else { self.followSlides() }
+        }
     }
 
     /// Called when the meeting ends (and when the mode is turned off during one).
     func end() {
+        settling?.cancel(); settling = nil
         guard isActive else { return }
         isActive = false
         CueIslandController.shared.model.presenting = false

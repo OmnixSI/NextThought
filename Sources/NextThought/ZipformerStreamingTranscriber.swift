@@ -18,6 +18,13 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
     /// Absolute sample index up to which audio has been committed (the segmenter
     /// re-sends half a second of overlap when it splits a long monologue).
     private var committedThroughSample = 0
+    /// Audio before this moment went out with an utterance that was closed here, not by
+    /// the segmenter; a segment that reaches back before it is trimmed.
+    private var committedThroughDate = Date.distantPast
+    /// Words on screen that are not a sentence yet, and the watch that closes them when
+    /// the segmenter does not.
+    private var pending = PendingUtterance()
+    private var watch: Task<Void, Never>?
     private(set) var lastRefineSeconds: Double?
 
     init(model: OnlineTransducerModel, refiner: OfflineTransducerModel?, vocabulary: String) {
@@ -38,8 +45,21 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
         errorHandler = onError
         lastFinalizedAt = .distantPast
         committedThroughSample = 0
+        committedThroughDate = .distantPast
+        pending = PendingUtterance()
         generation = UUID()
         streamID = try await runtime.makeStream()
+        watch?.cancel()
+        watch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, self.streamID != nil else { continue }
+                guard self.pending.isOverdue(at: Date()) else { continue }
+                Diagnostics.record("zipformer.closed_pending", ["characters": self.pending.text.count,
+                                                              "seconds": Date().timeIntervalSince(self.pending.since ?? Date())])
+                await self.commitUtterance(nil)
+            }
+        }
         Diagnostics.record("zipformer.stream_started", ["language": language, "hotwords": !vocabulary.isEmpty, "refine": refiner != nil])
     }
 
@@ -52,6 +72,7 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
                 guard let self else { return }
                 Task { @MainActor [self] in
                     guard self.generation == id else { return }
+                    if !hypothesis.isFinal { self.pending.heard(hypothesis.text, at: Date()) }
                     self.deliver(hypothesis)
                 }
             }
@@ -61,6 +82,8 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
     func finish() async {
         guard let streamID else { return }
         self.streamID = nil
+        watch?.cancel(); watch = nil
+        pending.closed()
         if let final = await runtime.finishStream(streamID) { deliver(final) }
         Diagnostics.record("zipformer.stream_finished")
     }
@@ -76,11 +99,18 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
             return
         }
         guard generation == id else { return }
+        pending.closed()
         guard refiner != nil, let event, OfflineSegmentRecognizer.shared.isLoaded else {
+            // Closed without a segment: what went out reaches up to now.
+            if event == nil { committedThroughDate = Date() }
             if let streaming { deliver(streaming) }
             return
         }
         let samples = newSamples(of: event)
+        guard !samples.isEmpty else {
+            if let streaming { deliver(streaming) }
+            return
+        }
         committedThroughSample = max(committedThroughSample, event.endSample)
         guard let refined = await OfflineSegmentRecognizer.shared.recognize(samples), generation == id else {
             if let streaming { deliver(streaming) }
@@ -88,7 +118,12 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
         }
         lastRefineSeconds = refined.seconds
         Diagnostics.record("refiner.decoded", ["seconds": refined.seconds, "audio_seconds": Double(samples.count) / 16_000, "changed": refined.text != streaming?.text])
-        let text = refined.text.isEmpty ? (streaming?.text ?? "") : refined.text
+        // The offline text covers the segment only; the stream may have heard much more.
+        let text = UtteranceText.final(streaming: streaming?.text ?? "", streamSeconds: streaming?.audioSeconds ?? 0,
+                                       refined: refined.text, segmentSeconds: Double(samples.count) / 16_000)
+        if text != refined.text, !refined.text.isEmpty {
+            Diagnostics.record("refiner.kept_stream", ["stream_seconds": streaming?.audioSeconds ?? 0, "segment_seconds": Double(samples.count) / 16_000])
+        }
         guard !text.isEmpty else { return }
         let origin = event.streamStartedAt ?? Date()
         let started = streaming?.startedAt ?? origin.addingTimeInterval(Double(event.startSample) / 16_000)
@@ -106,11 +141,15 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
             errorHandler?("Zipformer 切换音频设备后重置失败：\(error.localizedDescription)")
         }
         committedThroughSample = 0
+        committedThroughDate = .distantPast
+        pending.closed()
         Diagnostics.record("zipformer.stream_reset")
     }
 
     func cancel() async {
         generation = UUID()
+        watch?.cancel(); watch = nil
+        pending.closed()
         if let streamID {
             await runtime.destroyStream(streamID)
             self.streamID = nil
@@ -121,7 +160,12 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
 
     /// Drops the overlap the segmenter repeats after splitting a long utterance.
     private func newSamples(of event: SpeechSegmentEvent) -> [Int16] {
-        let alreadyCommitted = max(0, committedThroughSample - event.startSample)
+        var alreadyCommitted = max(0, committedThroughSample - event.startSample)
+        // Part of it went out with an utterance closed here: by the clock, not by samples.
+        if let origin = event.streamStartedAt {
+            let begins = origin.addingTimeInterval(Double(event.startSample) / 16_000)
+            alreadyCommitted = max(alreadyCommitted, Int(committedThroughDate.timeIntervalSince(begins) * 16_000))
+        }
         guard alreadyCommitted > 0 else { return event.samples }
         return Array(event.samples.dropFirst(min(alreadyCommitted, event.samples.count)))
     }

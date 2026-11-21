@@ -12,7 +12,7 @@ struct SubtitleBarSettingsSection: View {
                 Slider(value: $live.subtitleFontSize, in: LiveWindowController.fontSizeRange, step: 1)
                     .frame(maxWidth: 320)
                     .onChange(of: live.subtitleFontSize) { _, _ in live.saveSubtitleFontSize() }
-                Text("\(Int(live.subtitleFontSize))").font(.caption.monospacedDigit()).frame(width: 36)
+                Text("\(Int(live.subtitleFontSize))").font(Font.zoomed(.caption).monospacedDigit()).frame(width: 36)
             }
             Button("恢复默认位置") { SubtitleBarController.shared.resetPosition() }
                 .buttonStyle(SecondaryButtonStyle())

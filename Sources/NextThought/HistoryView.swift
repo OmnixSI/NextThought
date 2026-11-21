@@ -87,7 +87,8 @@ struct HistoryView: View {
                 if wide {
                     if !isMeetingListHidden && !archive.sessions.isEmpty {
                         sessionList
-                            .frame(width: 270)
+                            // Wider with bigger text, so names are not cut where they were not before.
+                            .frame(width: 270 * min(TextZoom.shared.factor, 1.3))
                             .padding(.leading, Space.s4).padding(.trailing, Space.s2).padding(.top, Space.s1)
                         Rectangle().fill(Ink.hairline).frame(width: 0.5)
                     }
@@ -215,7 +216,7 @@ struct HistoryView: View {
                 Text("所选系列及其会议记录将被永久删除，无法恢复。")
                 if !selectedSeriesSummary.isEmpty {
                     Text(verbatim: selectedSeriesSummary)
-                        .font(.caption)
+                        .font(.zoomed(.caption))
                         .lineLimit(3)
                 }
             }
@@ -590,7 +591,7 @@ struct HistoryView: View {
                         .font(Typo.caption.monospacedDigit())
                         .foregroundStyle(Ink.secondary)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.zoomed(size: 9, weight: .semibold))
                         .foregroundStyle(Ink.tertiary)
                 }
                 .padding(.horizontal, Space.s3)
@@ -814,10 +815,10 @@ struct HistoryView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("会议记录未能完整读取")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.zoomed(size: 12, weight: .semibold))
                     ForEach(Array(archive.archiveReadIssues.enumerated()), id: \.offset) { _, issue in
                         Text(issue.message)
-                            .font(.system(size: 11))
+                            .font(.zoomed(size: 11))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -848,7 +849,7 @@ struct HistoryView: View {
     private var searchField: some View {
         HStack(spacing: Space.s2) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11, weight: .medium))
+                .font(.zoomed(size: 11, weight: .medium))
                 .foregroundStyle(Ink.secondary)
             TextField(LocalizedStringKey(searchPlaceholder), text: $query)
                 .textFieldStyle(.plain)
@@ -858,7 +859,7 @@ struct HistoryView: View {
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28))
-                    .font(.system(size: 11))
+                    .font(.zoomed(size: 11))
                     .foregroundStyle(Ink.secondary)
                     .help("清空搜索")
             }
@@ -1093,7 +1094,7 @@ private struct HistoryFilterPicker<Value: Hashable>: View {
                 Text(LocalizedStringKey(options.first(where: { $0.0 == selection })?.1 ?? "筛选"))
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.zoomed(size: 8, weight: .semibold))
             }
             .font(Typo.caption.weight(.medium))
             .foregroundStyle(isDefault ? Ink.secondary : Ink.ink)
@@ -1196,7 +1197,7 @@ private struct MeetingArchiveOverview: View {
                 if !isRoot {
                     Button("所有记录") { onOpenRoot() }
                         .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
-                    Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+                    Image(systemName: "chevron.right").font(.zoomed(size: 9)).foregroundStyle(Ink.tertiary)
                 }
                 Text(selectedFolder?.name ?? title).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
                 Spacer(minLength: Space.s2)
@@ -1412,11 +1413,11 @@ private struct MeetingArchiveOverview: View {
                     .lineLimit(1)
                     if isSelectingSeries && hasWorkspace {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : (canSelect ? "circle" : "minus.circle"))
-                            .font(.system(size: 17, weight: .medium))
+                            .font(.zoomed(size: 17, weight: .medium))
                             .foregroundStyle(isSelected ? Ink.ai : (canSelect ? Ink.tertiary : Ink.caution))
                     } else {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.zoomed(size: 10, weight: .semibold))
                             .foregroundStyle(Ink.tertiary)
                     }
                 }
@@ -1646,7 +1647,7 @@ struct SessionAnswersList: View {
         VStack(alignment: .leading, spacing: 0) {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if detail.answers.isEmpty {
-                    Text("这场会议没有生成回答。").font(.callout).foregroundStyle(.secondary)
+                    Text("这场会议没有生成回答。").font(.zoomed(.callout)).foregroundStyle(.secondary)
                 }
                 ForEach(detail.answers) { answer in
                     VStack(alignment: .leading, spacing: 6) {
@@ -1655,15 +1656,15 @@ struct SessionAnswersList: View {
                                 .font(Typo.caption).foregroundStyle(Ink.caution)
                         }
                         HStack {
-                            Text(answer.question).font(.system(size: 13, weight: .semibold)).lineLimit(3).textSelection(.enabled)
+                            Text(answer.question).font(.zoomed(size: 13, weight: .semibold)).lineLimit(3).textSelection(.enabled)
                             Spacer()
-                            Text(answer.automatic ? "自动" : "手动").font(.system(size: 10)).foregroundStyle(.secondary)
+                            Text(answer.automatic ? "自动" : "手动").font(.zoomed(size: 10)).foregroundStyle(.secondary)
                         }
                         if let path = answer.screenshotPath {
                             ArchivedScreenshot(sessionID: detail.meta.id, relativePath: path)
                         }
                         MarkdownText(text: answer.answer, size: 13).equatable()
-                        Text(meta(answer)).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        Text(meta(answer)).font(.zoomed(size: 10)).foregroundStyle(.tertiary)
                     }
                     .aiBlock(padding: 12)
                     .id("answer-\(answer.id)")
@@ -1702,13 +1703,13 @@ private struct ArchivedScreenshot: View {
                     .onTapGesture { NSWorkspace.shared.open(fileURL) }
                     .help("点击查看原图")
             } else if missing {
-                Text("截图文件已不存在").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text("截图文件已不存在").font(.zoomed(size: 11)).foregroundStyle(.tertiary)
             } else {
                 ProgressView().controlSize(.mini)
             }
             HStack(spacing: 4) {
-                Image(systemName: "photo").font(.system(size: 9))
-                Text(missing ? "截图已归档（文件缺失）" : "截图已归档").font(.system(size: 10))
+                Image(systemName: "photo").font(.zoomed(size: 9))
+                Text(missing ? "截图已归档（文件缺失）" : "截图已归档").font(.zoomed(size: 10))
             }
             .foregroundStyle(.tertiary)
         }

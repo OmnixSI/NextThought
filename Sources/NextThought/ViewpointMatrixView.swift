@@ -52,7 +52,7 @@ struct ViewpointMatrixView: View {
                     Rectangle().fill(Ink.hairline).frame(height: 1)
                     GridRow(alignment: .top) {
                         Text(verbatim: issue.title)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.zoomed(size: 14, weight: .semibold))
                             .frame(width: Self.issueWidth, alignment: .topLeading)
                             .padding(.vertical, Space.s3)
                         ForEach(matrix.parties, id: \.self) { party in
@@ -87,7 +87,7 @@ struct ViewpointMatrixView: View {
             Text(title).font(Typo.section)
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                    Image(systemName: icon).font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
+                    Image(systemName: icon).font(.zoomed(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
                     Text(verbatim: item.text).font(Typo.body).lineSpacing(5).textSelection(.enabled)
                     StructuredTimeLink(at: item.at, onJump: onJump)
                 }

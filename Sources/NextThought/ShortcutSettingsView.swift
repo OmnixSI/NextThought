@@ -11,16 +11,16 @@ struct ShortcutSettingsView: View {
                 HStack {
                     Text(LocalizedStringKey(action.title))
                     Spacer()
-                    Button(state.shortcutLabel(action)) { recording = action }.font(.system(.callout, design: .monospaced))
+                    Button(state.shortcutLabel(action)) { recording = action }.font(.zoomed(.callout, design: .monospaced))
                 }
             }
             Button("恢复默认快捷键") { state.resetShortcuts() }
         }
         .sheet(item: $recording, onDismiss: { state.registerHotkeys() }) { action in
             VStack(spacing: 16) {
-                Text("设置快捷键：\(String(localized: String.LocalizationValue(action.title)))").font(.headline)
+                Text("设置快捷键：\(String(localized: String.LocalizationValue(action.title)))").font(.zoomed(.headline))
                 Text("按下组合键；至少包含 Command、Option 或 Control。Esc 取消。")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(.zoomed(.callout)).foregroundStyle(.secondary)
                 KeyRecorder { binding in
                     if let binding { state.setShortcut(action, binding: binding) }
                     recording = nil

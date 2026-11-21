@@ -2,17 +2,17 @@ import AppKit
 import SwiftUI
 import NextThoughtCore
 
-/// The live page keeps the current type scale while using native text styles, so
-/// macOS accessibility text sizes can scale its reading content and controls.
+/// The type scale of the live page: the sizes of the system's text styles, at the app's
+/// text zoom.
 enum LiveSessionTypography {
-    static let display = Font.system(.largeTitle, design: .serif).weight(.medium)
-    static let section = Font.system(.title3, design: .serif).weight(.medium)
-    static let prompt = Font.system(.title2).weight(.medium)
-    static let body = Font.body
-    static let label = Font.body.weight(.medium)
-    static let caption = Font.caption
-    static let overline = Font.caption2.weight(.semibold)
-    static let code = Font.system(.body, design: .monospaced)
+    static var display: Font { .zoomed(.largeTitle, design: .serif, weight: .medium) }
+    static var section: Font { .zoomed(.title3, design: .serif, weight: .medium) }
+    static var prompt: Font { .zoomed(.title2, weight: .medium) }
+    static var body: Font { .zoomed(.body) }
+    static var label: Font { .zoomed(.body, weight: .medium) }
+    static var caption: Font { .zoomed(.caption) }
+    static var overline: Font { .zoomed(.caption2, weight: .semibold) }
+    static var code: Font { .zoomed(.body, design: .monospaced) }
 }
 
 /// 会中页 (focus mode): a top bar, the live transcript on the left, the suggested
@@ -24,6 +24,7 @@ struct LiveSessionView: View {
     @State private var highlightedLineID: UUID?
 
     var body: some View {
+        let _ = (LiveRenderCount.page += 1)
         VStack(spacing: 0) {
             LiveTopBar()
             AutoEndBanner()
@@ -71,6 +72,7 @@ private struct LiveTopBar: View {
     private var scene: Workspace { state.preparedWorkspace ?? state.activeWorkspace }
 
     var body: some View {
+        let _ = (LiveRenderCount.topBar += 1)
         GeometryReader { proxy in
             Group {
                 if proxy.size.width < 1_080 {
@@ -134,7 +136,7 @@ private struct LiveTopBar: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(verbatim: title)
-                .font(Font.system(.body, design: .serif).weight(.medium)).foregroundStyle(Ink.ink)
+                .font(Font.zoomed(.body, design: .serif).weight(.medium)).foregroundStyle(Ink.ink)
                 .lineLimit(1).truncationMode(.middle)
             if state.activeWorkspace.name != title {
                 Text(verbatim: state.activeWorkspace.name)
@@ -177,7 +179,7 @@ private struct LiveTopBar: View {
         Group {
             if let item {
                 HStack(spacing: 5) {
-                    Image(systemName: item.symbol).font(.system(size: 10, weight: .semibold))
+                    Image(systemName: item.symbol).font(.zoomed(size: 10, weight: .semibold))
                     Text(verbatim: item.text).font(LiveSessionTypography.caption).lineLimit(1)
                 }
                 .foregroundStyle(Ink.caution)
@@ -202,7 +204,11 @@ private struct LiveTopBar: View {
     }
 
     private var endSessionButton: some View {
-        Button("结束") { Task { await state.stopSession() } }
+        Button("结束") {
+            // Not for the click that only brought the app forward.
+            guard !FirstMouse.isActivatingClick else { return }
+            Task { await state.stopSession() }
+        }
             .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
             .disabled(state.isChangingSession)
             .help("结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")
@@ -245,6 +251,8 @@ private struct LiveTopBar: View {
                 Toggle("英文回答附中文对照", isOn: Binding(get: { state.answerGloss }, set: { state.answerGloss = $0 }))
             }
             Section("工具") {
+                Toggle("实时纪要", isOn: Binding(get: { state.liveNotes.isEnabled }, set: { state.liveNotes.setEnabled($0) }))
+                    .help("边开边整理议题、决定和待办，大约每 45 秒更新一次")
                 Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
                     state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)
                 }
@@ -258,7 +266,7 @@ private struct LiveTopBar: View {
                         Label("回答浮窗", systemImage: "rectangle.topthird.inset.filled")
                     }
                 }
-                Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0) })) {
+                Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0, byUser: true) })) {
                     ForEach(LiveWindowMode.allCases) { mode in
                         Text(LocalizedStringKey(mode.title)).tag(mode)
                     }
@@ -273,7 +281,7 @@ private struct LiveTopBar: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.zoomed(size: 14, weight: .semibold))
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
                 .overlay(alignment: .topTrailing) {
@@ -365,14 +373,14 @@ private struct RecordingTimer: View {
             HStack(spacing: 6) {
                 let onAir = state.isRunning && !state.isPaused
                 Image(systemName: "circle.fill")
-                    .font(.system(size: 7))
+                    .font(.zoomed(size: 7))
                     .foregroundStyle(onAir ? Ink.seal : Ink.tertiary)
                     .symbolEffect(.pulse, options: .repeating, isActive: onAir && !Motion.reduce)
                     .frame(width: 10, height: 10)
                     .accessibilityHidden(true)
                 if let elapsed {
                     Text(verbatim: elapsed)
-                        .font(Font.callout.weight(.medium).monospacedDigit())
+                        .font(Font.zoomed(.callout).weight(.medium).monospacedDigit())
                         .foregroundStyle(state.isPaused ? Ink.secondary : Ink.ink)
                         .contentTransition(.numericText())
                 }
@@ -406,7 +414,10 @@ private struct PauseResumeButton: View {
     private var title: LocalizedStringKey { state.isPaused ? "继续" : "暂停" }
 
     var body: some View {
-        Button { Task { await state.togglePause() } } label: {
+        Button {
+            guard !FirstMouse.isActivatingClick else { return }
+            Task { await state.togglePause() }
+        } label: {
             Label(title, systemImage: state.isPaused ? "play.fill" : "pause.fill")
         }
         .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
@@ -438,7 +449,7 @@ private struct PhoneStatusIcon: View {
     @Environment(AppState.self) private var state
     var body: some View {
         Image(systemName: "iphone")
-            .font(.system(size: 13))
+            .font(.zoomed(size: 13))
             .foregroundStyle(Ink.secondary)
             .frame(width: 28, height: 28)
             .overlay(alignment: .topTrailing) {
@@ -453,7 +464,7 @@ private struct ScreenStatusIcon: View {
     @Environment(AppState.self) private var state
     var body: some View {
         Image(systemName: "display")
-            .font(.system(size: 13))
+            .font(.zoomed(size: 13))
             .foregroundStyle(Ink.secondary)
             .frame(width: 28, height: 28)
             .overlay(alignment: .topTrailing) {
@@ -512,7 +523,7 @@ private struct AnswerSettingsMenu: View {
                 Text(verbatim: state.currentAnswerModel.isEmpty ? String(localized: "选择模型") : state.currentAnswerModel)
                     .font(LiveSessionTypography.label)
                 if state.activeServiceTier == "fast" {
-                    Image(systemName: "bolt.fill").font(.system(size: 10))
+                    Image(systemName: "bolt.fill").font(.zoomed(size: 10))
                 }
             }
             .foregroundStyle(Ink.secondary)
@@ -550,6 +561,7 @@ private struct TranscriptColumn: View {
     @State private var follow = ScrollFollowState()
 
     var body: some View {
+        let _ = (LiveRenderCount.transcript += 1)
         // 区分对方的每个人: people appear only once the voices have been told apart.
         let layout = state.speakers.isActive && state.entries.contains(where: { $0.voice != nil })
             ? SpeakerLayout(lines: state.liveSpeakerLines, voiceNames: state.voiceNames(for: nil), meVoices: state.speakers.meVoices) : nil
@@ -631,7 +643,12 @@ private struct TranscriptColumn: View {
                 }
                 .frame(maxHeight: .infinity)
                 .onChange(of: state.entries.count) { oldCount, newCount in
-                    if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) }
+                    if follow.isFollowing {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                        // A lazy stack only knows the height of a new row after it has laid it
+                        // out: the first jump can stop short of it. Once more, a frame later.
+                        DispatchQueue.main.async { if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) } }
+                    }
                     else { follow.receivedNewContent(count: newCount - oldCount) }
                 }
                 // Final translations arrive after the transcript row was inserted;
@@ -678,7 +695,7 @@ private struct SpeakerLabel: View {
     var hidden = false
     var body: some View {
         Text(speaker.displayName)
-            .font(Font.caption.weight(.medium))
+            .font(Font.zoomed(.caption).weight(.medium))
             .foregroundStyle(speaker == .me ? Ink.ink : Ink.secondary)
             .frame(width: 40, alignment: .leading)
             .opacity(hidden ? 0 : 1)
@@ -695,6 +712,7 @@ private struct TranscriptLine: View {
     @FocusState private var answerButtonFocused: Bool
 
     var body: some View {
+        let _ = (LiveRenderCount.line += 1)
         if entry.suspectedEcho == true {
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                 SpeakerLabel(speaker: entry.speaker)
@@ -756,6 +774,11 @@ private struct TranscriptLine: View {
                                               offsetSeconds: Int(max(0, entry.date.timeIntervalSince(state.sessionStartedAt ?? entry.date))), sessionID: sessionID)
                     }
                 }
+                // The other side or the room: which of them said it, or was it me.
+                if entry.speaker != .me, state.speakers.isActive {
+                    Divider()
+                    LineSpeakerMenu(layout: layout) { state.assignLine(entry.id, to: $0, in: nil) }
+                }
             }
             .animation(Motion.hover, value: hovering)
         }
@@ -768,7 +791,7 @@ private struct QuestionMark: View {
     var body: some View {
         let tint = (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode.theme.tint
         Text("问题")
-            .font(Font.caption2.weight(.medium))
+            .font(Font.zoomed(.caption2).weight(.medium))
             .foregroundStyle(tint)
             .padding(.horizontal, 7).padding(.vertical, 2)
             .background(tint.opacity(0.13), in: Capsule())
@@ -781,6 +804,7 @@ private struct QuestionMark: View {
 private struct PartialLines: View {
     @Environment(AppState.self) private var state
     var body: some View {
+        let _ = (LiveRenderCount.partial += 1)
         if !state.partialTranscript.isEmpty {
             line(state.partialTranscript, translation: state.liveTranslation.systemPartialTranslation, speaker: .remote)
                 .liveSessionAcceptanceFrame("partial-transcript")
@@ -900,13 +924,16 @@ private struct TranscriptStatus: View {
 private struct RightColumn: View {
     @Environment(AppState.self) private var state
     let onOpenHighlight: (SessionHighlight) -> Void
-    @State private var showsAnswer = false
+    private enum Tab: Hashable { case myNotes, answers, liveNotes }
+    @State private var tab: Tab = .myNotes
     @State private var highlights: [SessionHighlight] = []
+    private var showsAnswer: Bool { tab == .answers }
 
     var body: some View {
+        let _ = (LiveRenderCount.rightColumn += 1)
         VStack(spacing: 0) {
             HStack {
-                InkSegmented(items: [(value: false, title: "我的笔记"), (value: true, title: "问答")], selection: $showsAnswer)
+                InkSegmented(items: [(value: Tab.liveNotes, title: "实时纪要"), (value: Tab.answers, title: "问答"), (value: Tab.myNotes, title: "我的笔记")], selection: $tab)
                 Spacer(minLength: Space.s2)
                 if state.isAnswering && !showsAnswer {
                     Label("回答生成中", systemImage: "sparkles").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai)
@@ -917,7 +944,9 @@ private struct RightColumn: View {
             .padding(.horizontal, Space.s6).padding(.top, Space.s4)
             .animation(Motion.snappy, value: state.isAnswering)
             Group {
-                if showsAnswer {
+                if tab == .liveNotes {
+                    LiveNotesColumn()
+                } else if showsAnswer {
                     AnswerColumn()
                 } else if let id = state.activeArchiveID {
                     MeetingUserNotes(sessionID: id, highlights: highlights, onOpenHighlight: onOpenHighlight)
@@ -931,12 +960,111 @@ private struct RightColumn: View {
                 }
             }
             .transition(.opacity)
-            .animation(Motion.expand, value: showsAnswer)
+            .animation(Motion.expand, value: tab)
         }
-        .onAppear { showsAnswer = state.automaticAnswers }
-        .onChange(of: state.currentAnswerID) { _, _ in if !state.currentAnswerAutomatic { showsAnswer = true } }
+        // What the meeting was started for is what shows first.
+        .onAppear {
+            if AppEnvironment.values["NEXTTHOUGHT_DEMO_LIVE_NOTES"] == "1" { tab = .liveNotes }
+            else { tab = state.automaticAnswers ? .answers : (state.liveNotes.isEnabled ? .liveNotes : .myNotes) }
+        }
+        .onChange(of: state.currentAnswerID) { _, _ in if !state.currentAnswerAutomatic { tab = .answers } }
         .task(id: state.archive.notesRevision) {
             if let id = state.activeArchiveID, let content = try? await state.archive.userContent(id) { highlights = content.highlights }
+        }
+    }
+}
+
+/// 实时纪要: what the meeting is about so far, its topics, what was decided and who is
+/// to do what; rewritten as the meeting goes on.
+private struct LiveNotesColumn: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let engine = state.liveNotes
+        let notes = engine.notes
+        let tint = (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode.theme.tint
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: Space.s2) {
+                if engine.status == .updating { ProgressView().controlSize(.mini) }
+                Text(verbatim: statusText(engine)).font(LiveSessionTypography.caption)
+                    .foregroundStyle(engine.status == .failed || engine.status == .noEngine ? Ink.caution : Ink.secondary)
+                    .contentTransition(.opacity)
+                Spacer(minLength: Space.s2)
+                if engine.isEnabled {
+                    Button("现在更新") { engine.updateNow(state) }
+                        .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 8, scalesWithDynamicType: true))
+                        .disabled(engine.status == .updating || !state.answerEngineReady)
+                } else {
+                    Button("开启实时纪要") { engine.setEnabled(true) }
+                        .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 8, scalesWithDynamicType: true))
+                }
+            }
+            .padding(.horizontal, Space.s6).padding(.top, Space.s3)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.s4) {
+                    if notes.isEmpty {
+                        Text(engine.isEnabled ? "说上几句之后，这里会出现这场会的要点：在谈什么、定了什么、谁要做什么。"
+                             : "这场没有开实时纪要。结束后仍会整理完整纪要；想边开边看要点，点右上角开启。")
+                            .font(LiveSessionTypography.body).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text(verbatim: notes.summary).font(LiveSessionTypography.body).foregroundStyle(Ink.ink).lineSpacing(5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(Space.s4).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+                        ForEach(notes.topics) { topic in
+                            VStack(alignment: .leading, spacing: Space.s2) {
+                                Text(verbatim: topic.title).font(LiveSessionTypography.label).foregroundStyle(Ink.ink)
+                                ForEach(topic.points, id: \.self) { point in bullet(point, fresh: engine.fresh.contains(point), tint: tint) }
+                            }
+                        }
+                        if !notes.decisions.isEmpty {
+                            VStack(alignment: .leading, spacing: Space.s2) {
+                                Text("定下来的").overline()
+                                ForEach(notes.decisions, id: \.self) { item in bullet(item, fresh: engine.fresh.contains(item), tint: tint, symbol: "checkmark") }
+                            }
+                        }
+                        if !notes.todos.isEmpty {
+                            VStack(alignment: .leading, spacing: Space.s2) {
+                                Text("要做的").overline()
+                                ForEach(notes.todos) { todo in
+                                    bullet(todo.owner.map { todo.text + "（" + $0 + "）" } ?? todo.text, fresh: engine.fresh.contains(todo.text), tint: tint, symbol: "square")
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(Space.s6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .animation(Motion.expand, value: notes)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityIdentifier("liveSession.liveNotes")
+    }
+
+    private func statusText(_ engine: LiveNotesEngine) -> String {
+        switch engine.status {
+        case .off: return String(localized: "实时纪要没有开")
+        case .updating: return String(localized: "正在更新…")
+        case .failed: return String(localized: "这次没更新成功，稍后会再试")
+        case .noEngine: return String(localized: "还没有连接回答服务，写不了实时纪要")
+        case .waiting:
+            guard let at = engine.updatedAt else { return String(localized: "有了内容就开始整理") }
+            return String(localized: "更新于 \(at.formatted(date: .omitted, time: .shortened)) · 约每 45 秒一次")
+        }
+    }
+
+    /// One line of the notes; what the last update added carries the scene's colour.
+    private func bullet(_ text: String, fresh: Bool, tint: Color, symbol: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+            if let symbol {
+                Image(systemName: symbol).font(.zoomed(size: 9, weight: .semibold)).foregroundStyle(fresh ? tint : Ink.tertiary).frame(width: 12)
+            } else {
+                Circle().fill(fresh ? tint : Ink.tertiary).frame(width: 4, height: 4).frame(width: 12).offset(y: -3)
+            }
+            Text(verbatim: text).font(LiveSessionTypography.body).foregroundStyle(Ink.ink).lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -977,7 +1105,7 @@ private struct AnswerColumn: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(spacing: Space.s2) {
                 HStack(spacing: Space.s1) {
-                    Image(systemName: "sparkle").font(.system(size: 11, weight: .medium)).foregroundStyle(tint)
+                    Image(systemName: "sparkle").font(.zoomed(size: 11, weight: .medium)).foregroundStyle(tint)
                     Group {
                         if state.isAnswering && state.historyCursor == nil {
                             Text("正在回答").transition(.blurReplace)
@@ -992,7 +1120,7 @@ private struct AnswerColumn: View {
                 if let position = state.historyPositionText {
                     Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("上一条 · \(state.shortcutLabel(.previousAnswer))")
-                    Text(verbatim: position).font(Font.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+                    Text(verbatim: position).font(Font.zoomed(.caption).monospacedDigit()).foregroundStyle(Ink.secondary)
                         .contentTransition(.numericText())
                     Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("下一条 · \(state.shortcutLabel(.nextAnswer))")
@@ -1280,7 +1408,7 @@ private struct EvidenceDetails: View {
                 Text(verbatim: evidence.retrieval).font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                 ForEach(Array(evidence.materials.enumerated()), id: \.offset) { _, item in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: item.citation).font(Font.caption.weight(.semibold))
+                        Text(verbatim: item.citation).font(Font.zoomed(.caption).weight(.semibold))
                         Text(verbatim: item.text).font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary).lineLimit(6)
                     }
                 }
@@ -1367,7 +1495,7 @@ private struct LiveComposer: View {
                 if state.automaticAnswers {
                     Button { state.forceAnswerCurrent() } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "bolt.fill").font(.system(size: 11))
+                            Image(systemName: "bolt.fill").font(.zoomed(size: 11))
                             Text("立即回答")
                             ShortcutHint(text: state.shortcutLabel(.forceAnswer), onInk: true, scalesWithDynamicType: true)
                         }

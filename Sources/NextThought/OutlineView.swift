@@ -23,7 +23,7 @@ struct OutlineView: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                 Text(verbatim: "\(index + 1)")
-                    .font(.system(size: 13, design: .serif)).foregroundStyle(Ink.tertiary)
+                    .font(.zoomed(size: 13, design: .serif)).foregroundStyle(Ink.tertiary)
                     .frame(width: 24, alignment: .leading)
                 Text(verbatim: section.title).font(Typo.section).textSelection(.enabled)
                 StructuredTimeLink(at: section.at, onJump: onJump)
@@ -63,7 +63,7 @@ struct OutlineView: View {
                 Rectangle().fill(Ink.hairline).frame(height: 1)
                 HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                     Text(verbatim: concept.term)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.zoomed(size: 14, weight: .semibold))
                         .frame(width: 140, alignment: .leading)
                     HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                         Text(verbatim: concept.meaning).font(Typo.body).lineSpacing(4).textSelection(.enabled)
@@ -81,7 +81,7 @@ struct OutlineView: View {
             Text("待复习").font(Typo.section)
             ForEach(Array(notes.review.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                    Image(systemName: "circle").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+                    Image(systemName: "circle").font(.zoomed(size: 9)).foregroundStyle(Ink.tertiary)
                     Text(verbatim: item.text).font(Typo.body).lineSpacing(5).textSelection(.enabled)
                     StructuredTimeLink(at: item.at, onJump: onJump)
                 }

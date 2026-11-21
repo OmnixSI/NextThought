@@ -84,7 +84,7 @@ struct SceneGlyph: View {
             .fill(theme.tint.opacity(0.13))
             .overlay {
                 Image(systemName: theme.symbol)
-                    .font(.system(size: size * 0.44, weight: .medium))
+                    .font(.zoomed(size: size * 0.44, weight: .medium))
                     .foregroundStyle(theme.tint)
             }
             .frame(width: size, height: size)

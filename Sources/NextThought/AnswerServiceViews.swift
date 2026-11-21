@@ -212,7 +212,7 @@ struct APIConnectView: View {
                     .onSubmit { run() }
             } else {
                 HStack(spacing: Space.s2) {
-                    Image(systemName: "key").font(.system(size: 12)).foregroundStyle(Ink.secondary)
+                    Image(systemName: "key").font(.zoomed(size: 12)).foregroundStyle(Ink.secondary)
                     Text(verbatim: APIKeyInput.masked(state.apiKey)).font(Typo.code).foregroundStyle(Ink.ink)
                     Spacer(minLength: 0)
                     Button("更换") { replacingKey = true; keyDraft = "" }.buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6))
@@ -377,7 +377,7 @@ struct APIConnectView: View {
     private var footnote: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             HStack(spacing: Space.s2) {
-                Image(systemName: "lock").font(.system(size: 11))
+                Image(systemName: "lock").font(.zoomed(size: 11))
                 Text(LocalizedStringKey(isLocal ? "这是本机上的服务，数据不会离开这台 Mac。" : "Key 只存在这台 Mac 的钥匙串里，只发给你选的服务商。"))
             }
             .font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -395,7 +395,7 @@ struct APIConnectView: View {
                 Link(destination: url) {
                     HStack(spacing: 4) {
                         Text("去哪里拿 Key")
-                        Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
+                        Image(systemName: "arrow.up.right").font(.zoomed(size: 10, weight: .semibold))
                     }
                     .font(Typo.label)
                 }

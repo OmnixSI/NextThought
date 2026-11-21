@@ -15,7 +15,7 @@ private struct PaperFieldBody<Label: View>: View {
         field
             .textFieldStyle(.plain)
             .focused($focused)
-            .font(.system(size: 13))
+            .font(.zoomed(size: 13))
             .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)

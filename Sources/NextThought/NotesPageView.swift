@@ -23,7 +23,8 @@ struct MeetingPage: View {
     @State private var evidenceReferences: [SessionEvidenceReference] = []
     @State private var selectedEvidenceID: String?
     @State private var editingEvidence: SessionEvidenceReference?
-    @State private var tab: MeetingTab = .notes
+    /// NEXTTHOUGHT_DEMO_MEETING_TAB=transcript opens on the transcript, for screenshots.
+    @State private var tab: MeetingTab = AppEnvironment.values["NEXTTHOUGHT_DEMO_MEETING_TAB"] == "transcript" ? .transcript : .notes
     @State private var transcriptVersion: TranscriptVersion = .corrected
     /// Which view of the notes is shown: the text notes (always the one a meeting opens with)
     /// or a fishbone, outline or viewpoint matrix the user picked. Not saved.
@@ -578,7 +579,7 @@ struct MeetingPage: View {
                 .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
                 .help("查看所有会议")
             if let seriesID, let seriesName {
-                Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+                Image(systemName: "chevron.right").font(.zoomed(size: 9)).foregroundStyle(Ink.tertiary)
                 Button { onNavigateToSeries(seriesID) } label: {
                     Text(verbatim: seriesName).font(Typo.caption).foregroundStyle(Ink.secondary)
                         .lineLimit(1).truncationMode(.middle)
@@ -586,8 +587,8 @@ struct MeetingPage: View {
                 .buttonStyle(.plain)
                 .help("查看“\(seriesName)”系列中的会议")
             }
-            Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
-            Text(currentPageTitle).font(.system(size: 12, weight: .medium))
+            Image(systemName: "chevron.right").font(.zoomed(size: 9)).foregroundStyle(Ink.tertiary)
+            Text(currentPageTitle).font(.zoomed(size: 12, weight: .medium))
                 .lineLimit(1).fixedSize().help(currentPageTitle)
         }
         .lineLimit(1)
@@ -699,7 +700,7 @@ private struct NotesProgressLine: View {
                     ForEach(NotesStep.allCases) { step in
                         HStack(spacing: Space.s1) {
                             Image(systemName: step.rawValue < current ? "checkmark" : (step.rawValue == current ? "circle.dotted" : "circle"))
-                                .font(.system(size: 10))
+                                .font(.zoomed(size: 10))
                             Text(step.title)
                         }
                         .font(Typo.caption)
@@ -745,15 +746,15 @@ private struct TemplateMenu: View {
             Group {
                 if compactLabel {
                     HStack(spacing: Space.s1) {
-                        Image(systemName: "doc.plaintext").font(.system(size: 11))
-                        Image(systemName: "chevron.down").font(.system(size: 9))
+                        Image(systemName: "doc.plaintext").font(.zoomed(size: 11))
+                        Image(systemName: "chevron.down").font(.zoomed(size: 9))
                     }
                 } else {
                     HStack(spacing: Space.s1) {
-                        Image(systemName: "doc.plaintext").font(.system(size: 11))
+                        Image(systemName: "doc.plaintext").font(.zoomed(size: 11))
                         Text("模板：\(currentName)")
                             .lineLimit(1).truncationMode(.middle)
-                        Image(systemName: "chevron.down").font(.system(size: 9))
+                        Image(systemName: "chevron.down").font(.zoomed(size: 9))
                     }
                 }
             }
@@ -851,7 +852,7 @@ private struct NotesSectionView: View {
                 // Points sit under the subject they belong to; a list without subjects reads as before.
                 ForEach(Array(NotesShape.groups(section.items).enumerated()), id: \.offset) { index, group in
                     if let topic = group.topic {
-                        Text(verbatim: topic).font(.system(size: 13, weight: .semibold)).foregroundStyle(Ink.secondary)
+                        Text(verbatim: topic).font(.zoomed(size: 13, weight: .semibold)).foregroundStyle(Ink.secondary)
                             .padding(.top, index == 0 ? 0 : Space.s2)
                     }
                     ForEach(group.items) { item in
@@ -896,11 +897,11 @@ private struct NotesSectionView: View {
                 ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
                     Rectangle().fill(Ink.hairline).frame(height: 1)
                     HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                        Text(verbatim: "\(index + 1)").font(.system(size: 13, design: .serif)).foregroundStyle(Ink.tertiary)
+                        Text(verbatim: "\(index + 1)").font(.zoomed(size: 13, design: .serif)).foregroundStyle(Ink.tertiary)
                             .frame(width: 24, alignment: .leading)
                         VStack(alignment: .leading, spacing: Space.s2) {
                             HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                                Text(verbatim: item.text).id("note-\(item.id)").font(.system(size: 14, weight: .semibold)).textSelection(.enabled)
+                                Text(verbatim: item.text).id("note-\(item.id)").font(.zoomed(size: 14, weight: .semibold)).textSelection(.enabled)
                                 TimeLink(time: item.time, onJump: onJump)
                                 evidenceButton(item)
                                 VerdictBadge(item: item)
@@ -930,7 +931,7 @@ private struct NotesSectionView: View {
             selectedEvidenceID = evidenceID
         } label: {
             Image(systemName: "quote.bubble")
-                .font(.system(size: 11, weight: .medium))
+                .font(.zoomed(size: 11, weight: .medium))
                 .foregroundStyle(Ink.secondary)
         }
         .buttonStyle(.plain)
@@ -973,17 +974,17 @@ private struct SessionEvidencePane: View {
                             Button { selectedID = reference.id } label: {
                                 VStack(alignment: .leading, spacing: 3) {
                                     HStack(spacing: Space.s1) {
-                                        Text(verbatim: reference.title).font(.system(size: 10, weight: .semibold))
+                                        Text(verbatim: reference.title).font(.zoomed(size: 10, weight: .semibold))
                                             .foregroundStyle(Ink.secondary).lineLimit(1)
                                         Spacer(minLength: 0)
                                         if let location = reference.location {
-                                            Text(verbatim: location).font(.system(size: 10).monospacedDigit())
+                                            Text(verbatim: location).font(.zoomed(size: 10).monospacedDigit())
                                                 .foregroundStyle(Ink.tertiary)
                                         }
                                     }
-                                    Text(verbatim: reference.claim).font(.system(size: 11)).foregroundStyle(Ink.ink)
+                                    Text(verbatim: reference.claim).font(.zoomed(size: 11)).foregroundStyle(Ink.ink)
                                         .lineLimit(2).multilineTextAlignment(.leading)
-                                    Text(supportLabel(reference)).font(.system(size: 9, weight: .medium))
+                                    Text(supportLabel(reference)).font(.zoomed(size: 9, weight: .medium))
                                         .foregroundStyle(reference.needsConfirmation || reference.support != .quoted ? Ink.caution : Ink.secondary)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1156,7 +1157,7 @@ private struct AIHeadingText: View {
     let text: String
     var body: some View {
         HStack(spacing: Space.s1) {
-            Image(systemName: "sparkle").font(.system(size: 11, weight: .medium))
+            Image(systemName: "sparkle").font(.zoomed(size: 11, weight: .medium))
             Text(verbatim: text)
         }
         .overline(Ink.ai)
@@ -1170,7 +1171,7 @@ private struct TimeLink: View {
     var body: some View {
         if let time, let seconds = NotesTime.seconds(time) {
             Button { onJump(seconds) } label: {
-                Text(verbatim: "[\(time)]").font(.system(size: 12).monospacedDigit()).foregroundStyle(Ink.secondary)
+                Text(verbatim: "[\(time)]").font(.zoomed(size: 12).monospacedDigit()).foregroundStyle(Ink.secondary)
             }
             .buttonStyle(.plain)
             .help("跳到转写里的这句话")
@@ -1181,7 +1182,7 @@ private struct TimeLink: View {
 private struct ConfirmBadge: View {
     var body: some View {
         Text("待确认")
-            .font(.system(size: 11, weight: .semibold))
+            .font(.zoomed(size: 11, weight: .semibold))
             .padding(.horizontal, 6).padding(.vertical, 1)
             .background(Ink.caution.opacity(0.18), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
@@ -1199,7 +1200,7 @@ private struct VerdictBadge: View {
 
     private func badge(_ title: LocalizedStringKey, color: Color) -> some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.zoomed(size: 11, weight: .semibold))
             .padding(.horizontal, 6).padding(.vertical, 1)
             .background(color.opacity(0.18), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
@@ -1209,6 +1210,50 @@ private struct VerdictBadge: View {
 
 /// The transcript with the proofreading corrections underlined (dotted); hover shows
 /// what was recognized, and a right click undoes a correction.
+/// One sentence of a saved meeting being rewritten by hand.
+struct LineEdit: Identifiable {
+    let id: UUID
+    /// As it was recognised; the record keeps this and the edit is laid over it.
+    let original: String
+    var text: String
+}
+
+/// "改这一句的文字": what was recognised wrongly, put right by hand. The notes are written
+/// from the corrected text the next time they are organised.
+private struct LineEditSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let edit: LineEdit
+    let save: (String) -> Void
+    @State private var draft = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("改这一句的文字").font(Typo.section)
+            Text(verbatim: String(localized: "原来识别为：\(edit.original)")).font(Typo.caption).foregroundStyle(Ink.secondary)
+                .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+            TextEditor(text: $draft)
+                .font(Typo.body)
+                .frame(minHeight: 96)
+                .padding(6)
+                .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            Text("原始转写不会被改动，随时可以在“原始转写”里看到。重新整理纪要时用的是改过的文字。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Space.s2) {
+                if edit.text != edit.original {
+                    Button("恢复原样") { save(edit.original); dismiss() }.buttonStyle(GhostButtonStyle(height: 28))
+                }
+                Spacer()
+                Button("取消") { dismiss() }.buttonStyle(GhostButtonStyle(height: 28)).keyboardShortcut(.cancelAction)
+                Button("保存") { save(draft); dismiss() }.buttonStyle(PrimaryButtonStyle(height: 28)).keyboardShortcut(.defaultAction)
+                    .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(Space.s6)
+        .frame(width: 520)
+        .onAppear { draft = edit.text }
+    }
+}
+
 private struct CorrectedTranscript: View {
     @Environment(AppState.self) private var state
     let detail: SessionDetail
@@ -1219,6 +1264,7 @@ private struct CorrectedTranscript: View {
     @State private var find = ""
     @State private var findCache = GlossarySearchCache()
     @State private var glossaryDraft: GlossaryDraft?
+    @State private var editing: LineEdit?
 
     var body: some View {
         let projectedLines = projection?.transcript ?? []
@@ -1250,15 +1296,18 @@ private struct CorrectedTranscript: View {
             ForEach(shown) { line in
                 HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                     Text(verbatim: NotesTime.text(line.offset))
-                        .font(.system(size: 11).monospacedDigit()).foregroundStyle(Ink.tertiary)
+                        .font(.zoomed(size: 11).monospacedDigit()).foregroundStyle(Ink.tertiary)
                         .frame(width: 52, alignment: .leading)
-                    Text(line.speaker.displayName)
-                        .font(.system(size: 12, weight: line.speaker == .me ? .semibold : .regular))
-                        .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
-                        .frame(width: 40, alignment: .leading)
-                        .opacity(layout.hidesRoleLabel(for: line.speaker) ? 0 : 1)
+                    // Once people are told apart, who speaks is a name above each run of
+                    // sentences (the user's included); the role column would be an empty gap.
+                    if !layout.isShown {
+                        Text(line.speaker.displayName)
+                            .font(.zoomed(size: 12, weight: line.speaker == .me ? .semibold : .regular))
+                            .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
+                            .frame(width: 40, alignment: .leading)
+                    }
                     VStack(alignment: .leading, spacing: Space.s1) {
-                        if layout.hidesRoleLabel(for: line.speaker), layout.starts.contains(line.id) {
+                        if layout.isShown, layout.starts.contains(line.id) {
                             SpeakerTag(layout: layout, lineID: line.id, speaker: line.speaker)
                         }
                         Text(Self.text(line, version: version))
@@ -1272,7 +1321,7 @@ private struct CorrectedTranscript: View {
                             HStack(alignment: .firstTextBaseline, spacing: Space.s1) {
                                 Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                                 if line.translationIsStale {
-                                    Text("待更新").font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.caution)
+                                    Text("待更新").font(.zoomed(size: 10, weight: .medium)).foregroundStyle(Ink.caution)
                                 }
                             }
                                 .textSelection(.enabled)
@@ -1297,11 +1346,20 @@ private struct CorrectedTranscript: View {
                                               offsetSeconds: line.offset, sessionID: detail.meta.id)
                     }
                     Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.originalText) }
+                    Divider()
+                    Button("改这一句的文字…") { editing = LineEdit(id: line.id, original: line.originalText, text: line.correctedText) }
+                        .disabled(state.archive.summarizing.contains(detail.meta.id))
+                    if line.speaker != .me {
+                        LineSpeakerMenu(layout: layout) { state.assignLine(line.id, to: $0, in: detail.meta.id) }
+                    }
                 }
             }
         }
         .sheet(item: $glossaryDraft) { draft in
             AddToGlossarySheet(line: draft.line).environment(state)
+        }
+        .sheet(item: $editing) { edit in
+            LineEditSheet(edit: edit) { text in state.editLine(edit.id, original: edit.original, to: text, in: detail.meta.id) }
         }
         }
     }

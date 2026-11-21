@@ -10,7 +10,7 @@ struct StructuredTimeLink: View {
     var body: some View {
         if let at {
             Button { onJump(at) } label: {
-                Text(verbatim: "[\(NotesTime.text(at))]").font(.system(size: 12).monospacedDigit()).foregroundStyle(Ink.secondary)
+                Text(verbatim: "[\(NotesTime.text(at))]").font(.zoomed(size: 12).monospacedDigit()).foregroundStyle(Ink.secondary)
             }
             .buttonStyle(.plain)
             .help("跳到转写里的这句话")
@@ -129,7 +129,7 @@ private struct StructuredFormatPane: View {
                 Task { try? await Task.sleep(for: .seconds(2)); copied = false }
             }
         } label: {
-            Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Ink.secondary)
+            Image(systemName: "ellipsis").font(.zoomed(size: 13, weight: .medium)).foregroundStyle(Ink.secondary)
         }
         .menuStyle(.button)
         .buttonStyle(GhostButtonStyle(height: 32, horizontalPadding: 10))

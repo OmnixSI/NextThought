@@ -47,6 +47,17 @@ struct NextThoughtApp: App {
                 }
                 .keyboardShortcut("b", modifiers: .command)
                 .disabled(AppState.shared.isRunning || !hasContextSidebar)
+                Divider()
+                // As everywhere on the Mac. (AppKit also takes ⌘= for ⌘+.)
+                Button("放大文字") { TextZoom.shared.grow() }
+                    .keyboardShortcut("+", modifiers: .command)
+                    .disabled(!TextZoom.shared.canGrow)
+                Button("缩小文字") { TextZoom.shared.shrink() }
+                    .keyboardShortcut("-", modifiers: .command)
+                    .disabled(!TextZoom.shared.canShrink)
+                Button("实际大小") { TextZoom.shared.reset() }
+                    .keyboardShortcut("0", modifiers: .command)
+                    .disabled(TextZoom.shared.factor == 1)
             }
             CommandGroup(after: .windowSize) {
                 Button("恢复最佳窗口大小") { MainWindowLayout.resetFrontWindow() }
@@ -139,6 +150,7 @@ enum MainWindowLayout {
         window.isOpaque = true
         window.isRestorable = false
         window.setFrameAutosaveName("")
+        if let content = window.contentView { FirstMouse.install(on: content) }
         reset(window)
     }
 
@@ -161,10 +173,20 @@ enum MainWindowLayout {
     /// Workspace windows float only while NextThought is the active app.
     static func refreshLevels() {
         let level = effectiveWorkspaceLevel
-        for window in NSApp.windows where isMainWindow(window) {
+        for window in NSApp.windows where isMainWindow(window) && window.level != level {
             window.level = level
         }
         DetachedModuleController.shared.applyWindowLevel(level)
+    }
+
+    /// The same, once the click that made the app active is over. Changing the level
+    /// re-orders the window, and doing that in the middle of the click closed the menu
+    /// the click had just opened.
+    static func refreshLevelsWhenIdle() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            if NSEvent.pressedMouseButtons != 0 || RunLoop.main.currentMode == .eventTracking { refreshLevelsWhenIdle() }
+            else { refreshLevels() }
+        }
     }
 
     static func reset(_ window: NSWindow) {
@@ -199,6 +221,46 @@ enum MainWindowLayout {
     private static func screen(for window: NSWindow) -> NSScreen? {
         let pointer = NSEvent.mouseLocation
         return NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? window.screen ?? NSScreen.main
+    }
+}
+
+/// During a meeting the page is used with another app in front (the meeting, the
+/// slides). AppKit gives the first click on a window of an app that is not active to
+/// nobody: it only brings the app forward, and every button and menu on the page needed
+/// a second click. While a meeting runs, the page takes that first click.
+///
+/// SwiftUI owns the window's hosting view, so the method is overridden on that view's
+/// own class at run time. (Giving the view a new class instead crashed AppKit's safe
+/// area code, which looks properties up by class.) Controls that end or pause the
+/// meeting ask `isActivatingClick` and leave a click alone when it is the one that
+/// brought the app forward.
+@MainActor
+enum FirstMouse {
+    private(set) static var lastFirstMouseAt = Date.distantPast
+    private static var installed: Set<ObjectIdentifier> = []
+
+    /// The click being handled is the one that made the app active.
+    static var isActivatingClick: Bool { Date().timeIntervalSince(lastFirstMouseAt) < 1 }
+
+    static func install(on view: NSView) {
+        guard let kind = object_getClass(view), installed.insert(ObjectIdentifier(kind)).inserted else { return }
+        let selector = #selector(NSView.acceptsFirstMouse(for:))
+        guard let method = class_getInstanceMethod(kind, selector) else { return }
+        typealias Original = @convention(c) (AnyObject, Selector, NSEvent?) -> Bool
+        let original = unsafeBitCast(method_getImplementation(method), to: Original.self)
+        let accepts: @convention(block) (AnyObject, NSEvent?) -> Bool = { view, event in
+            let duringMeeting = MainActor.assumeIsolated { () -> Bool in
+                guard AppState.shared.isRunning, !NSApp.isActive else { return false }
+                lastFirstMouseAt = Date()
+                return true
+            }
+            return duringMeeting || original(view, selector, event)
+        }
+        let replacement = imp_implementationWithBlock(accepts)
+        // Inherited from NSView: an override on this class alone. Its own: replaced.
+        if !class_addMethod(kind, selector, replacement, method_getTypeEncoding(method)) {
+            method_setImplementation(method, replacement)
+        }
     }
 }
 
@@ -267,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// mode brings the page back (and nothing else opens a second window).
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         let live = AppState.shared.liveWindow
-        if live.mode != .notes { live.set(.notes); return false }
+        if live.mode != .notes { live.set(.notes, byUser: true); return false }
         // A page that is minimized, behind other apps or on another display comes
         // forward. Only with no page at all (it was closed) is a new one made.
         guard let page = MainWindowLayout.openPage else { return true }
@@ -296,6 +358,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // One page, no tabs: "显示标签页栏" and ⌘T made a second page in the same window.
+        NSWindow.allowsAutomaticWindowTabbing = false
         // A window reopened from the Dock after closing is a new window: style and size it too.
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             guard let window = note.object as? NSWindow else { return }
@@ -310,7 +374,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainActor.assumeIsolated { if MainWindowLayout.isMainWindow(window) { MainWindowLayout.closed.add(window) } }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: NSApp, queue: .main) { _ in
-            MainActor.assumeIsolated { MainWindowLayout.refreshLevels() }
+            MainActor.assumeIsolated { MainWindowLayout.refreshLevelsWhenIdle() }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: NSApp, queue: .main) { _ in
             MainActor.assumeIsolated { MainWindowLayout.refreshLevels() }

@@ -95,7 +95,7 @@ struct DetachedModuleView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Color.clear.frame(width: 52, height: 1) // traffic lights
-                    Label(module.title, systemImage: module.symbol).font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                    Label(module.title, systemImage: module.symbol).font(.zoomed(size: 12, weight: .semibold)).foregroundStyle(.secondary)
                     Spacer()
                     Button { state.dockModule(module) } label: { Label("合并回主窗口", systemImage: "arrow.down.right.and.arrow.up.left") }
                         .buttonStyle(ChipButtonStyle())

@@ -215,9 +215,9 @@ struct MenuPicker<Value: Hashable>: View {
                         optionText(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
                             .lineLimit(1).truncationMode(.middle)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
+                            .font(.zoomed(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
                     }
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.zoomed(size: 13, weight: .medium))
                     .contentShape(RoundedRectangle(cornerRadius: ControlMetrics.radius))
                 }
                 .menuStyle(.button).buttonStyle(SettingsValueMenuStyle())
@@ -252,10 +252,10 @@ struct MenuPicker<Value: Hashable>: View {
                         .lineLimit(1)
                         .foregroundStyle(Ink.ink)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.zoomed(size: 10, weight: .medium))
                         .foregroundStyle(Ink.secondary)
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(.zoomed(size: 13, weight: .medium))
                 .contentShape(Rectangle())
             }
             .menuStyle(.button)

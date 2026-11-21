@@ -148,7 +148,7 @@ struct WideDisclosureStyle: DisclosureGroupStyle {
             } label: {
                 HStack(spacing: Space.s2) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.zoomed(size: 10, weight: .semibold))
                         .foregroundStyle(Ink.secondary)
                         .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
                         .frame(width: 12)

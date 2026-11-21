@@ -234,13 +234,13 @@ struct DocumentComponentsAdvanced: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(LocalizedStringKey(title)).font(.system(size: 13, weight: .semibold))
-                    Text(LocalizedStringKey(status)).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(title)).font(.zoomed(size: 13, weight: .semibold))
+                    Text(LocalizedStringKey(status)).font(.zoomed(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
-                action().font(.system(size: 12))
+                action().font(.zoomed(size: 12))
             }
-            Text(LocalizedStringKey(detail)).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(LocalizedStringKey(detail)).font(.zoomed(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }.padding(.vertical, Space.s2)
     }
 }
@@ -252,13 +252,13 @@ struct DocumentChoiceSummary: View {
             summary("读取资料", "系统识别：Mac 自带、离线、无需下载；复杂表格和公式可能丢失结构。\n本机增强：另下约 1.42 GB（含共用组件），适合复杂版面；占存储与内存，仍可能识别错。\nCodex 代读：免 OCR 权重，另需约 186 MB 共用组件；联网、使用账号额度，耗时受网络影响。")
             summary("查找资料（向量检索可选）", "不启用：按关键词查找，无需下载或建索引，准备快；同义问法可能漏检。\n启用：模型加共用组件最多约 835 MB，先在本机建索引，额外占内存；能补充按含义查找，但仍可能漏检。")
             Text("两者都只把相关片段带入回答，并非“关闭向量就发送全文”。全量发送资料会增加等待与用量，也可能超过上下文上限。共用组件只需安装一次。")
-                .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.zoomed(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
     private func summary(_ title: String, _ detail: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
-            Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(7).fixedSize(horizontal: false, vertical: true)
+            Text(title).font(.zoomed(.headline))
+            Text(detail).font(.zoomed(size: 12)).foregroundStyle(.secondary).lineSpacing(7).fixedSize(horizontal: false, vertical: true)
         }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
     }
@@ -276,7 +276,7 @@ struct ManagedModelRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(LocalizedStringKey(descriptor.name)).fontWeight(.medium)
                     Text(LocalizedStringKey(!state.documentModelsChecked ? "检查中…" : isInstalled ? "已安装 · 文件已校验" : "尚未接入 · 可扫描或下载"))
-                        .font(.caption).foregroundStyle(isInstalled ? .green : .secondary)
+                        .font(.zoomed(.caption)).foregroundStyle(isInstalled ? .green : .secondary)
                 }
                 Spacer()
                 if downloading { Button("取消") { state.cancelManagedModelDownload() } }

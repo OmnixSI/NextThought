@@ -3,10 +3,61 @@ import Foundation
 import SwiftUI
 import NextThoughtCore
 
+/// How often the heavy parts of the live page are rebuilt. The page is told about every
+/// recognised syllable and every line that is saved; what holds menus and the whole
+/// transcript must not be rebuilt for those (an open menu flickered and missed clicks,
+/// and a long meeting got slower by the minute). Counted for the `live-churn` self-test.
+@MainActor
+enum LiveRenderCount {
+    static var topBar = 0, moreMenu = 0, transcript = 0, rightColumn = 0, partial = 0, line = 0, page = 0
+    static func reset() { topBar = 0; moreMenu = 0; transcript = 0; rightColumn = 0; partial = 0; line = 0; page = 0 }
+}
+
 /// Native, deterministic acceptance evidence for the live meeting slice.
 /// All meeting content is synthetic and DemoMode prevents audio/model/network work.
 @MainActor
 enum LiveSessionAcceptanceSelfTest {
+    /// A long meeting in full flow on the page that is on screen: syllables arrive, lines
+    /// are saved, a sentence is added now and then. Says how often each heavy part of the
+    /// page was rebuilt. SwiftUI only updates a window that is really visible, so this
+    /// runs in the walkthrough copy of the app (`NEXTTHOUGHT_DEMO_CHURN=<file>` with
+    /// `preview.sh walk`), not in a headless self-test.
+    static func churn(lines: Int = 500) async -> String {
+        let state = AppState.shared
+        configure(state, for: .streaming)
+        state.entries = (0..<lines).map { index in
+            var entry = TranscriptEntry(source: (index % 3 == 0 ? CaptureSource.microphone : CaptureSource.system).rawValue,
+                                        text: "第 \(index) 句：缓存命中率目标是百分之九十二，灰度期间比较 P95 与错误率。", isFinal: true)
+            if index % 3 != 0 { entry.voice = index % 4 }
+            return entry
+        }
+        try? await Task.sleep(for: .milliseconds(1_500))
+        let before = "before: page \(LiveRenderCount.page) top \(LiveRenderCount.topBar) transcript \(LiveRenderCount.transcript) line \(LiveRenderCount.line) partial \(LiveRenderCount.partial); running \(state.isRunning) section \(state.section)"
+        LiveRenderCount.reset()
+        let sessionID = state.activeArchiveID!
+        let began = Date()
+        var added = 0
+        for step in 0..<300 {
+            state.partialTranscript = String(repeating: "正在说的话 ", count: step % 12 + 1)
+            if step % 3 == 0 {
+                let saving = step % 6 == 0
+                SessionArchive.shared.installDemoPersistence(SessionPersistenceSnapshot(
+                    submittedRevision: step + 10, persistedRevision: saving ? step + 9 : step + 10,
+                    pendingEvents: saving ? 1 : 0, pendingBytes: saving ? 120 : 0, lastPersistedAt: Date(), lastFailure: nil), for: sessionID)
+            }
+            if step % 30 == 29 {
+                state.entries.append(TranscriptEntry(source: CaptureSource.system.rawValue, text: "新的一句 \(step)", isFinal: true)); added += 1
+                state.partialTranscript = ""
+            }
+            try? await Task.sleep(for: .milliseconds(16))
+        }
+        let seconds = Date().timeIntervalSince(began)
+        let visible = NSApp.windows.first(where: MainWindowLayout.isMainWindow)?.occlusionState.contains(.visible) == true
+        return before + "\n" + String(format: "%d lines, 300 updates (%d new sentences) in %.2f s, page visible %@: page %d, top bar rebuilt %d, menu %d, transcript %d, lines %d, partial %d, right column %d",
+                      lines, added, seconds, visible ? "yes" : "no", LiveRenderCount.page, LiveRenderCount.topBar, LiveRenderCount.moreMenu, LiveRenderCount.transcript, LiveRenderCount.line, LiveRenderCount.partial, LiveRenderCount.rightColumn)
+    }
+
+
     private struct Capture: Encodable {
         let scenario: String
         let description: String

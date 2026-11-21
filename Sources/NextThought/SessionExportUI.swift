@@ -198,7 +198,7 @@ struct SessionExportSheet: View {
             } else {
                 ScrollView {
                     Text(verbatim: previewText.isEmpty ? String(localized: "没有可导出的内容。") : previewText)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.zoomed(size: 11, design: .monospaced))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(Space.s4)

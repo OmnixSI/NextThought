@@ -66,8 +66,8 @@ struct ControlButtonBody: View {
 
     var body: some View {
         configuration.label
-            .font(scalesWithDynamicType ? Font.body.weight(.medium)
-                  : .system(size: height >= Space.controlLarge ? 14 : 13, weight: .medium))
+            .font(scalesWithDynamicType ? Font.zoomed(.body).weight(.medium)
+                  : .zoomed(size: height >= Space.controlLarge ? 14 : 13, weight: .medium))
             .lineLimit(1)
             .foregroundStyle(ink)
             .environment(\.controlInk, ink)

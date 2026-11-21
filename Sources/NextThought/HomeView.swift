@@ -47,6 +47,7 @@ struct HomeView: View {
                     HomeScreenshotCard().padding(.top, Space.s6)
                 }
                 RecentMeetings().padding(.top, Space.s10)
+                HomeStats().padding(.top, Space.s10)
             }
             .frame(maxWidth: 760, alignment: .leading)
             .padding(.horizontal, Space.s8)
@@ -94,7 +95,7 @@ private struct OnboardingResumeRow: View {
                     HStack(spacing: Space.s2) {
                         Circle().fill(Ink.seal).frame(width: 6, height: 6)
                         Text(verbatim: line).font(Typo.label).foregroundStyle(Ink.ink).lineLimit(1)
-                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                        Image(systemName: "arrow.right").font(.zoomed(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
                         Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
@@ -103,7 +104,7 @@ private struct OnboardingResumeRow: View {
                 .accessibilityLabel(line)
                 .accessibilityHint("回到上次停下的引导页")
                 Button { dismissed = version } label: {
-                    Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                    Image(systemName: "xmark").font(.zoomed(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
                         .frame(width: 24, height: 24).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -135,7 +136,7 @@ private struct StartComposer: View {
                     .id(scene).transition(.scale(scale: 0.8).combined(with: .opacity))
                 TextField("给这场会起个名字，比如“字节二面”", text: $title)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 19, weight: .medium))
+                    .font(.zoomed(size: 19, weight: .medium))
                     .focused($titleFocused)
                     .onSubmit { open(startNow: false) }
                     .onChange(of: title) { _, text in
@@ -154,7 +155,7 @@ private struct StartComposer: View {
 
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text(verbatim: scene.theme.promise)
-                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .font(.zoomed(size: 17, weight: .medium, design: .serif))
                     .foregroundStyle(Ink.ink)
                 HStack(spacing: Space.s4) {
                     ForEach(scene.theme.moments, id: \.self) { moment in
@@ -271,9 +272,9 @@ private struct ContinueSeries: View {
         if !series.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("接着上一场").overline()
+                    Text("继续一个系列").overline()
                     Spacer()
-                    Button("全部资料夹") { state.section = .library }.buttonStyle(.tapText).font(Typo.caption)
+                    Button("全部系列") { state.section = .library }.buttonStyle(.tapText).font(Typo.caption)
                 }
                 .padding(.bottom, Space.s2)
                 ForEach(series) { item in
@@ -290,15 +291,17 @@ private struct ContinueSeries: View {
                             Text(verbatim: item.name).font(Typo.body).foregroundStyle(Ink.ink).lineLimit(1)
                             Text(verbatim: item.typeDisplayName).font(Typo.caption).foregroundStyle(Ink.secondary)
                             Spacer(minLength: Space.s3)
-                            Text("\(state.sessionCount(inSeries: item.id)) 场记录 · \(item.documents.count) 份资料")
+                            let stats = MeetingStats.of(state.archive.sessions, series: item.id)
+                            Text(stats.meetings > 0 ? "\(stats.meetings) 场 · \(stats.durationText) · \(item.documents.count) 份资料"
+                                 : "还没开过 · \(item.documents.count) 份资料")
                                 .font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
-                            Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                            Image(systemName: "arrow.right").font(.zoomed(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
                         }
                         .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(InteractiveRowButtonStyle())
-                    .help("准备下一场")
+                    .help("在这个系列里开下一场：资料、经验和常见问题都会带上")
                     .accessibilityIdentifier("home.continueProject.\(item.id.uuidString)")
                 }
                 Rectangle().fill(Ink.hairline).frame(height: 0.5)
@@ -365,7 +368,7 @@ private struct RecentMeetings: View {
                         Spacer(minLength: Space.s3)
                         Text(MeetingOutcome.when(meta.startedAt)).font(Typo.caption).foregroundStyle(Ink.secondary)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.zoomed(size: 9, weight: .semibold))
                             .foregroundStyle(Ink.tertiary)
                     }
                     .padding(.horizontal, Space.s2)

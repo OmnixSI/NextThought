@@ -127,7 +127,7 @@ final class TeleprompterController {
 
     func showOnlyTeleprompter() {
         // In a meeting the live window mode owns the page and the subtitle bar.
-        AppState.shared.liveWindow.set(.hidden)
+        AppState.shared.liveWindow.set(.hidden, byUser: true)
         show()
         NSApp.windows.filter { !($0 is NSPanel) && $0.isVisible }.forEach { $0.orderOut(nil) }
     }
@@ -135,7 +135,7 @@ final class TeleprompterController {
     /// Brings the main window back (from the subtitle bar or hidden mode too).
     /// Not `first(where: !NSPanel)`: that could be the settings window.
     func showWorkbench() {
-        AppState.shared.liveWindow.set(.notes)
+        AppState.shared.liveWindow.set(.notes, byUser: true)
         MainWindowLayout.bringToFront()
     }
 

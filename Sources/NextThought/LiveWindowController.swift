@@ -27,10 +27,13 @@ final class LiveWindowController {
     /// The shortcut: notes → subtitles → hidden → notes. Only during a meeting.
     func cycle() {
         guard AppState.shared.isRunning else { return }
-        set(mode.next())
+        set(mode.next(), byUser: true)
     }
 
-    func set(_ next: LiveWindowMode) {
+    /// - Parameter byUser: chosen from a menu, a shortcut or the Dock (dual-screen
+    ///   presenting then leaves the page where the user put it).
+    func set(_ next: LiveWindowMode, byUser: Bool = false) {
+        if byUser { PresenterMode.shared.pageModeChosen(next) }
         // Outside a meeting there is nothing to switch: the page is the app.
         guard next == .notes || AppState.shared.isRunning, next != mode else { return }
         let appWasActive = NSApp.isActive
@@ -98,7 +101,7 @@ struct LiveWindowMenu: View {
 
     var body: some View {
         Menu {
-            Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0) })) {
+            Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0, byUser: true) })) {
                 ForEach(LiveWindowMode.allCases) { mode in
                     Text(LocalizedStringKey(mode.title)).tag(mode)
                 }
