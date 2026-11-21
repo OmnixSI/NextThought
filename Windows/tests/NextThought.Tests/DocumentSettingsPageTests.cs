@@ -41,14 +41,17 @@ public sealed class DocumentSettingsPageTests
     public void TheReadingMethodLivesOnTheAnswerPage()
     {
         var xaml = SettingsXaml();
-        Assert.Contains("{loc:Tr 读取资料的方式}", xaml);
-        Assert.Contains("Settings.DocumentProviderChoices", xaml);
-        Assert.Contains("Settings.SelectedDocumentProvider", xaml);
-        Assert.Contains("Settings.DocumentProviderHelp", xaml);
-        Assert.Contains("DocumentProviderNeedsSetup", xaml);
-        Assert.Contains("PrepareDocumentComponentsCommand", xaml);
-        Assert.Contains("UseSystemDocumentReader_Click", xaml);
-        Assert.Equal("Answer", CardTag(xaml, "Settings.DocumentProviderChoices"));
+        // E23: the card now hosts the Mac-named view; its fields live in that view.
+        Assert.Contains("<views:DocumentReadingSettings />", xaml);
+        Assert.Equal("Answer", CardTag(xaml, "<views:DocumentReadingSettings />"));
+        var reading = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "DocumentReadingSettings.axaml"));
+        Assert.Contains("{loc:Tr 读取资料的方式}", reading);
+        Assert.Contains("Settings.DocumentProviderChoices", reading);
+        Assert.Contains("Settings.SelectedDocumentProvider", reading);
+        Assert.Contains("Settings.DocumentProviderHelp", reading);
+        Assert.Contains("DocumentProviderNeedsSetup", reading);
+        Assert.Contains("PrepareDocumentComponentsCommand", reading);
+        Assert.Contains("UseSystemDocumentReader_Click", reading);
     }
 
     [Fact]
@@ -56,18 +59,21 @@ public sealed class DocumentSettingsPageTests
     {
         var xaml = SettingsXaml();
         Assert.Equal("Advanced", CardTag(xaml, "{loc:Tr 资料组件}"));
+        Assert.Contains("<views:DocumentComponentsAdvanced />", xaml);
+        // E23: the fields are in the Mac-named view and its ManagedModelRow rows.
+        var advanced = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "DocumentComponentsAdvanced.axaml"));
         foreach (var member in new[]
                  {
                      "Settings.DocumentFallbackToVision", "Settings.ShowCodexDocumentSettings",
                      "Settings.CodexOcrModel", "Settings.CodexOcrEffort", "Settings.CodexOcrTimeout",
-                     "DocumentRuntimeStatusText", "DocumentOcrModelsStatusText", "DocumentEmbeddingStatusText",
-                     "InstallDocumentRuntimeCommand", "VerifyDocumentRuntimeCommand", "DeleteDocumentRuntimeCommand",
-                     "InstallDocumentOcrModelsCommand", "VerifyDocumentOcrModelsCommand", "DeleteDocumentOcrModelsCommand",
-                     "PrepareRetrievalCommand", "Settings.UseSemanticRetrieval",
-                     "{loc:Tr 本机识别模型}", "{loc:Tr 共用文档组件 · 已安装}", "{loc:Tr 校验／修复}",
+                     "Settings.UseSemanticRetrieval", "ComponentRows",
+                     "{loc:Tr 本机识别模型}",
                      "{loc:Tr 本机识别失败时用系统识别补读，并标明降级内容}", "{loc:Tr 每个文件超时（秒）}"
                  })
-            Assert.Contains(member, xaml);
+            Assert.Contains(member, advanced);
+        var row = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "ManagedModelRow.axaml"));
+        Assert.Contains("{loc:Tr 安装}", row);
+        Assert.Contains("{loc:Tr 校验／修复}", row);
     }
 
     [Fact]

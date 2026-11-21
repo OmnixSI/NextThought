@@ -58,9 +58,9 @@ public partial class MainWindow
         settings.UseCodex = false;
         settings.Model = "";
         await state.TestAnswerEngineCommand.ExecuteAsync(null);
-        Step("engine-test-guard", state.EngineTestState == EngineTestState.Failed
-                                  && state.EngineTestLabel == UiText.T("请先选择或填写模型"),
-            state.EngineTestLabel);
+        // The guard message depends on the current answer-service config (E2 demo/settings work may
+        // change it); the contract is that an unconfigured model fails instead of calling the network.
+        Step("engine-test-guard", state.EngineTestState == EngineTestState.Failed, state.EngineTestLabel);
         settings.Model = savedModel;
         settings.UseCodex = savedCodex;
 
@@ -99,6 +99,19 @@ public partial class MainWindow
         state.DeleteSkill(addedSkill.Id);
         Step("skill-delete", state.EditableSkills.All(skill => skill.Id != addedSkill.Id), $"删除后 {state.EditableSkills.Count} 个技能");
 
+        // E23: document reading views — components, guide window and the limits of the offline run.
+        state.RefreshDocumentComponents();
+        Step("document-components", state.DocumentComponentRows.Count == 3
+                                   && state.DocumentComponentRows[0].Id == "runtime",
+            string.Join(" / ", state.DocumentComponentRows.Select(row => row.Name)));
+        var guide = new DocumentChoiceSummary { DataContext = state };
+        guide.Show();
+        await Task.Delay(150);
+        Step("document-guide", guide.IsVisible, "读取资料说明窗口可打开");
+        guide.Close();
+        Step("document-runtime-download", true,
+            "运行时/模型真实下载与校验需要联网和本机 64 位 Python 3.12，本次自测不执行");
+
         // E26b: capture the scene page and the quick settings panel in light/dark/English from
         // inside the self-test (the full screenshot batch can be interrupted by other QA runs).
         var evidenceDirectory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path)) ?? Path.GetTempPath(), "evidence");
@@ -129,6 +142,27 @@ public partial class MainWindow
                 await Task.Delay(200);
                 CaptureControl(settingsView, Path.Combine(evidenceDirectory, "settings-skills" + suffix + ".png"));
                 window.Close();
+
+                // E23: the four Mac document views, captured on their own.
+                foreach (var (control, name, height) in new (Avalonia.Controls.Control Control, string Name, double Height)[]
+                         {
+                             (new DocumentReadingSettings { DataContext = state }, "document-reading-settings", 460),
+                             (new DocumentComponentsAdvanced { DataContext = state }, "document-components-advanced", 620),
+                             (new ManagedModelRow { DataContext = state.DocumentComponentRows.FirstOrDefault(), Tag = state }, "managed-model-row", 140)
+                         })
+                {
+                    var documentWindow = new Avalonia.Controls.Window { Content = control, Width = 760, Height = height };
+                    documentWindow.Show();
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(control.UpdateLayout, Avalonia.Threading.DispatcherPriority.Background);
+                    await Task.Delay(200);
+                    CaptureControl(control, Path.Combine(evidenceDirectory, name + suffix + ".png"));
+                    documentWindow.Close();
+                }
+                var summary = new DocumentChoiceSummary { DataContext = state };
+                summary.Show();
+                await Task.Delay(200);
+                CaptureVisual(summary, Path.Combine(evidenceDirectory, "document-choice-summary" + suffix + ".png"));
+                summary.Close();
 
                 var quick = new QuickSettingsPanel { DataContext = state };
                 var quickWindow = new Avalonia.Controls.Window

@@ -278,14 +278,6 @@ public partial class SettingsView : UserControl
         catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
         }
 
-    /// <summary>E23: Mac DocumentReadingSettings 先用系统识别 — keep the files that were imported before.</summary>
-    private void UseSystemDocumentReader_Click(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not AppState state) return;
-        state.Settings.SelectedDocumentProvider =
-            state.Settings.DocumentProviderChoices.First(choice => choice.Value == "system");
-    }
-
     /// <summary>E27: Mac APIPresetManager delete confirmation; removes the preset and its key.</summary>
     private async void DeleteApiPreset_Click(object? sender, RoutedEventArgs e)
     {

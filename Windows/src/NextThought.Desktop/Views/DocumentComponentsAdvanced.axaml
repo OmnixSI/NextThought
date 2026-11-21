@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.DocumentComponentsAdvanced"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+    <TextBlock Text="{loc:Tr 本机识别模型}" Classes="label" />
+    <StackPanel x:Name="ComponentRows" Spacing="{DynamicResource D4Spacing_6}" />
+    <TextBlock Text="{loc:Tr 下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。}"
+               Classes="caption" FontSize="11" TextWrapping="Wrap" />
+    <CheckBox Content="{loc:Tr 本机识别失败时用系统识别补读，并标明降级内容}" IsChecked="{Binding Settings.DocumentFallbackToVision}" />
+    <TextBlock Text="{loc:Tr 关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+    <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.ShowCodexDocumentSettings}">
+        <TextBlock Text="{loc:Tr Codex 模型}" Classes="label" />
+        <TextBox Text="{Binding Settings.CodexOcrModel}" Width="240" HorizontalAlignment="Left" />
+        <TextBlock Text="{loc:Tr 推理强度}" Classes="label" />
+        <ComboBox ItemsSource="{Binding Settings.CodexOcrEffortChoices}" SelectedItem="{Binding Settings.CodexOcrEffort}"
+                  Width="140" HorizontalAlignment="Left" />
+        <TextBlock Text="{loc:Tr 每个文件超时（秒）}" Classes="label" />
+        <TextBox Text="{Binding Settings.CodexOcrTimeout}" Width="100" HorizontalAlignment="Left" />
+      </StackPanel>
+    </Border>
+    <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Text="{loc:Tr 查找方式}" Classes="label" />
+        <CheckBox Content="{loc:Tr 参考资料库时使用语义与关键词混合检索}" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
+        <TextBlock Text="{loc:Tr Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。}"
+                   Classes="caption" FontSize="11" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <TextBlock Text="{Binding DocumentSetupStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+               IsVisible="{Binding DocumentSetupBusy}" />
+    <ProgressBar Value="{Binding DocumentSetupProgress}" Maximum="1" MaxWidth="420" HorizontalAlignment="Left"
+                 IsVisible="{Binding DocumentSetupBusy}" />
+  </StackPanel>
+</UserControl>
