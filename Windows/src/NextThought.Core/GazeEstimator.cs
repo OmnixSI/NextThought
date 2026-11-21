@@ -183,3 +183,43 @@ public sealed class GazeEstimator
         looking = true;
     }
 }
+
+/// <summary>
+/// The Mac LiveCoach eye-contact cue (LiveCoach.receive + shouldLookUp): "speaking" means a finished
+/// line in the last four seconds; while speaking, time with the eyes away accumulates and four
+/// seconds of it raise the 看镜头 cue. Looking back, a new sentence or a frame without a face clear it.
+/// </summary>
+public sealed class GazeAttention
+{
+    /// <summary>A finished transcript line keeps counting as speaking for this long (Mac 4 s).</summary>
+    public const double SpeakWindow = 4;
+
+    /// <summary>Away-time that raises the cue (Mac shouldLookUp: awayWhileSpeaking >= 4).</summary>
+    public const double LookUpDelay = 4;
+
+    private DateTimeOffset? awaySince;
+    private DateTimeOffset? lastSpokeAt;
+
+    public bool ShouldLookUp { get; private set; }
+
+    /// <summary>A finished line was spoken (Mac LiveCoach.ingest sets lastSpokeAt).</summary>
+    public void Heard(DateTimeOffset now) => lastSpokeAt = now;
+
+    public void Reset()
+    {
+        awaySince = null;
+        ShouldLookUp = false;
+    }
+
+    /// <summary>Consumes one reading; returns whether the cue should be shown right now.</summary>
+    public bool Ingest(GazeReading reading, DateTimeOffset now)
+    {
+        var speaking = lastSpokeAt is { } spoke && (now - spoke).TotalSeconds < SpeakWindow;
+        if (reading.State == GazeReading.StateValue.Away && speaking)
+            awaySince ??= now;
+        else
+            awaySince = null;
+        ShouldLookUp = awaySince is { } since && (now - since).TotalSeconds >= LookUpDelay;
+        return ShouldLookUp;
+    }
+}

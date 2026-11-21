@@ -15,6 +15,7 @@ public partial class MainWindow
             "windows" => "RunWindowsCheckAsync",
             "share-test" => "RunShareTestCheckAsync",
             "notes-structured" => "RunNotesStructuredCheckAsync",
+            "shell" => "RunShellCheckAsync",
             "subtitle-export" => "RunSubtitleExportCheckAsync",
             "backup" => "RunBackupCheckAsync",
             "acceptance" => "RunAcceptanceCheckAsync",

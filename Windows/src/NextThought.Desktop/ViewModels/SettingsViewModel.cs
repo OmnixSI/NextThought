@@ -32,6 +32,12 @@ public sealed record DocumentProviderChoice(string Value, string Title)
     public override string ToString() => UiText.T(Title);
 }
 
+/// <summary>E10: the Mac <c>GazeSensitivity</c> picker (relaxed / standard / strict).</summary>
+public sealed record GazeSensitivityChoice(string Value, string Title)
+{
+    public override string ToString() => UiText.T(Title);
+}
+
 /// <summary>
 /// Editable draft of <see cref="AppSettings"/> plus the device, process and model choices
 /// the settings page offers. Mirrors the settings surface of the Mac app; the keys and
@@ -572,6 +578,33 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool insightFollowSlides = true;
     [ObservableProperty] private string insightScreenSource = "display";
     [ObservableProperty] private string insightScreenRegion = "";
+
+    // E10 看镜头提醒（Mac PresenterSettings 临场教练）: off until the user turns the camera on.
+    private static readonly GazeSensitivityChoice[] GazeSensitivityValues =
+    [
+        new("relaxed", "宽松"),
+        new("standard", "标准"),
+        new("strict", "严格")
+    ];
+
+    [ObservableProperty] private bool coachWatchesGaze;
+    [ObservableProperty] private GazeSensitivityChoice? selectedGazeSensitivity;
+    private bool loadingCoachGaze;
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<GazeSensitivityChoice> GazeSensitivityChoices => GazeSensitivityValues.ToArray();
+
+    partial void OnCoachWatchesGazeChanged(bool value)
+    {
+        if (loadingCoachGaze) return;
+        _ = state.ApplyCoachGazeDraftAsync(value, SelectedGazeSensitivity?.Value ?? "standard");
+    }
+
+    partial void OnSelectedGazeSensitivityChanged(GazeSensitivityChoice? value)
+    {
+        if (loadingCoachGaze || value is null || !CoachWatchesGaze) return;
+        _ = state.ApplyCoachGazeDraftAsync(true, value.Value);
+    }
     public IReadOnlyList<string> InsightScreenSources { get; } = ["display", "window", "region"];
     private static readonly string[] InsightSourceLabelKeys = ["显示器", "窗口", "区域"];
     public IReadOnlyList<string> InsightSourceLabels => InsightSourceLabelKeys.Select(UiText.T).ToArray();
@@ -753,6 +786,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightFollowSlides = settings.InsightFollowSlides;
         InsightScreenSource = settings.InsightScreenSource;
         InsightScreenRegion = settings.InsightScreenRegion;
+        loadingCoachGaze = true;
+        CoachWatchesGaze = settings.CoachWatchesGaze;
+        SelectedGazeSensitivity = GazeSensitivityValues.FirstOrDefault(choice => choice.Value == settings.CoachGazeSensitivity)
+            ?? GazeSensitivityValues[1];
+        loadingCoachGaze = false;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -866,6 +904,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         InsightFollowSlides = InsightFollowSlides,
         InsightScreenSource = InsightScreenSource,
         InsightScreenRegion = InsightScreenRegion,
+        CoachWatchesGaze = CoachWatchesGaze,
+        CoachGazeSensitivity = SelectedGazeSensitivity?.Value ?? "standard",
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

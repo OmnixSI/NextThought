@@ -155,6 +155,12 @@ public sealed record AppSettings
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
 
+    /// <summary>E10: Mac <c>coachWatchesGaze</c> 鈥?the camera eye-contact coach, off until asked.</summary>
+    public bool CoachWatchesGaze { get; set; }
+
+    /// <summary>E10: Mac <c>coachGazeSensitivity</c> 鈥?relaxed / standard / strict (LiveCoach.GazeSensitivity).</summary>
+    public string CoachGazeSensitivity { get; set; } = "standard";
+
     /// <summary>E27: saved OpenAI-compatible providers (Mac key <c>apiPresets</c>, Mac field names).</summary>
     public List<APIPreset> ApiPresets { get; set; } = [];
 

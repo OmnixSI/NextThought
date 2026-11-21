@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        x:Class="NextThought.Desktop.Views.LiveComponentSamplesWindow"
+        Title="会中组件状态样板" Width="1200" Height="1080"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource Paper}">
+  <!-- Debug-only sample sheet (LiveSessionAcceptanceComponentSamples.swift). Synthetic content
+       only: no microphone, ASR, model, network or archive is touched; opened by the shell self-test. -->
+  <ScrollViewer>
+    <StackPanel Margin="24" Spacing="16">
+      <StackPanel Spacing="2">
+        <TextBlock Text="会中组件状态样板" FontSize="24" Foreground="{DynamicResource InkBrush}" />
+        <TextBlock Text="原生 Avalonia 样板 · 所有文本与状态均为合成演示，不访问麦克风、ASR、模型、网络或归档。"
+                   FontSize="11.5" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="12">
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="ActionButton · default / hover / pressed / focus / unavailable" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="primary" Content="默认" />
+              <Button Content="悬停" />
+              <Button Classes="quiet" Content="按下" />
+              <Button Content="焦点" />
+              <Button Content="不可用" IsEnabled="False" />
+            </StackPanel>
+            <TextBlock Text="预览态由演示环境注入，不代表鼠标事件录制。" FontSize="11" Foreground="{DynamicResource Secondary}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="DataStateView · loading / no-match" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ProgressBar IsIndeterminate="True" Width="80" VerticalAlignment="Center" />
+              <TextBlock Text="正在加载本场资料…" Foreground="{DynamicResource Secondary}" />
+            </StackPanel>
+            <TextBlock Text="还没有匹配的内容。" FontSize="11" Foreground="{DynamicResource Secondary}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="SourceChip · system / microphone / screen" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Classes="chip"><TextBlock Text="系统声音" FontSize="11" /></Border>
+              <Border Classes="chip"><TextBlock Text="麦克风" FontSize="11" /></Border>
+              <Border Classes="chip"><TextBlock Text="屏幕" FontSize="11" /></Border>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="TranscriptRow · remote / me / partial" FontSize="13" />
+            <TextBlock Text="对方：这段缓存一致性方案要不要再压测一遍？" FontSize="13" TextWrapping="Wrap" />
+            <TextBlock Text="我：可以，上线前补一轮回归。" FontSize="13" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            <TextBlock Text="我：那我们先…" FontSize="13" Foreground="{DynamicResource Tertiary}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="TaskRow · running / done / failed" FontSize="13" />
+            <TextBlock Text="正在生成回答…" FontSize="12" />
+            <TextBlock Text="已完成 · 回答与证据已保存" FontSize="12" Foreground="{DynamicResource Secondary}" />
+            <TextBlock Text="失败 · 可以重试" FontSize="12" Foreground="{DynamicResource Caution}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="InlineNotice · caution / info" FontSize="13" />
+            <TextBlock Text="这次没整理成功，纪要不受影响。" FontSize="12" Foreground="{DynamicResource Caution}" />
+            <TextBlock Text="共享某个窗口或另一块屏幕时，提词岛不在画面里。" FontSize="12"
+                       Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </UniformGrid>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

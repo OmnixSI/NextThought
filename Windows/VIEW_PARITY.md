@@ -60,9 +60,9 @@
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerStrip` | E12 | Views/NotesView.axaml | 已实现、未验证 | `Windows/validation/screens/speakers/` |
 | `Sources/NextThought/SpeakerViews.swift` | `SpeakerTag` | E12 | TranscriptRow.cs | 已实现、未验证 | `Windows/validation/screens/speakers/` |
 | `Sources/NextThought/ContentView.swift` | `ContentView` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
-| `Sources/NextThought/ContentView.swift` | `ErrorBanner` | E13 | Views/MainWindow.axaml | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `FocusModeView` | E13 | Views/MainWindow.axaml | 未做 | — |
-| `Sources/NextThought/ContentView.swift` | `LevelMeters` | E13 | Views/MainWindow.axaml | 未做 | — |
+| `Sources/NextThought/ContentView.swift` | `ErrorBanner` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/shell/` |
+| `Sources/NextThought/ContentView.swift` | `FocusModeView` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/shell/` |
+| `Sources/NextThought/ContentView.swift` | `LevelMeters` | E13 | Views/Shell/LevelMeters.cs | 已实现、未验证 | `Windows/validation/screens/shell/` |
 | `Sources/NextThought/ContentView.swift` | `MainShell` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `PulseDot` | E13 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/ContentView.swift` | `QRCodeView` | E13 | Views/Controls/QrCodeView.cs | 已实现、未验证 | `Windows/validation/screens/share-test/` |
@@ -228,7 +228,7 @@
 | `Sources/NextThought/AppNavigationSidebar.swift` | `TopButtonBody` | E4 | Views/MainWindow.axaml | 已实现、未验证 | `Windows/validation/screens/final-shell/` |
 | `Sources/NextThought/AutoEndViews.swift` | `AutoEndBanner` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/AutoEndViews.swift` | `AutoEndSettingsSection` | E4 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/LiveSessionAcceptanceComponentSamples.swift` | `LiveSessionAcceptanceComponentSamplesView` | E4 | — | 未做 | — |
+| `Sources/NextThought/LiveSessionAcceptanceComponentSamples.swift` | `LiveSessionAcceptanceComponentSamplesView` | E4 | Views/Shell/LiveComponentSamplesWindow.axaml | 已实现、未验证 | `Windows/validation/screens/shell/` |
 | `Sources/NextThought/LiveSessionView.swift` | `AnswerColumn` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `AnswerMoreMenu` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `AnswerSettingsMenu` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
@@ -256,7 +256,7 @@
 | `Sources/NextThought/LiveSessionView.swift` | `TranscriptStatus` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `WebSources` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/LiveSessionView.swift` | `WebStatusLine` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
-| `Sources/NextThought/LiveWindowController.swift` | `LiveWindowMenu` | E4 | — | 未做 | — |
+| `Sources/NextThought/LiveWindowController.swift` | `LiveWindowMenu` | E4 | Views/LiveView.axaml | 已实现、未验证 | `Windows/validation/screens/live/` |
 | `Sources/NextThought/MeetingStatsViews.swift` | `HomeStats` | E4 | Views/Home/HomeStats.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
 | `Sources/NextThought/MeetingStatsViews.swift` | `SeriesStatsLine` | E4 | Views/SeriesView.axaml | 已实现、未验证 | `Windows/validation/screens/series/` |
 | `Sources/NextThought/MeetingStatsViews.swift` | `StatFigure` | E4 | Views/Home/HomeStats.axaml | 已实现、未验证 | `Windows/validation/screens/home/` |
@@ -288,4 +288,4 @@
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
 
-总计：**281** 个视图；已有 Windows 页面 **272** 个，其余 **9** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **277** 个，其余 **4** 个待做。

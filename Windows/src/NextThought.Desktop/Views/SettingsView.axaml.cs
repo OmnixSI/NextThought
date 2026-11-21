@@ -77,6 +77,9 @@ public partial class SettingsView : UserControl
         }
     }
 
+    /// <summary>E10: Mac PermissionSettingsSection 去允许 — open the Windows camera privacy page.</summary>
+    private void OpenCameraSettings_Click(object? sender, RoutedEventArgs e) => NextThought.Platform.WindowsPermissions.OpenCameraSettings();
+
     /// <summary>E26: Mac SceneRow 恢复默认 — every field of the row back to the built-in table.</summary>
     private void ResetScene_Click(object? sender, RoutedEventArgs e)
     {
