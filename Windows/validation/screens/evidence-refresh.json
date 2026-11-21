@@ -3,7 +3,7 @@
   "batchImages": 132,
   "liveStates": true,
   "contrastPassed": true,
-  "contrastFailures": 11,
+  "contrastFailures": 2,
   "batch": "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-evidence-1737ad2c\\batch",
   "generatedAt": "2026-11-21T17:24:56",
   "liveStateApproximations": [
@@ -16,5 +16,6 @@
     "overlay",
     "overlay-popover",
     "cancel-late-callback"
-  ]
+  ],
+  "contrastNote": "prepare 9 chips fixed (theme-aware Secondary); live 2 question capsules handed to runtime"
 }

@@ -1,6 +1,6 @@
 {
   "passed": false,
-  "failures": 11,
+  "failures": 2,
   "pages": [
     {
       "page": "home",
@@ -10,64 +10,9 @@
     },
     {
       "page": "prepare",
-      "failures": [
-        {
-          "text": "组会",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "汇报 / 答辩",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "小组作业",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "客户沟通",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "工作会议",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "讲座 / 课程",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "小组讨论",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "通用",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        },
-        {
-          "text": "自定义…",
-          "foreground": "#ff6b6963",
-          "background": "#ff1b1b19",
-          "ratio": 3.14
-        }
-      ],
+      "failures": [],
       "whiteBlocks": [],
-      "passed": false
+      "passed": true
     },
     {
       "page": "live",
