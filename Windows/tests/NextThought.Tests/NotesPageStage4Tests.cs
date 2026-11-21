@@ -177,4 +177,21 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("EmptyPanel.IsVisible", code);
         Assert.Contains("Retry_Click", code);
     }
+
+    [Fact]
+    public void TheTranscriptTabEmbedsTheCorrectedView()
+    {
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding CorrectedTranscriptInline}", view);
+        Assert.Contains("{Binding CorrectedTranscriptVersionIndex}", view);
+        Assert.Contains("{Binding CorrectedTranscriptFind}", view);
+        Assert.Contains("{Binding CorrectedTranscriptRows}", view);
+        Assert.Contains("InlineToggleFix_Click", view);
+        Assert.Contains("{Binding ToggleInlineCorrectedTranscriptCommand}", view);
+        var state = Read("AppState.Proofread.cs");
+        Assert.Contains("ToggleInlineCorrectedTranscript", state);
+        Assert.Contains("OnCorrectedTranscriptInlineChanged", state);
+        var code = Read("Views", "NotesView.axaml.cs");
+        Assert.Contains("ToggleCorrectedTranscriptFixCommand", code);
+    }
 }

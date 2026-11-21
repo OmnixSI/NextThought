@@ -46,6 +46,12 @@ public partial class NotesView : UserControl
     {
         if (DataContext is AppState state) TranscriptRow.RefreshSpeakerLabels(state.Transcript);
     }
+    private void InlineToggleFix_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: CorrectedTranscriptFix fix } && DataContext is AppState state)
+            state.ToggleCorrectedTranscriptFixCommand.Execute(fix);
+    }
+
     private void NotesStructured_SizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (DataContext is AppState state) state.SetNotesStructuredWidth(e.NewSize.Width);

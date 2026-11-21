@@ -115,6 +115,8 @@ public partial class AppState
     public ObservableCollection<CorrectedTranscriptRow> CorrectedTranscriptRows { get; } = [];
 
     [ObservableProperty] private bool correctedTranscriptShowOriginal;
+    /// <summary>task-78 notes 5: the corrected transcript renders inside the 转写 tab.</summary>
+    [ObservableProperty] private bool correctedTranscriptInline;
     [ObservableProperty] private string correctedTranscriptFind = "";
     [ObservableProperty] private string correctedTranscriptCountText = "";
     [ObservableProperty] private string correctedTranscriptStatus = "";
@@ -126,6 +128,14 @@ public partial class AppState
     public bool HasCorrectedTranscriptCount => CorrectedTranscriptCountText.Length > 0;
 
     public bool HasCorrectedTranscriptStatus => CorrectedTranscriptStatus.Length > 0;
+
+    partial void OnCorrectedTranscriptInlineChanged(bool value)
+    {
+        if (value) RefreshCorrectedTranscript();
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleInlineCorrectedTranscript() => CorrectedTranscriptInline = !CorrectedTranscriptInline;
 
     partial void OnCorrectedTranscriptShowOriginalChanged(bool value)
     {
