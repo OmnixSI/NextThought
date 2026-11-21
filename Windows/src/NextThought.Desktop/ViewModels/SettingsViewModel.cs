@@ -652,6 +652,22 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     [ObservableProperty] private WebSearchModeChoice? selectedWebSearchMode;
 
+    /// <summary>§3.3 web-search 5 / decisions: Mac webSearchProvider (Codex or Tavily) for the advanced card.</summary>
+    public sealed record WebSearchProviderChoice(string Value, string Title);
+
+    public IReadOnlyList<WebSearchProviderChoice> WebSearchProviderChoices =>
+    [
+        new("codex", "Codex"),
+        new("tavily", "Tavily")
+    ];
+
+    [ObservableProperty] private WebSearchProviderChoice? selectedWebSearchProvider;
+
+    public bool ShowTavilyKey => SelectedWebSearchProvider?.Value == "tavily";
+
+    partial void OnSelectedWebSearchProviderChanged(WebSearchProviderChoice? value) =>
+        OnPropertyChanged(nameof(ShowTavilyKey));
+
     partial void OnSelectedWebSearchModeChanged(WebSearchModeChoice? value)
     {
         if (value is null) return;
@@ -827,6 +843,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         LiveTranslation = settings.LiveTranslation;
         WebSearchMode = settings.WebSearchMode;
         SelectedWebSearchMode = WebSearchModeChoices.FirstOrDefault(choice => choice.Value == WebSearchMode) ?? WebSearchModeChoices[1];
+        SelectedWebSearchProvider = WebSearchProviderChoices.FirstOrDefault(choice => choice.Value == settings.WebSearchProvider)
+                                    ?? WebSearchProviderChoices[0];
         AnswerBackendIndex = settings.UseCodex ? 1 : 0;
         FollowSlides = settings.FollowSlides;
         InsightScreenWatch = settings.InsightScreenWatch;
@@ -960,6 +978,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AutoTranslateForeign = AutoTranslateForeign,
         LiveTranslation = LiveTranslation,
         WebSearchMode = SelectedWebSearchMode?.Value ?? "auto",
+        WebSearchProvider = SelectedWebSearchProvider?.Value ?? "codex",
         FollowSlides = FollowSlides,
         InsightScreenWatch = InsightScreenWatch,
         InsightScreenInterval = Math.Max(1, InsightScreenInterval),

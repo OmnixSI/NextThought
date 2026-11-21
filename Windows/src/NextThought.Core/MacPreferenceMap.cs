@@ -77,6 +77,7 @@ public static class MacPreferenceMap
         "automaticUpdateChecks" => settings.AutoCheckUpdates,
         "answerBackend" => settings.UseCodex ? "codexAppServer" : "openAICompatible",
         "webSearchMode" => settings.WebSearchMode,
+        "webSearchProvider" => settings.WebSearchProvider,
         "semanticRetrievalEnabled" => settings.UseSemanticRetrieval,
         "codexModelID" => settings.CodexModel,
         "answerGloss" => settings.AnswerGloss,
@@ -154,6 +155,12 @@ public static class MacPreferenceMap
                 settings.UseCodex = normalized is string backend && backend is "codexAppServer" or "codexExec";
                 break;
             case "webSearchMode":
+            case "webSearchProvider":
+            {
+                var provider = normalized as string ?? "codex";
+                settings.WebSearchProvider = provider is "tavily" ? "tavily" : "codex";
+                break;
+            }
             {
                 // 决议 §3.3: the Mac three-state value (off / auto / always), not a Windows bool.
                 // Old settings files stored the bool mapping; accept it once and migrate. Read the

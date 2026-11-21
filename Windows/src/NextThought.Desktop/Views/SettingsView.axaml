@@ -459,13 +459,8 @@
             <ComboBox ItemsSource="{Binding Settings.WebSearchModeChoices}"
                       SelectedItem="{Binding Settings.SelectedWebSearchMode}" MinWidth="180" />
           </StackPanel>
-          <TextBlock Text="{loc:Tr 问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。}"
+          <TextBlock Text="{loc:Tr 先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
-            <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
-          </StackPanel>
-          <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
         </StackPanel>
       </Border>
 
@@ -551,6 +546,20 @@
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 回答服务（Codex）}" Classes="section" />
+          <!-- §3.3 web-search 5: Mac 高级 → 回答服务·联网搜索 (webSearchProvider + Tavily key). -->
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 搜索方式}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.WebSearchProviderChoices}"
+                      SelectedItem="{Binding Settings.SelectedWebSearchProvider}" Width="160" />
+          </StackPanel>
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding Settings.ShowTavilyKey}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260"
+                       PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
+              <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
+            </StackPanel>
+            <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.EffortChoicesList}" SelectedItem="{Binding Settings.SelectedEffort}"

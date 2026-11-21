@@ -243,6 +243,9 @@ public sealed record AppSettings
     /// <summary>E6: answer language: auto / zh / en.</summary>
     public string AnswerLanguage { get; set; } = "auto";
 
+    /// <summary>Mac key <c>webSearchProvider</c>: codex or tavily (default codex).</summary>
+    public string WebSearchProvider { get; set; } = "codex";
+
     /// <summary>E4/Mac UserDefaults "webSearchMode": off / auto / always.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("webSearchMode")]
     public string WebSearchMode { get; set; } = "auto";
