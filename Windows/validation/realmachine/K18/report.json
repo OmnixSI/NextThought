@@ -1,0 +1,18 @@
+{
+  "test": "K18 文档组件真实下载 / 取消 / 中断重试",
+  "date": "2026-11-21T16:37:39",
+  "model": "layout",
+  "modelBytes": 132004944,
+  "downloadSeconds": 46.1,
+  "installed": true,
+  "sha256Verified": true,
+  "cancelRequested": true,
+  "cancelObserved": true,
+  "cancelInstalled": false,
+  "interruptObserved": true,
+  "afterInterruptInstalled": false,
+  "retryInstalled": true,
+  "retrySeconds": 41.3,
+  "passed": true,
+  "failures": []
+}
