@@ -644,7 +644,11 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
         Assert.Contains("IsHighlighted", xaml);
-        Assert.Contains("MeetingHighlights", xaml);
+        // §3.3 live 12: the highlights list is the shared MeetingUserNotes panel embedded in the live page.
+        Assert.Contains("MeetingUserNotes", xaml);
+        var userNotes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MeetingUserNotes.axaml"));
+        Assert.Contains("HasMeetingHighlights", userNotes);
+        Assert.Contains("MeetingHighlightRows", userNotes);
         var row = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "TranscriptRow.cs"));
         Assert.Contains("isHighlighted", row);
     }
@@ -895,8 +899,9 @@ public sealed class SelfTestStructureTests
         Assert.Contains("LiveWebSources", xaml);
         Assert.Contains("EvidenceSummary", xaml);
         Assert.Contains("EvidenceMaterialRows", xaml);
+        var web = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.WebSearch.cs"));
+        Assert.Contains("WebResults.Clear", web);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
-        Assert.Contains("WebResults.Clear", live);
         Assert.Contains("new EvidenceBundle", live);
     }
 
