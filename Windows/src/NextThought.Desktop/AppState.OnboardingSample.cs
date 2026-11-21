@@ -114,5 +114,7 @@ public partial class AppState
     partial void OnOnboardingVisibleChanged(bool value)
     {
         if (!value) StopSample();
+        // E3 §6.7: re-paint the header/pages whenever the guide opens.
+        RaiseOnboardingLayout();
     }
 }

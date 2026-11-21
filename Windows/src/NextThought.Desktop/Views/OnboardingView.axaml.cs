@@ -69,9 +69,44 @@ public partial class OnboardingView : UserControl
         }
     }
 
+    /// <summary>
+    /// E3: the guide's two InkSegmented controls (Mac LiquidGlass.swift). One-way checked state plus
+    /// a click, so the control cannot write a stale value back over a page refresh.
+    /// </summary>
+    private void OnboardingOnlineVenue_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.OnboardingVenueIndex = 0;
+    }
+
+    private void OnboardingOfflineVenue_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.OnboardingVenueIndex = 1;
+    }
+
+    private void OnboardingRecordMe_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.OnboardingMicrophoneIndex = 0;
+    }
+
+    private void OnboardingOnlyOther_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.OnboardingMicrophoneIndex = 1;
+    }
+
     private void SceneChip_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: SceneChoice choice } || DataContext is not AppState state) return;
         if (state.SetSceneCommand.CanExecute(choice.Mode)) state.SetSceneCommand.Execute(choice.Mode);
+        // Mac rememberGuideScene: the picked scene is painted into the sheet at once.
+        state.RefreshGuideScene();
+    }
+
+    /// <summary>
+    /// E3: the provider chips are the Mac AnswerEngineForm's list. The full form lives in Settings;
+    /// choosing one here opens it (the diff is listed in validation/screens/onboarding/compare.md).
+    /// </summary>
+    private void Provider_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.NavigateCommand.Execute("Settings");
     }
 }

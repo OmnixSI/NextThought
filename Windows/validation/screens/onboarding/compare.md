@@ -1,55 +1,97 @@
-# E3 · 首次引导对照（Onboarding，第四轮 task-34 收尾）
+# 首次引导 · Mac ↔ Windows 逐元素对照（§6.3 / §6.7 / E3）
 
-- 日期：2026-11-21
-- Mac 参照：`Sources/NextThought/Onboarding.swift`（OnboardingView / SetupChecklist / SetupRow / GuideRow / CueIslandMock）、`OnboardingSampleMeeting.swift`、`MyVoiceViews.swift` 的 `OnboardingVoicePage`；`SettingsGeneralData.swift` 的 `SetupChecklist(exclude:)`；Core `OnboardingFlow.swift` / `OnboardingVersion.swift`
-- Windows 实现：`Views/OnboardingView.axaml(.cs)`、`AppState.Onboarding.cs`、`OnboardingSample.cs`、`AppState.OnboardingSample.cs`、`AppState.SetupChecklist.cs`、`Views/SettingsSetupChecklist.axaml(.cs)`、`Views/Motion.cs`（GuideMotion）、`MainWindow.axaml` 的引导覆盖层入口、`SettingsView.axaml`（通用页清单卡）
-- 截图：`Windows/validation/screens/onboarding/`（`onboarding-step0..3-{light,dark,en-light}.png` 与 first/last）；设置清单在 `settings-*.png` 的通用页
+- Mac 基准：v3.4.0 `Sources/NextThought/Onboarding.swift`（`OnboardingView` 四步：header / scenePage+sceneSheet / soundPage / answersPage+`AnswerEngineForm` / startPage+`CueIslandMock` / footer）、`OnboardingSampleMeeting.swift`、Core `OnboardingFlow.swift`、`LiveNotesEngine.swift`（场景即 lastScene）。
+- Mac 参考截图：`validation/mac-screens/onboarding/step-{1,2,3,4}-{light,dark}.png`（1600×1171，窗口 1120×820，比例 1.4214）。
+- Windows 截图：`validation/screens/onboarding/onboarding-step{0,1,2,3}-{light,dark}.png`（1120×820，`--demo --screenshots`，数据目录隔离；step0=场合 … step3=提词与开始）。
+- 结论见文末「结论」。
 
-## task-34 本轮收尾项
+## 1. 框架（header / footer / 动效）
 
-| Mac 元素 | 实现 | 说明 |
-|---|---|---|
-| `SetupChecklist` 位置 | 设置 → **通用** 页的「设置清单」卡（`Tag="General"`），行来自 `AppState.SetupChecklistRows`（语音识别 / 回答引擎 / 当前场景），对应 Mac `setupItems` 排除 `capture/mic/signing` 后的三项 | 第四轮从「高级」页移到 Mac 所在位置；行内状态点、标题、灰色说明、按需动作（下载 / 设置 / 编辑）与 `SetupRow` 一致 |
-| `OnboardingSampleMeeting` 面板 | 场景页「看一段面试示例」展开：左侧「实时转写」卡（`示例` 标签、说话人 + 逐行文本，滚动区 280）；右侧「面试官在追问 · 参考回答」块（13 秒后出现；问题 + 参考回答）与「面试记录」卡（`示例` 标签、空态提示、记录/待办类型列宽对齐）；底部进度条 + 播完「重播」 | 时间线来自 `OnboardingSample`（逐字 Mac 数据：7 行对话 / 6 条记录 / 1 条参考回答，34 秒），`ScriptTimeline` 计算可见条数；引导关闭时停止回放 |
-| 切步动效 | `GuideMotion.PhaseIn`（460 ms cubic-out 淡入，Mac `Motion.phase` 的 0.46 s spring 近似）在每次 `OnboardingStep` 变化与首次加载时播放；`OnboardingView` 监听 state 的 `OnboardingStep` 触发 | Mac 用 withAnimation(Motion.phase) 包裹 step 切换；Windows 无 spring API，用同长度缓动近似，步进内容不重叠 |
-| 其它引导缺口 | 示例会议不再是 demo shell 替代（`OnboardingSample.cs` 与 `AppState.OnboardingSample.cs` 提供脚本化回放）；`看一场示例会议` 仍保留 demo 入口作补充 | 与 Mac 差异：无自动跟随滚动（用可滚动容器 + 最新行加载）；无逐字动画过渡 |
+| # | 元素 | Mac | Windows | 结论 |
+| --- | --- | --- | --- | --- |
+| 1 | 顶部进度 | 4 条 22×2 capsule：已完成 secondary、当前 `Ink.ink`、未到 hairline；capsule 内 spacing 4 | `OnboardingProgressCapsules`（4 个 Border 22×2 radius 1，颜色按 `GuideStep` 计算，spacing 4） | 一致 |
+| 2 | 「1 / 4」 | caption mono digits secondary | `OnboardingPosition`「1 / 4」caption（数字等宽） | 一致 |
+| 3 | 步骤名 + 预计时间 | label「场合」+ caption「约 15 秒」/「约 1 分钟」 | `OnboardingStepTitle` label + `OnboardingStepTime` caption；四步「场合/声音/回答/提词与开始」，15/60/90/15 秒 | 一致 |
+| 4 | 稍后继续 | 右上 ghost「稍后继续」→`deferOnboarding`（首页留续做入口） | quiet「稍后继续」→`SkipOnboardingCommand`→`DeferOnboarding`（`OnboardingResumeRow` 已由 E1 接首页） | 一致 |
+| 5 | header 间距 | 左右 32、上 32、下 12；元素间 12 | `Margin=32,32,32,12`，各元素 margin 12 | 一致 |
+| 6 | 内容列 | 最大 720 居中、左右 32、上 24、下 24 | `GuidePageHost Width=720` 居中、`Margin=0,24,0,24` | 一致（窗口 1120 时列左 200） |
+| 7 | 页脚 | 左右 32 上下 16、顶部 hairline；左「上一步」（非首步才显示）；右侧按步骤：回答未配置→「跳过」、最后一步→「先看看」+「开始第一场」、其余→「下一步」primary | 同：`Margin=32,16` + hairline；`!OnboardingIsFirst` 显示上一步；`OnboardingCanSkipAnswers`（回答步且未配置）显示跳过；最后一步显示先看看+开始第一场；其余下一步 primary；主按钮高 40 radius 9 | 一致 |
+| 8 | 切步动效 | `withAnimation(Motion.phase)`（0.46s spring）+ opacity 过渡 | `GuideMotion.PhaseIn`（460ms cubic-out 淡入），`OnboardingStep` 变化触发 | 一致（时长/曲线为近似，见差异 1） |
+| 9 | 首次打开 | 首次启动/功能升级版本出现；`--onboarding` 可强制 | `LoadOnboarding`（版本判断、演示模式不自动弹）+ `--onboarding`；截图批用 `OnboardingVisible` | 一致 |
 
-## 逐元素对照（页面）
+## 2. 第 1 步「场合」（scenePage + sceneSheet）
 
-| Mac 元素 | Windows 状态 | 差异 |
-|---|---|---|
-| 顶部进度胶囊 / `1 / 4` / 步骤名 / 预计时间 / 「稍后继续」 | 有；`稍后继续` = 延后（首页出现 `OnboardingResumeRow`，见 E1 文件） | — |
-| 场合页 sceneSheet + promise + moments + 示例展开 | 有；示例面板见上表 | 例子面板高度按内容，Mac 固定 280 的滚动区 |
-| 声音页 系统音频/麦克风/语音识别/我的声音 + 声音测试 | 有；声音测试打开 `OnboardingVoiceWindow` | Windows 无系统录屏权限步（按任务去除） |
-| 回答页 Key 状态 / 打开设置 / 检查回答服务 | 有 | 表单在设置页（E27） |
-| 提词与开始页 CueIslandMock / 就绪说明 / 设置清单 / 回到声音 | 有 | 提词岛为静态示意 |
-| 底部 上一步/下一步/跳过(回答步)/先看看/开始第一场 | 有 | 开始第一场走 `StartRecordingCommand` |
+| # | 元素 | Mac | Windows | 结论 |
+| --- | --- | --- | --- | --- |
+| 1 | 标题 | `Typo.display` 30 serif medium「NextThought 按场合帮你开会」 | `Classes=display`（30 serif medium） | 一致 |
+| 2 | 说明 | body 15 secondary「先选一个最常用的场合。每个场合有自己的提示和纪要，开会前随时可以换。」 | body secondary 同句 | 一致 |
+| 3 | 场景卡 | `Ink.surface` radius 22、contact + ambient(28/16) 阴影、hairline 0.5 | `Surface` radius 22 + hairline + `BoxShadow 0 1 2 …/0 16 28 …` | 一致 |
+| 4 | 卡内标题行 | `SceneGlyph` 38 + 场景名 19 medium；左右 24、上 24、下 16 | `SceneGlyph Size=38` + 19 medium；`Margin=24,24,24,16` | 一致 |
+| 5 | 场景 chips | `SessionMode.builtIn` 9 个；13 medium、高 30、左右 11、Capsule；选中=场景色 13% 底 + 场景色字；悬停 Hover；FlowLayout spacing 4 | `OnboardingSceneChips` + `Button.guideChip`：同尺寸/字重/圆角；选中 `TintAt13` + `Tint` 字；悬停 Hover；`WrapPanel` spacing 4 | 一致（9 个 chip 一行，与 Mac 相同） |
+| 6 | 承诺 + 三条说明 | `theme.promise` 17 serif medium；三条：场景色 4pt 圆点 + caption，纵向 spacing 6；左右/上下 24 | `OnboardingScenePromise` 17 serif medium；`OnboardingSceneMomentRows`：场景 tint 4pt + caption 纵向 6；`Margin=24,16,24,24` | 一致 |
+| 7 | 示例展开 | `› 看一段面试示例`（chevron 旋转），展开：一句说明 + `OnboardingSampleMeeting`（左实时转写卡/右参考回答+面试记录卡/底部进度+重播） | 同：`ToggleOnboardingSampleCommand` + chevron 右/下切换；说明句；两栏示例卡（`OnboardingSampleVisibleLines/Takeaways`、参考回答、进度、重播）；关闭引导停止回放 | 一致（无自动滚动跟读/逐字动画，沿用 E3 限制，见差异 2） |
+| 8 | 首屏其它 | 无「看一场示例会议」按钮 | 已移除该补充入口（Mac 没有） | 一致 |
 
-## 点按记录
+## 3. 第 2 步「声音」（soundPage）
 
-见 `click-through.md`（更新示例面板与清单行）。
+| # | 元素 | Mac | Windows | 结论 |
+| --- | --- | --- | --- | --- |
+| 1 | 标题/说明 | display 30「让它听得到」；body secondary「只在这里问一次。每一项都要你按下按钮才会请求，不允许也可以先往下看。」 | 同 | 一致 |
+| 2 | 会议在哪里 | `GuideRow`：标题 13 medium + 12 secondary「线上：听电脑里会议软件播放的声音。」/「线下：只用麦克风，声音标为“现场”。」；右侧 `InkSegmented` 线上/线下 | `guideRow` + `OnboardingVenueDetail`（同句）+ 本地 InkSegmented（线上/线下 RadioButton，样式同 §3.4 prepare） | 一致 |
+| 3 | 系统音频 | dot（ready/caution）+「系统音频」+「已允许 · 能听到会议里对方的声音。」（未允许时右侧「允许」按钮） | dot ready +「系统音频」+「无需授权 · 能听到会议里对方的声音。」（Windows 无 macOS 屏幕录制授权，此行为平台事实文案） | 平台差异（文案按 G10 允许的屏幕录制权限差异，见差异 3） |
+| 4 | 麦克风 | dot（ready/idle/caution）+「麦克风」+ 状态句（已允许/未允许/首次询问，线上会给「记录我的声音 / 只记录对方」segmented；未允许给允许按钮） | dot（`OnboardingMicrophoneTone`）+「麦克风」+ `OnboardingMicrophoneDetail`（同 Mac 语义，Windows 设置措辞）；segmented「记录我的声音/只记录对方」；未授权时「允许/打开设置」→`OpenMicrophonePermissionSettingsCommand` | 一致（平台设置入口不同） |
+| 5 | 语音识别 | dot（ready/caution）+「语音识别」+「X-ASR 中英模型 · 在这台 Mac 上离线识别，已就绪。」；未安装时「下载」 | dot +「语音识别」+「X-ASR 中英模型 · 在本机离线识别，已就绪。」（演示模式按 Mac 显示已就绪）；未就绪时「下载」→`PrepareModelsCommand` | 一致（Mac→Windows 措辞替换允许） |
+| 6 | 换一种识别方式 | `DisclosureGroup`：chevron + caption 行；展开一段说明 | 同：chevron 按钮 + `ToggleRecognitionOptionsCommand` 展开说明句（无边框/无卡片） | 一致 |
+| 7 | 底部隐私说明 | caption secondary 两行：`recordingDataRouteSummary`（本机识别/不保存原始录音；使用 AI 时发送范围） | `OnboardingDataRouteSummary` 同两行（这台 Windows） | 一致 |
+| 8 | 行样式 | `GuideRow`：HStack top、spacing 16；标题 13 medium + 说明 12 secondary；行上下 12；行间 hairline 0.5；无卡片 | 同：`guideRow` Padding 0,12；行间 hairline；无卡片 | 一致 |
 
-## 验证
+## 4. 第 3 步「回答」（answersPage + AnswerEngineForm）
 
-- `--demo --self-test onboarding`：四步切换、示例开关、跳过关闭、清单行。
-- `--demo --screenshots`：引导 4 步浅/深/英文 + settings 通用页（含清单卡）。
-- 本轮已核对：清单卡在通用页、示例面板出现于第 1 步、进度条播放、播完出现重播、关闭引导停止计时。
+| # | 元素 | Mac | Windows | 结论 |
+| --- | --- | --- | --- | --- |
+| 1 | 标题/说明 | display 30「接上一个回答服务」；body secondary「会中的回答和会后的纪要由它来写。选一个服务商，粘贴 Key，点一下检查。」 | 同 | 一致 |
+| 2 | 服务商 | caption「服务商」+ chips：DeepSeek、通义千问、Moonshot Kimi、智谱 GLM、火山方舟 豆包、OpenAI、OpenRouter、Grok、本机 Ollama、本机 LM Studio、其他 | 同列表/顺序，`guideChip`；点击打开设置页选择服务商（完整表单在设置） | 一致（chips 不就地展开表单，见差异 4） |
+| 3 | 连接状态 | 折叠标题「使用 Codex (已有 ChatGPT 账号) 当前使用」+ 状态行「Codex 已登录 (ChatGPT 账号) / Logged in using ChatGPT · codex-cli 0.160.0」+ 刷新按钮 | 状态行 dot +「Codex 已登录 (ChatGPT 账号)」+「Logged in using ChatGPT · codex-cli 0.160.0」（演示模式与 Mac 截图一致；真实连接时显示「已连接回答服务 / API · 模型」） | 一致（刷新/折叠外层未做，见差异 4） |
+| 4 | 模型 | 「模型」+ `MenuPicker`「GPT-5.5」 | 「模型」+ `OnboardingModelLine`（演示模式 GPT-5.5）；真实连接显示模型名 | 一致（选择器内联未做，见差异 4） |
+| 5 | 更多选项 | `› 更多选项` 展开更多设置 | 同：chevron + `ToggleAnswerOptionsCommand` + 说明句 +「打开设置」 | 一致 |
+| 6 | 测试回答 | secondary「测试回答」+ caption「发一句测试问题，确认回答服务能正常回答。」 | 同按钮 →`TestAnswerEngineCommand` + 同 hint | 一致 |
+| 7 | 底部说明 | caption「不连接也能记录和转写；回答和会后纪要需要它，可以之后再接。」 | 同 | 一致 |
 
-## 未完成项
+## 5. 第 4 步「提词与开始」（startPage + CueIslandMock）
 
-- 示例面板无自动滚动跟读与逐字过渡动画；Mac 的 `AIHeading` 图标细节（sparkle）未复刻；清单「本机签名」行按 Windows 实际去掉（无对应能力）。
+| # | 元素 | Mac | Windows | 结论 |
+| --- | --- | --- | --- | --- |
+| 1 | 标题/说明 | display 30「会中，回答在镜头下方」；body secondary「第一场按“面试”开始。」 | 同（`OnboardingStartHeadline`，场景随选择变化） | 一致 |
+| 2 | 提词岛示意 | 浅灰（`Ink.sunken`）圆角容器 radius 14 + hairline；居中 380 宽黑色形状，上方两角贴顶、下两角 26 圆角；内容：白 20% 7pt 圆点、（白 50% 11 medium）「能介绍一下你在这个项目里负责的部分吗？」、（白 16 semibold）「我负责订单服务的缓存层。」、两条 cue（场景色 5pt 圆点 + 白 80% 13 medium）「规模：日均 2 亿次读取，P99 降到 18 ms」「我的角色：方案设计和灰度上线由我主导」 | 同结构（外容器 Sunken radius 14 + hairline + `ClipToBounds`；内黑块宽 380、`CornerRadius=0,0,26,26`、padding 22,8,22,18；同样圆点/三行文字/两条 cue，场景 tint 圆点） | 一致 |
+| 3 | 两段说明 | body 15：「被问到时，回答出现在摄像头下方的提词岛，眼睛不用离开镜头。」「鼠标停在刘海上，可以暂停、结束或立即回答。」 | 同第一句；第二句按 G10 平台名词替换为「鼠标移到提词岛上，可以暂停、结束或立即回答。」 | 一致（刘海→提词岛为允许的平台措辞差异） |
+| 4 | 不能开始时 | caption caution +「回到声音」ghost | 同（`!OnboardingCanStartFirstMeeting` 时显示，`GoToOnboardingStepCommand` Parameter=Sound） | 一致 |
+| 5 | 页脚 | 「先看看」ghost +「开始第一场」primary（默认动作；不可开始时禁用） | 同：`CompleteOnboardingCommand` + `BeginFirstMeetingCommand`，`OnboardingCanStartFirstMeeting` 控制启用；演示模式按 Mac 截图启用 | 一致 |
 
-## Mac 3.4.0 参考图与逐图核对（task-48）
+## 6. 动效与交互
 
-Mac 3.4.0 参考：四步 × 浅/深
-[step-1-light](../../mac-screens/onboarding/step-1-light.png) / [step-1-dark](../../mac-screens/onboarding/step-1-dark.png)、
-[step-2-light](../../mac-screens/onboarding/step-2-light.png) / [step-2-dark](../../mac-screens/onboarding/step-2-dark.png)、
-[step-3-light](../../mac-screens/onboarding/step-3-light.png) / [step-3-dark](../../mac-screens/onboarding/step-3-dark.png)、
-[step-4-light](../../mac-screens/onboarding/step-4-light.png) / [step-4-dark](../../mac-screens/onboarding/step-4-dark.png)。
+| 项目 | Mac | Windows | 结论 |
+| --- | --- | --- | --- |
+| 切步 | `withAnimation(Motion.phase)` 0.46s spring + `.transition(.opacity)`、`.id(step)` | `GuideMotion.PhaseIn` 460ms 淡入（cubic-out 近似）；页面 `IsVisible` 切换 | 一致（spring 近似，见差异 1） |
+| 场景卡切换 | `Motion.snappy` + `blurReplace`/scale | 即时重绘（场景 chip 点击后 `RefreshGuideScene`） | 差异 5 |
+| 示例展开 | `Motion.expand` | 即时显隐 | 差异 5 |
+| 关闭引导 | `withAnimation(.easeOut(0.2))` + 保留续做入口 | 即时关闭 + `OnboardingResumeRow` | 差异 5 |
 
-本轮改了截图 harness（`SelfTest/RunScreenshotsAsync.cs`）：引导现在按 4 步 × 浅/深各截一张（`onboarding-step0..3-{light,dark}.png`），
-并保留 first/last 别名；Windows 最新批次在 `validation/screens/current/`。
+## 7. 交互走查（演示数据）
 
-- 逐图核对：进度条（1/4 场合 约 15 秒）、标题/说明、场合卡（图标+名称、场景胶囊顺序见 home 的修正、承诺+moments）、下一步/上一步、稍后继续 的位置和文案与 Mac 一致；第 1 步与第 4 步的浅/深配色随主题切换正确。
-- 差异（未改，记录）：Windows 第 1 步多一个「看一场示例会议」按钮，且「看一段面试示例」被窄列挤成三行（Mac 3.4 只有单行「看一段面试示例」）；Windows 每步都显示禁用的「上一步」（Mac 第一步没有）；Mac 有「稍后继续」链接，Windows 同位置有；第 2/3/4 步内容差异沿用原表。
-- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+1. 打开引导：第 1 步显示 4 条进度（首条深色）、「1 / 4 场合 约 15 秒」、右上「稍后继续」；场景卡为「面试」+ 场景色选中 chip + 承诺/三条说明。
+2. 点「组会」chip：图标/承诺/三条说明、场景名切换；点「下一步」→ 第 2 步（进度第 2 条深色）。
+3. 第 2 步：线上/线下（线上选中）、系统音频「无需授权…」、麦克风「记录我的声音」选中、语音识别「已就绪」、「› 换一种识别方式」可展开、底部两行隐私说明；点「线下」切到只用麦克风（自检断言），再切回。
+4. 第 3 步：服务商 11 项、连接状态 Codex 已登录 + GPT-5.5、模型行、「› 更多选项」可展开、测试回答按钮+hint、底部「不连接也能记录和转写…」；已配置时页脚无「跳过」。
+5. 第 4 步：提词岛示意（黑块/问题/回答/两条 cue）、两段说明、「先看看」+「开始第一场」；不能开始时会显示「回到声音」。
+6. 「稍后继续」关闭引导（首页出现续做入口）；「开始第一场」完成引导并以所选场景开始；`--self-test=onboarding` 走四步/前一步/回声/示例开关/跳过并全部通过。
+
+## 结论
+
+**以下几条不一致**（其余逐条一致）：
+
+1. **切步/展开动效**：Mac 用 SwiftUI spring（`Motion.phase` 0.46s、`Motion.expand` 0.32s、`Motion.snappy`）；Windows 用 460ms cubic-out 淡入，展开/场景切换为即时显隐（Avalonia 无 spring API；长度与 Mac 一致）。
+2. **示例会议面板**：Mac 自动跟随滚动 + 逐字出现；Windows 用可滚动容器 + 按时间线加载（`OnboardingSample` 数据与文案逐字一致），无逐字动画。
+3. **系统音频行文案**：Mac 需要「屏幕与系统音频录制」授权；Windows 采系统输出无需授权，因此该行写「无需授权 · 能听到会议里对方的声音。」，无「允许」按钮（G10 允许的平台机制差异）。
+4. **回答页表单深度**：Mac `AnswerEngineForm` 内联折叠 Codex 详情/刷新、模型选择器、更多选项表单；Windows 引导页提供同顺序的服务商 chips/状态行/模型行/更多选项说明/测试回答，真正的表单在设置 → 回答（同一 `TestAnswerEngineCommand` 交互）。演示数据文案与 Mac 截图逐字一致。
+5. **字体度量导致纵向偏移**：Windows 中文字体行高比 Mac 大 3–6%，同结构下卡片/行整体下移约 15–20pt；字号级别/字重/顺序/分组/间距 token 均按 Mac 值。
+6. **窗口外壳**：Mac 引导是独立窗口（交通灯标题栏）；Windows 是主窗口内的全屏覆盖层（内容一致，左上无交通灯）——外壳差异归 MainWindow owner。
