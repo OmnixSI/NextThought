@@ -1338,6 +1338,13 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 | 1288 | 资料文件 (*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg)\|*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg | Material files (*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg)\|*.pdf;*.docx;*.pptx;*.xlsx;*.md;*.txt;*.png;*.jpg | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:110 |
 | 1289 | 每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。 | One action=key per line; saving re-registers immediately. Modifiers may include Ctrl/Alt/Shift/Win, and keys may be A–Z, 0–9, F1–F24, Left/Right/Up/Down/PageUp/PageDown/Space/Backslash. | — |  |
 | 1290 | 系列按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。 | Series are merged by modification time. A local restore point is created before anything is applied. Templates and personal notes are data and are always restored. | — | Windows/src/NextThought.Desktop/Views/BackupRestoreReviewView.axaml |
+| 1291 | 画面只在这台电脑上分析成几个特征点，不保存、不上传。 | The picture is reduced to a few landmarks on this computer only. Nothing is saved or uploaded. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
+| 1292 | 没有找到看镜头模型（assets/face-landmarker）。 | The eye-contact model is missing (assets/face-landmarker). | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:92 |
+| 1293 | 正在看镜头（已校准） | Looking at the camera (calibrated). | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:111 |
+| 1294 | 正在看镜头；先校准一次更准。 | Looking at the camera; calibrate once for a better reading. | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:111 |
+| 1295 | 摄像头打不开；本机没有可用摄像头。 | The camera will not open; no camera is available on this computer. | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:114 |
+| 1296 | 先打开「留意眼神」并允许摄像头。 | Turn on “Watch eye contact” and allow the camera first. | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:167 |
+| 1297 | 没有看清眼睛，请正对摄像头再试一次。 | Couldn't see your eyes. Face the camera and try again. | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:176 |
 
 ## 3. 英文模式逐页扫描
 

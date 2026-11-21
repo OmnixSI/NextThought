@@ -181,6 +181,27 @@
         </StackPanel>
       </Border>
 
+      <!-- E10: Mac PresenterSettings 临场教练 (LiveCoach/GazeCamera), off until the user asks. -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorCoachGaze" Text="{loc:Tr 临场教练}" Classes="section" />
+          <CheckBox Content="{loc:Tr 留意眼神是否离开镜头（使用摄像头）}" IsChecked="{Binding Settings.CoachWatchesGaze}" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="{loc:Tr 灵敏度}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.GazeSensitivityChoices}"
+                      SelectedItem="{Binding Settings.SelectedGazeSensitivity}" Width="160" />
+            <Button Classes="quiet" Content="{loc:Tr 校准：看着摄像头 2 秒}" Command="{Binding CalibrateGazeCommand}"
+                    IsEnabled="{Binding IsGazeWatching}" />
+          </StackPanel>
+          <TextBlock Text="{Binding GazeStatusText}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding IsGazePermissionDenied}">
+            <TextBlock Text="{loc:Tr 摄像头还没有允许。}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+            <Button Classes="quiet" Content="{loc:Tr 去允许}" Click="OpenCameraSettings_Click" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr 画面只在这台电脑上分析成几个特征点，不保存、不上传。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoach2" Text="{loc:Tr 字幕条}" Classes="section" />

@@ -18,6 +18,7 @@ public static class MacPreferenceMap
         "baseUrl", "model", "notesModel", "reasoningEffort", "localModel", "secondPass", "captureMicrophone",
         "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt",
         "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize", "cueSurface", "presenterSlideNotes",
+        "coachWatchesGaze", "coachGazeSensitivity",
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
         "cueScreen", "cueSurface", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen", "presenterSlideNotes",
@@ -36,6 +37,7 @@ public static class MacPreferenceMap
         "answerBackend", "answerGloss", "answerLanguage", "apiBaseURL", "apiModel", "appearance", "autoSummarize",
         "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider",
         "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueSurface", "cueWidth", "presenterSlideNotes",
+        "coachWatchesGaze", "coachGazeSensitivity",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
@@ -96,6 +98,8 @@ public static class MacPreferenceMap
         "teleprompterFontSize" => settings.TeleprompterFontSize,
         "reducedEffects" => settings.ReducedEffects,
         "textZoom" => settings.TextZoom,
+        "coachWatchesGaze" => settings.CoachWatchesGaze,
+        "coachGazeSensitivity" => settings.CoachGazeSensitivity,
         "apiPresets" => settings.ApiPresets.Select(preset => (object?)new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["id"] = preset.Id,
@@ -193,6 +197,17 @@ public static class MacPreferenceMap
             case "textZoom":
                 settings.TextZoom = normalized is double zoom ? zoom : settings.TextZoom;
                 break;
+            case "coachWatchesGaze":
+                settings.CoachWatchesGaze = normalized is bool coachWatch ? coachWatch : settings.CoachWatchesGaze;
+                break;
+            case "coachGazeSensitivity":
+            {
+                var sensitivity = AsString(normalized, settings.CoachGazeSensitivity);
+                settings.CoachGazeSensitivity = sensitivity is "relaxed" or "standard" or "strict"
+                    ? sensitivity
+                    : settings.CoachGazeSensitivity;
+                break;
+            }
             case "apiPresets":
                 settings.ApiPresets = ApplyPresets(normalized);
                 break;
