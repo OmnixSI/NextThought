@@ -223,6 +223,7 @@
       <Thickness x:Key="D4Padding_28">28</Thickness>
       <Thickness x:Key="D4Padding_30_14">30,14</Thickness>
       <Thickness x:Key="D4Padding_6">6</Thickness>
+      <Thickness x:Key="D4Padding_6_2">6,2</Thickness>
       <Thickness x:Key="D4Padding_7_3">7,3</Thickness>
       <Thickness x:Key="D4Padding_8">8</Thickness>
       <Thickness x:Key="D4Padding_8_2">8,2</Thickness>

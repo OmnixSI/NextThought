@@ -98,8 +98,9 @@ public sealed class HomeParityTests
         Assert.Contains("HomeSeriesRows", state);
         Assert.Contains("Take(3)", state);
         Assert.Contains("Standing != true", state);
-        Assert.Contains("OrderByDescending(item => item.Last?.StartedAt ?? item.Series.CreatedAt)", state);
-        Assert.Contains("ThenByDescending(item => item.Series.CreatedAt)", state);
+        // Mac ContinueSeries: (lastSessionDate ?? workspace.updatedAt), newest first.
+        Assert.Contains("OrderByDescending(item => item.Last?.StartedAt ?? item.Series.EffectiveUpdatedAt)", state);
+        Assert.Contains("ThenByDescending(item => item.Series.EffectiveUpdatedAt)", state);
         Assert.Contains("UiText.Format(\"%lld 场 · %@ · %lld 份资料\"", state);
         Assert.Contains("还没开过 · %lld 份资料", state);
         var view = Read("Views", "Home", "ContinueSeries.axaml");
