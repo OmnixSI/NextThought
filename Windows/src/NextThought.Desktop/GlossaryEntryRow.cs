@@ -10,6 +10,6 @@ public sealed record GlossaryEntryRow(GlossaryEntry Entry, Action<GlossaryEntry>
     public bool HasVariants => Entry.Variants.Count > 0;
     public string MisheardBadge => HasVariants ? "误听标记" : "";
     public bool IsPerson => Entry.Kind == GlossaryKind.Person;
-    public string VariantsLine => HasVariants ? "→ " + string.Join("、", Entry.Variants) : "";
+    public string VariantsLine => HasVariants ? "← " + string.Join("、", Entry.Variants) : "";
     public string Note => Entry.Note ?? "";
 }

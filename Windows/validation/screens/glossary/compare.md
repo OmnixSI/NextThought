@@ -1,77 +1,48 @@
-# E22 术语表收尾：Mac ↔ Windows 对照
+# 术语表 / 加入术语表（E22 · §6.7）Mac 3.4.0 源码 ↔ Windows GlossaryWindow 逐元素对照
 
-对照代码：`Sources/NextThought/GlossaryView.swift`（约 520 行：GlossarySettingsEntry / GlossaryView / MisheardMark / TranscriptFindField / GlossaryDraft+AddToGlossarySheet）、`Sources/NextThought/AppState+Glossary.swift`（212 行全文）
-对照基准：Mac v3.3.0（`5ddb9e5`）；Mac 无 glossary 截图，按源码逐元素对照
-Windows 代码：`Views/GlossaryWindow.axaml(.cs)`、`Views/AddToGlossarySheet.axaml(.cs)`、`AppState.Glossary.cs`、`GlossaryRows.cs`、`GlossaryEntryRow.cs`、`Views/NotesView.axaml(.cs)`（转写标签的 TranscriptFindField）、`NextThought.Core/GlossaryMaterialTerms.cs`（新增）、`GlossaryMerge.cs`（新增）
-Windows 截图：`Windows/validation/screens/glossary/`（自检 `glossary-ui` 生成：glossary-light / add-to-glossary-light / notes-transcript-find-light）
+- Mac 基准：Mac 3.4.0 `f015e8c6`，`Sources/NextThought/GlossaryView.swift`（GlossaryView + AddToGlossarySheet + MisheardMark + TranscriptFindField）
+- Windows 代码：`Windows/src/NextThought.Desktop/Views/GlossaryWindow.axaml(.cs)`、`Views/AddToGlossarySheet.axaml(.cs)`、`AppState.Glossary.cs`
+- Windows 截图（本目录）：`glossary-light.png` / `glossary-dark.png`（列表 + 选中条目的编辑器）、`add-to-glossary-light.png` / `add-to-glossary-dark.png`（`--self-test glossary-ui` 产出）
+- 注：Mac 没有术语表截图，按 Swift 源码逐元素对照
 
-## 1. 术语窗口（GlossaryView）
+## GlossaryView
 
-| Mac | Windows | 结论 |
-|---|---|---|
-| 标题「术语和人名」+「完成」+ 说明（名字术语统一、记下听错写法、原始转写不改写） | 同文案（`GlossaryTitleText`/`GlossaryHint`/完成按钮） | 一致 |
-| 作用域切换：全局 / 当前系列（InkSegmented） | 两个 RadioButton（全局 / 当前系列）+ UseGlobal/UseSeries 命令；切换后清空选中并重载列表 | 一致（Radio 的 IsChecked 未绑定回显，仅点击生效 → 视觉小差异） |
-| 查找框（过滤列表，按 spellings+note） | 「查找」TextBox + 过滤（`GlossaryFilter`） | 一致 |
-| 「新增」按钮 + 条目列表（canonical、人名 chip、变体「→ a、b」） | 同（新增命令、人名 chip、`VariantsLine`） | 一致 |
-| 选中条目编辑：规范写法、类型（术语/人名）、听错写法 tags+输入、备注、删除 | 编辑器字段同（规范写法 / 类型 Radio / 听错的写法逗号分隔 / 备注 / 删除 / 保存条目）；听错写法为文本输入而非 tag 流式布局 | 部分（无 tag 流式组件） |
-| 自动保存（onChange commit） | 显式「保存条目」按钮（Mac 即时 commit，Windows 保存式，行为等价） | 差异（交互方式） |
-| 批量粘贴（每行 规范写法\|变体\|类型\|备注，默认类型可选） | 「更多」菜单→批量粘贴…：粘贴文本 + 默认类型 + 加入（`ImportGlossaryPasted`） | 一致 |
-| 从文件导入… / 导出为文件… / 复制为文字 / 整理重复项 | 「更多」菜单四项均已接（文件选择器导入、另存导出、复制到剪贴板、`TidyGlossariesCommand`） | 一致 |
-| 保存到设置/即时持久化 | `SaveGlossaryCommand`（文本批量保存到 glossary.json）+ 条目立即保存 | 一致 |
-| 系列「术语」区块（当前系列自己的条目 + 移除） | 编辑器下方「系列术语」区 + `SeriesGlossaryRows` + 移除按钮 | 一致 |
-| 条目合并/重复提示（duplicatesAnother） | 合并由 `Glossary.Normalized()/Merging` 完成；无「已有同名条目…」提示 | 部分 |
+| # | Mac 元素（顺序） | 值 | Windows 现状 | 结论 |
+|---|---|---|---|---|
+| 1 | 窗口 | min 780×540 / ideal 820×580，paper 底，padding 24，spacing 12 | 820×580、Min 780×540、Paper、Margin 24、RowSpacing 12 | 一致 |
+| 2 | 标题区 | 「术语和人名」section + caption 提示（含「原始转写不会被改写。」）；右上「完成」primary、默认动作 | 同（`DoneButton IsDefault`，文案与 Mac 逐字） | 一致 |
+| 3 | 作用域 | 全局 / 当前系列 分段控件（有系列时） | 同（`seg` 分段样式，绑定 `UseGlobal/SeriesGlossaryScopeCommand`） | 一致 |
+| 4 | 查找框 | 放大镜 + 「查找」，高 32、sunken、radiusSmall、最大宽 200 | 同（`Border.field` 32 pt + 图标 + 透明 TextBox） | 一致 |
+| 5 | 状态文字 | 工具行右侧 caption | 同（`GlossaryStatusText`） | 一致 |
+| 6 | 「…」菜单 | 批量粘贴… / 从文件导入… / 导出为文件… / 复制为文字 / 整理重复项 | 同（Flyout 五项同序） | 一致 |
+| 7 | 左列 | paperCard padding 8，宽 270；「新增」ghost（加号）；条目行 | 同（card padding 8、列宽 270、`新增`带加号） | 一致 |
+| 8 | 条目行 | 规范写法 label + 人名 chip（仅人名）；变体行「← a、b」caption；选中 Hover 底、radius 8；行 padding h8 v6 | 同（`glossaryRow`，hover Sunken、selected Hover；变体行为「← …」） | 一致 |
+| 9 | 空态 | 「还没有条目。点“新增”，或用“批量粘贴”一次加入多条。」/「这个系列还没有自己的条目。」/「没有匹配的条目。」 | 同（三句 Mac 原文） | 一致 |
+| 10 | 空编辑器 | 「选一条来编辑，或新增一条。」body 次要色、居中、minHeight 200 卡片 | 同 | 一致 |
+| 11 | 规范写法 | overline + sunken 32 pt 单行框，placeholder「正确的写法，例如 Kubernetes」 | 同 | 一致 |
+| 12 | 类型 | 术语 / 人名 分段控件 | 同 | 一致 |
+| 13 | 听错的写法 | 可删除胶囊 tag（文字 + xmark 24 tap）+ 输入框；回车/逗号加入，长度≥2 且不等于规范写法 | 同（`VariantTags` + `VariantInput`，Enter/逗号/顿号分隔） | 一致 |
+| 14 | 备注 | overline + 单行框，placeholder「可选，例如“我们的数据库项目”」 | 同 | 一致 |
+| 15 | 重复提示 | 「已有同名条目，关闭这个页面时会合并。」（looseKey 比较） | 同（`HasGlossaryDuplicate`，`Glossary.LooseKey`） | 一致 |
+| 16 | 删除 | 编辑器底部右侧 ghost「删除」 | 同 | 一致 |
+| 17 | 自动保存 | 编辑内容变化即 commit（去抖），关闭时 finishVariants + tidyGlossaries | 同（500 ms 去抖 commit；Closing 时 tidy） | 一致 |
+| 18 | 批量粘贴 | 「批量粘贴」label + 说明句 + mono TextEditor（minHeight 220、sunken）+ 「没写类型的当作」+ 分段 + 取消/加入（空时禁用） | 同 | 一致 |
+| 19 | 作用域语义 | global + 当前系列 layered；原始转写不改写 | 同（`EffectiveGlossary`，自检覆盖资料术语叠加） | 一致 |
 
-## 2. 误听标记（MisheardMark）与转写查找（TranscriptFindField）
+## AddToGlossarySheet
 
-| Mac | Windows | 结论 |
-|---|---|---|
-| MisheardMark：命中行下小字「匹配到听错的写法：<form>」+ 放大镜图标 + help「…记下的听错写法，搜索时一并找出来」 | 命中行下小字 `MisheardMarkText`（同一句 Mac 文案）+ 行内 tooltip；无图标（纯文字） | 基本一致（缺图标） |
-| TranscriptFindField：放大镜 + 占位「在转写里查找（听错的写法也会找出来）」+ 匹配数「N 处」+ 清空按钮 | 术语窗口与会议页转写标签均有同款查找：占位、`N 处`、清空搜索 | 一致（无放大镜图标） |
-| 查找按「全局 + 该会议系列」表展开听错写法 | `EffectiveGlossary(CurrentSession).Search(query)` + `FirstMatch`：规范写法能找到只有听错写法的行，并标记 Misheard | 一致（自检验证「Kubernetes → 库伯尼提斯」「订单链路 → 定单链路」） |
-| 会议页转写查找结果（点击定位） | 会议页转写标签：查找框 + 命中面板（文本 + MisheardMark + 「加入术语表…」按钮）；未做点击命中滚动到原行 | 部分（无滚动定位） |
+| # | Mac 元素 | 值 | Windows 现状 | 结论 |
+|---|---|---|---|---|
+| 1 | 窗口 | 宽 440、paper、padding 24、spacing 16 | 440×420、Paper、Margin 20（差 4 pt）、spacing 10 | 接近（间距略紧） |
+| 2 | 标题/来源行 | 「加入术语表」section；来源句 caption 4 行、可选中；提示「在这句里选中听错的词并复制（⌘C）…」 | 同（`SelectableTextBlock` MaxLines 4；提示文案逐字） | 一致 |
+| 3 | 字段 | 规范写法 / 听错的写法 overline + 框；placeholder 同 Mac | 同 | 一致 |
+| 4 | 类型/范围 | 术语/人名 分段；「只用于当前系列」toggle（workspaces 非空时） | 同（Windows 仅在选中系列时显示 toggle，见差异） | 基本一致 |
+| 5 | 底部 | 取消 ghost + 加入 primary（默认动作、规范写法空时禁用） | 同（`IsDefault`、`CommitAddToGlossary` 校验） | 一致 |
 
-## 3. 从转写加入术语表（GlossaryDraft / AddToGlossarySheet）
+## 差异 / 未解决
 
-| Mac | Windows | 结论 |
-|---|---|---|
-| 转写菜单「加入术语表…」→ sheet：显示来源行、「选中并复制听错的词，会自动填入」、规范写法、听错写法、类型、只用于当前系列、取消/加入 | `AddToGlossarySheet` 同结构（来源行、规范写法、听错写法、类型、只用于当前系列、取消/加入）；**剪贴板自动预填未做**（Avalonia 12 剪贴板文本读取 API 不可用），改为查找命中已知听错形式时由调用方预填 `GlossaryDraftHeard` | 部分（无剪贴板预填；规范写法仍需手填） |
-| 「只用于当前系列」仅在存在系列时可勾 | 同（`IsVisible="{Binding HasSelectedSeries}"`） | 一致 |
-| 加入全局表或系列表（`addToGlossary` 合并同名） | `CommitAddToGlossary` → `Merging` 到全局 store 或系列表（自检：全局加入「订单链路」） | 一致 |
-
-## 4. 系列级术语叠加生效（AppState+Glossary）
-
-| Mac | Windows | 结论 |
-|---|---|---|
-| effectiveGlossary = 全局 + 会议系列 + 资料术语（MaterialTerms） | `EffectiveGlossary(meta)` = `Glossary.Layered(glossary, series.Glossary)` + `GlossaryMaterialTerms.WithTerms(MaterialTerms.Extract(series.Enabled 文档 pages))` | 一致 |
-| 识别热词（recognitionHotwords）用有效表 + 设置词表 | `GlossaryHotwords()` 改用 `EffectiveGlossary(CurrentSession).Hotwords()` | 一致 |
-| 回答提示 1,500 字符（glossaryPromptSection） | `GlossaryPromptSection(meta)` 用有效表（含资料术语）`PromptSection(1500)`，接在回答提示（AppState.Live） | 一致 |
-| 纪要提示 glossaryNotesBlock（2,000 字符 + 校正/整理规则） | Windows 未把 glossary 块注入纪要提示（只用于回答与识别） | **未做**（记未解决） |
-| 转写查找按该会议系列叠加 | `EffectiveGlossary(CurrentSession)`（自检命中系列条目的听错写法） | 一致 |
-| 规范化整理（normalize 全局+系列） | `TidyGlossariesCommand` 同时整理全局与当前系列并保存 | 一致 |
-| 同名合并/来源计数 | `GlossaryMerge.Count/Size` 统计条目+变体数；自检「已加入 4 项」 | 一致（无 Mac 的 duplicates 提示） |
-
-## 5. 自检点按记录（`glossary-ui`，隔离数据目录）
-
-| 步骤 | 操作 | 结果 |
-|---|---|---|
-| 1 | 载入全局术语（2 条） | 通过 |
-| 2 | 查找「Kubernetes」→ 命中只有「库伯尼提斯」的行并标记 Misheard | 通过（1 处；匹配到听错的写法：库伯尼提斯） |
-| 3 | 会议页转写查找「订单链路」→ 系列表叠加后命中「定单链路」 | 通过（1 处；匹配到听错的写法：定单链路） |
-| 4 | 切换「当前系列」作用域 | 通过（1 条系列条目） |
-| 5 | 编辑系列条目备注并保存 | 通过（workspace 系列 glossary 含备注） |
-| 6 | 从转写行加入术语表（AddToGlossarySheet 流程） | 通过（全局表合并「订单链路」+ 变体） |
-| 7 | 批量粘贴两行 | 通过（已加入 4 项） |
-| 8 | 整理重复项 + 导出文字 | 通过（5 行文本） |
-| 9 | 资料术语叠加（系列文档含「吞吐量」） | 通过（有效术语 5 条含吞吐量） |
-| 截图 | glossary-light / add-to-glossary-light / notes-transcript-find-light | 生成 |
-
-自检报告：`Windows/validation/screens/glossary/glossary-check.json`（9/9、exit 0）。
-新增测试 `GlossaryMaterialTermsTests`（6 个）：分层查找规范/听错写法、资料术语去重、短词忽略、提示包含系列+资料术语且 ≤1500、合并计数、批量粘贴解析合并。
-
-## 6. 未解决 / 待补
-
-1. **剪贴板自动预填未做**：Avalonia 12 的 `IClipboard` 文本读取接口与 Mac `NSPasteboard` 不对应（`GetTextAsync/TryGetTextAsync` 不可用）；查找命中时由调用方预填已知听错形式，转写右键打开时需手填。若找到新 API（`IAsyncDataTransfer`）再补。
-2. 纪要提示未注入 glossary 块（Mac glossaryNotesBlock：纪要/校对规则 + 2,000 字符）；回答提示、识别热词与查找已叠加。
-3. 会议页转写查找命中不做滚动定位/高亮（只列出命中行并可加入术语表）；MisheardMark 无放大镜图标；作用域 Radio 的 IsChecked 无状态回显。
-4. 无 tag 流式「听错写法」组件、无「已有同名条目，关闭时会合并」提示；条目保存为显式按钮（Mac 即时 commit）。
-5. 无 Mac 对应视图截图（docs 无 glossary 图），本轮截图仅 Windows 自检取证；状态最多「已实现、未验证」。
+1. **间距**：AddToGlossarySheet 的 padding 20/spacing 10 与 Mac 24/16 略有差别（功能与元素一致）。
+2. **剪贴板预填**：Mac 打开 sheet 时读剪贴板自动填「听错的写法」；Windows 由调用方（转写命中行）预填，未读系统剪贴板（Avalonia 12 文本读取限制），已在 E22 说明。
+3. **「只用于当前系列」显隐**：Mac 只要有任意系列就显示；Windows 仅在当前选中系列时显示。
+4. Mac 的 TranscriptFindField / MisheardMark 用在转写表面（会议页/Notes），不在术语窗口内；Windows 同样把它们放在会议页转写查找里（`--self-test glossary-ui` 的 notes-transcript-find 截图覆盖），术语窗口不再重复。
+5. 截图里的示例数据来自自检隔离目录（全局 3 条 + 系列 1 条），Mac 无对应截图。

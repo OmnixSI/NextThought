@@ -122,16 +122,32 @@ public partial class MainWindow
             Step("资料术语叠加生效", state.EffectiveGlossary().Entries.Any(entry => entry.Canonical == "吞吐量"),
                 "有效术语 " + state.EffectiveGlossary().Entries.Count + " 条");
 
-            // 截图：术语窗口、加入术语表弹窗、会议页转写查找。
+            // 截图：术语窗口、加入术语表弹窗、会议页转写查找。Show an entry being edited so the
+            // Mac editor (canonical, kind, misheard tags, note, delete) is in the picture.
+            state.GlossaryPasteMode = false;
+            state.GlossaryFilter = "";
+            if (state.GlossaryRows.Count > 0) state.BeginGlossaryEntry(state.GlossaryRows[0]);
+            await Task.Delay(200);
             var glossaryWindow = new GlossaryWindow { DataContext = state };
             glossaryWindow.Show();
             await Task.Delay(800);
             CaptureVisual(glossaryWindow, Path.Combine(directory, "glossary-light.png"));
+            var themeApp = Application.Current!;
+            themeApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(300);
+            CaptureVisual(glossaryWindow, Path.Combine(directory, "glossary-dark.png"));
+            themeApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(200);
             state.BeginAddToGlossary("我们聊了定单链路的回滚。");
             var sheet = new AddToGlossarySheet { DataContext = state };
             sheet.Show();
             await Task.Delay(600);
             CaptureVisual(sheet, Path.Combine(directory, "add-to-glossary-light.png"));
+            themeApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            await Task.Delay(300);
+            CaptureVisual(sheet, Path.Combine(directory, "add-to-glossary-dark.png"));
+            themeApp.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+            await Task.Delay(200);
             sheet.Close();
             glossaryWindow.Close();
             await Task.Delay(200);
