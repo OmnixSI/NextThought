@@ -59,3 +59,41 @@ Mac 打包用 `ditto --sequesterRsrc --keepParent`：ZIP 带 `__MACOSX/` 与 `._
 - 夹具里的 `note-templates.json` 为空数组；自定义模板的 Mac→Windows→Mac 双向未由本夹具覆盖（A13 已有非空模板测试）。
 - Windows 导出 manifest 的 `appVersion/appBuild` 仍是 Windows 自己的值（Mac 导入只校验 format/version），未改。
 - 恢复点导入要求点文件位于本库 `Backups/RestorePoints`（与 Mac 相同），跨机器迁移要迁整个 `Backups/` 目录；已在测试里按此流程验证。
+
+## 8. §4.5 复核（task-52，2026-11-21 阶段 1）
+
+测试文件：`Windows/tests/NextThought.Tests/MacBackupParityTests.cs`（13 项；12 通过，win-export 项在导出夹具生成前 Skip）。
+全部走正式路径 `BackupService.ImportAsync` / `IncrementalBackupStore.List+Restore`，不另写读写实现。
+
+### 8.1 四份备份导入数量表（与 mac-backup/README.md 对照）
+
+| 备份 | 系列 | 会议 | 转写 | 纪要 | 个人笔记 | 翻译 | 声纹 | 术语表 | 技能 | 模板 | 设置 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| all-scenarios | 4 | 4 | 4 场逐行与夹具一致 | 4 份 | 随夹具 | 1 场有 translations.jsonl（final translation self-test） | 1 场有 voices.jsonl | 全局 3 条（Zipformer / Sherpa-ONNX / 王老师） | 1 条 | 归档内 note-templates.json（夹具为空数组，导入 0 个用户模板） | 恢复（apiPresets 1 条 OpenAI 预设） |
+| 01-text-only | 1 | 1 | 2 句 | 有（# 周三组会…） | 「记得补消融实验的表格。」 | 无 | 无 | 无（系列导出不带全局术语表） | 无 | 无 | 无（系列导出不带 settings.plist） |
+| 02-voiceprints | 1 | 1 | 4 句 | 有（分工会） | 无 | 无 | 有：声音 1=「李工」、声音 2；共 3 个说话人（含我） | 无 | 无 | 无 | 无 |
+| 03-glossary | 1 | 1 | 2 句 | 有（识别模型例会） | 无 | 无 | 无 | 系列术语表 X-ASR | 系列挂 C4911013…（技能库 1 条「夹具 · 先给日期」） | 无 | 无 |
+
+### 8.2 ZIP 包装 / AppleDouble
+
+- 四份归档都带顶层 `NextThought-Backup/`、`__MACOSX/`、`._*` 项；`ExtractArchive` 只把合法路径解到 staging，`LocateRoot` 在根与单层子目录找 `manifest.json`（顶层目录布局可导入）。
+- 导入 all-scenarios 后扫描整个 Windows 数据目录：无 `._*` 文件、无 `__MACOSX` 目录、无 `NextThought-Backup` 目录残留。
+
+### 8.3 settings.plist apiPresets
+
+`MacSettingsPlist.Apply` 将 plist 的 base64 `<data>` 解成 JSON 再映射：OpenAI / baseURL `https://api.openai.com/v1` / keyAccount `answer.api` / id `846ADF47-227C-465A-A122-9769BA4C4E09`；真实导入后 `SettingsStore.Load()` 中同一条。
+
+### 8.4 增量备份链
+
+`04-incremental-chain-Backups.zip` 解压后（忽略 `._*` 伴随文件）`IncrementalBackupStore.List()` 得 4 个恢复点，按 Mac 秒级 `createdAt` 排序：session / 夹具 A / 夹具 B / 夹具 C；逐个 `Restore` 到独立目录，会议数 **1 → 2 → 3 → 4** 递增，`manifest.sessionCount` 相同；旧路径前缀 `Sessions/essions/<id>` 被 `NormaliseLegacyPath` 纠正，恢复结果无 `Sessions/essions` 残留。
+
+### 8.5 Windows 导出（win-export）—— 待 runtime-gaps §4.3/4.4 后生成
+
+按 §4.5.5，all-scenarios 导入后立即从 Windows 导出，提交 `Windows/tests/Fixtures/win-export/all-scenarios-from-windows.ntbackup` 与同目录 `README.md`（逐文件：逐字节相同 / 仅键序或空白不同 / 实质差别）。导出字节依赖 runtime-gaps 正在做的 §4.3（UUID 大写）与 §4.4（去掉多写出的键）序列化修复；这些修复进 HEAD 前生成的导出会有实质差别（如新增键、UUID 小写），不能作为提交夹具。比较由 `Windows/scripts/compare_mac_backup_export.py` + `MacBackupParityTests` 的 win-export 项共同保证，实质差别必须为 0。
+
+### 8.6 未解决 / 待 verify（A16）
+
+- win-export 夹具尚未生成与提交（等待 §4.3/4.4 序列化提交进 HEAD）。
+- Mac 端导入 Windows 导出仍需人做（任务书第 12 节「需要人做的事」）；本机只验证到 Windows 导入→导出→逐文件比较。
+- 夹具里 note-templates.json 为空数组，自定义模板的双向已由 A13 其它测试覆盖，不在本夹具范围。
+- Windows 导出 manifest 的 appVersion/appBuild 仍是 Windows 自己的值（Mac 导入只校验 format/version，见第 6 节）。
