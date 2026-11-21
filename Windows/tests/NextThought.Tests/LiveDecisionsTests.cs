@@ -153,7 +153,7 @@ public sealed class LiveDecisionsTests
     public void ThePageScreenshotsWereRetakenAfterTheFixes()
     {
         var directory = Path.Combine(Root(), "Windows", "validation", "screens", "live");
-        foreach (var name in new[] { "light.png", "dark.png", "en-light.png", "en-dark.png" })
+        foreach (var name in new[] { "live-light.png", "live-dark.png", "live-en-light.png", "live-en-dark.png" })
             Assert.True(File.Exists(Path.Combine(directory, name)), name);
     }
 }

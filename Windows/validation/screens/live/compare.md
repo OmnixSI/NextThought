@@ -1,3 +1,6 @@
+> 截图来源：提交 `b7863099`（2026-11-21 17:06，最终构建；浅/深/英与状态截图均由该提交生成）。
+
+
 # 会中主界面（LiveSessionView.swift ↔ LiveView.axaml）逐元素对照 — §6.5 重做版
 
 - 对照标准：Mac 3.4.0（`Sources/NextThought/LiveSessionView.swift` 全文 1619 行，含 `LiveTopBar`、`RecordingTimer`、`PauseResumeButton`、`AnswerSettingsMenu`、`TranscriptColumn`、`SpeakerLabel`、`TranscriptLine`、`QuestionMark`、`PartialLines`、`CandidateStrip`、`TranscriptStatus`、`RightColumn`、`LiveNotesColumn`、`AnswerColumn`、`AnswerText`、`WebStatusLine`、`WebSources`、`RefinementRow`、`AnswerMoreMenu`、`EvidenceLine`、`EvidenceDetails`、`LiveComposer`）；E7 另对照 `Sources/NextThought/InsightsPanel.swift` 全文。

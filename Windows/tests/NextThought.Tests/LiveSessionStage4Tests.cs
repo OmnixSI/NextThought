@@ -244,7 +244,7 @@ public sealed class LiveSessionStage4Tests
         Assert.Contains("public async Task AssignLiveLineSpeakerAsync", state);
         Assert.Contains("SessionSpeakerEdits.AssignLine", state);
         // The assignment goes through the archive tag + meta.json only.
-        Assert.Contains("Sessions.AppendVoiceTagAsync", state);
+        Assert.Contains("EnqueueVoiceTag", state);
         Assert.Contains("Sessions.SetVoiceLabelAsync", state);
         Assert.DoesNotContain("AppendTranscriptAsync", state);
         var row = Read("TranscriptRow.cs");
@@ -320,8 +320,8 @@ public sealed class LiveSessionStage4Tests
     public void TheStage4ScreenshotsAndCompareFileExist()
     {
         var directory = Path.Combine(Root(), "Windows", "validation", "screens", "live");
-        Assert.True(File.Exists(Path.Combine(directory, "light.png")), "light.png");
-        Assert.True(File.Exists(Path.Combine(directory, "dark.png")), "dark.png");
+        Assert.True(File.Exists(Path.Combine(directory, "live-light.png")), "live-light.png");
+        Assert.True(File.Exists(Path.Combine(directory, "live-dark.png")), "live-dark.png");
         var compare = File.ReadAllText(Path.Combine(directory, "compare.md"));
         Assert.Contains("§6.5", compare);
         Assert.Contains("LiveTopBar", compare);
