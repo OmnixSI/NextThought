@@ -38,6 +38,8 @@ void Lines(string name, params string[] properties)
     {
         index++;
         if (string.IsNullOrWhiteSpace(raw)) continue;
+        if (raw.Trim() != raw || !raw.StartsWith("{", StringComparison.Ordinal) || !raw.EndsWith("}", StringComparison.Ordinal))
+            failures.Add($"{name}:{index}: Mac JSONL lines are one compact object per line");
         try
         {
             using var document = JsonDocument.Parse(raw);
@@ -49,13 +51,17 @@ void Lines(string name, params string[] properties)
 }
 
 var meta = ParseJson("session-meta.json");
-Require(meta, "session-meta.json", "id", "title", "startedAt", "mode", "workspaceID");
+// Mac SessionMeta always carries the capture/model counters, not only the identity fields.
+Require(meta, "session-meta.json", "id", "title", "startedAt", "mode", "workspaceID",
+    "audioSource", "recognizer", "answerModel", "transcriptCount", "questionCount", "answerCount", "summaryState");
 var summary = ParseJson("summary.json");
 Require(summary, "summary.json", "title", "markdown", "generatedAt", "questions", "model");
 var user = ParseJson("user-content.json");
 Require(user, "user-content.json", "schemaVersion", "revision", "personalNotes", "highlights");
 var workspace = ParseJson("workspace.json");
 // Mac has no session list in a workspace: a meeting points at its series through meta.workspaceID.
+if (workspace is not null && workspace.RootElement.TryGetProperty("sessionIds", out _))
+    failures.Add("workspace.json: Mac workspace must not carry sessionIds (meta.workspaceID points back)");
 Require(workspace, "workspace.json", "id", "name", "mode", "lessons", "questionBank", "seriesItems");
 if (workspace is not null && workspace.RootElement.TryGetProperty("seriesItems", out var items) && items.ValueKind == JsonValueKind.Array)
 {
@@ -65,12 +71,14 @@ if (workspace is not null && workspace.RootElement.TryGetProperty("seriesItems",
 }
 var backup = ParseJson("backup-manifest.json");
 // Mac BackupManifest stores counts, not id lists (Sources/NextThoughtCore/Backup.swift).
+if (backup is not null && (backup.RootElement.TryGetProperty("sessions", out _) || backup.RootElement.TryGetProperty("workspaces", out _)))
+    failures.Add("backup-manifest.json: Mac manifest must not carry sessions/workspaces lists");
 Require(backup, "backup-manifest.json", "format", "version", "kind", "createdAt", "appVersion", "appBuild", "includesSecrets", "workspaceCount", "sessionCount");
 var revisions = ParseJson("revisions.json");
 Require(revisions, "revisions.json", "transcriptSourceRevision", "claimSourceRevision", "sourceRevision", "expected");
 Lines("transcript.jsonl", "id", "date", "speaker", "text");
 Lines("translations.jsonl", "id", "text", "inputRevision");
-Lines("questions.jsonl", "id", "text", "intent", "disposition");
+Lines("questions.jsonl", "id", "text", "intent", "score", "disposition");
 foreach (var name in new[] { "skills.json", "templates.json", "glossary.json" })
 {
     var doc = ParseJson(name);

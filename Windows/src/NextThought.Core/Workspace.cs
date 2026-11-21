@@ -72,13 +72,24 @@ public sealed record WorkspaceLesson
 /// Partial port of <c>Workspace</c>: the Windows app groups meetings by series, so the
 /// series carries the knowledge that the Mac workspace carries.
 /// </summary>
+[method: System.Text.Json.Serialization.JsonConstructor]
 public sealed record WorkspaceSeries(
     string Id,
     string Name,
     DateTimeOffset CreatedAt,
-    [property: JsonIgnore] IReadOnlyList<string> SessionIds,
     IReadOnlyList<WorkspaceLesson> Lessons)
 {
+    /// <summary>
+    /// Meetings of this series. Mac workspaces carry no session list (meta.workspaceID points back),
+    /// so decoding a Mac file leaves this empty rather than null.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<string> SessionIds { get; init; } = [];
+
+    public WorkspaceSeries(string id, string name, DateTimeOffset createdAt,
+        IReadOnlyList<string> sessionIds, IReadOnlyList<WorkspaceLesson> lessons)
+        : this(id, name, createdAt, lessons) => SessionIds = sessionIds;
+
     /// <summary>Questions asked in these meetings and the best answer known so far.</summary>
     public IReadOnlyList<QuestionBankItem> QuestionBank { get; init; } = [];
 
