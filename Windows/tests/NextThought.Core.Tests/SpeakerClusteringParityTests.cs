@@ -335,4 +335,61 @@ public sealed class SpeakerClusteringParityTests
         var data = tags.SelectMany(tag => JSONLines.Line(tag)).ToArray();
         Assert.Equal(tags, JSONLines.Decode<SessionVoiceTag>(data));
     }
+
+    // MARK: 3.4.0 hand-named people (J5)
+
+    [Fact]
+    public void APersonNamedByHandIsShownHoweverLittleTheySaid()
+    {
+        TranscriptLine Line(int voice, string text) => new()
+        {
+            Id = Guid.NewGuid(),
+            Date = DateTimeOffset.UtcNow,
+            Speaker = "room",
+            Text = text,
+            Voice = voice
+        };
+        // One voice does all the talking; two others say a sentence each.
+        var lines = Enumerable.Range(0, 8).Select(_ => Line(1, "这一页讲的是缓存一致性的方案")).ToList();
+        lines.Insert(3, Line(4, "我有一个问题想问一下"));
+        lines.Add(Line(7, "好的谢谢老师的解释"));
+        Assert.Empty(SpeakerLabels.VoiceNumbers(lines));
+        // Naming the quiet ones puts them on show, after the one who earned a number.
+        var named = SpeakerLabels.VoiceNumbers(lines, named: new HashSet<int> { 7, 4 });
+        Assert.Equal(3, named.Count);
+        Assert.Equal(1, named[1]);
+        Assert.Equal(2, named[4]);
+        Assert.Equal(3, named[7]);
+        var names = SpeakerLabels.Names(new Dictionary<string, string> { ["4"] = "小王" }, lines);
+        Assert.Single(names);
+        Assert.Equal("小王", names[2]);
+        Assert.Equal(9, SpeakerLabels.Numbers(lines, named: new HashSet<int> { 4 }).Count);
+        Assert.Equal(13, SpeakerLabels.NewVoice(
+            lines, new Dictionary<string, string> { ["9"] = "x" }, new HashSet<int> { 12 }));
+    }
+
+    [Fact]
+    public void NumbersEarnedByTalkingDoNotMoveWhenSomeoneIsNamed()
+    {
+        TranscriptLine Line(int voice) => new()
+        {
+            Id = Guid.NewGuid(),
+            Date = DateTimeOffset.UtcNow,
+            Speaker = "remote",
+            Text = "这是一句足够长的话用来计数",
+            Voice = voice
+        };
+        var lines = new List<TranscriptLine> { Line(9) };
+        lines.AddRange(Enumerable.Range(0, 5).Select(_ => Line(3)));
+        lines.AddRange(Enumerable.Range(0, 5).Select(_ => Line(5)));
+        var numbers = SpeakerLabels.VoiceNumbers(lines);
+        Assert.Equal(2, numbers.Count);
+        Assert.Equal(1, numbers[3]);
+        Assert.Equal(2, numbers[5]);
+        var renumbered = SpeakerLabels.VoiceNumbers(lines, named: new HashSet<int> { 9, 5 });
+        Assert.Equal(3, renumbered.Count);
+        Assert.Equal(1, renumbered[3]);
+        Assert.Equal(2, renumbered[5]);
+        Assert.Equal(3, renumbered[9]);
+    }
 }

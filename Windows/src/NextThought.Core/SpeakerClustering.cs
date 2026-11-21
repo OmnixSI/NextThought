@@ -90,30 +90,57 @@ public static class SpeakerLabels
         return wide >= 4;
     }
 
-    /// <summary>Voice id → 1-based speaker number, for the voices on show.</summary>
-    public static IReadOnlyDictionary<int, int> VoiceNumbers(IReadOnlyList<TranscriptLine> lines, ISet<int>? meVoices = null)
+    /// <summary>
+    /// Voice id → 1-based speaker number, for the voices on show.
+    /// <paramref name="meVoices"/>: voices recognised as the user ("我"); they are never numbered
+    /// and don't count towards the two people needed.
+    /// <paramref name="named"/>: voices the user gave a name, or put a sentence in by hand. They
+    /// are on show however little they said, after the voices that earned their number by talking
+    /// (whose numbers therefore never move: notes already written say "说话人 2").
+    /// </summary>
+    public static IReadOnlyDictionary<int, int> VoiceNumbers(
+        IReadOnlyList<TranscriptLine> lines, ISet<int>? meVoices = null, ISet<int>? named = null)
     {
         var count = new Dictionary<int, int>();
         var reached = new Dictionary<int, int>();
+        var first = new Dictionary<int, int>();
         for (var index = 0; index < lines.Count; index++)
         {
             var line = lines[index];
             if (line.Speaker == "me") continue;
-            if (line.Voice is not { } voice || meVoices?.Contains(voice) == true || !Substantive(line.Text)) continue;
+            if (line.Voice is not { } voice || meVoices?.Contains(voice) == true) continue;
+            if (!first.ContainsKey(voice)) first[voice] = index;
+            if (!Substantive(line.Text)) continue;
             count[voice] = count.GetValueOrDefault(voice) + 1;
             if (count[voice] == ShownAfter) reached[voice] = index;
         }
         var shown = reached.Keys.OrderBy(voice => reached[voice]).ToList();
-        if (shown.Count < 2) return new Dictionary<int, int>();
+        var byHand = (named ?? new HashSet<int>())
+            .Where(voice => !reached.ContainsKey(voice) && first.ContainsKey(voice))
+            .OrderBy(voice => first[voice])
+            .ToList();
+        if (shown.Count < 2 && byHand.Count == 0) return new Dictionary<int, int>();
+        shown.AddRange(byHand);
         var numbers = new Dictionary<int, int>();
         for (var position = 0; position < shown.Count; position++) numbers[shown[position]] = position + 1;
         return numbers;
     }
 
-    /// <summary>Line id → 1-based speaker number; lines without one keep showing as 对方 / 现场.</summary>
-    public static IReadOnlyDictionary<Guid, int> Numbers(IReadOnlyList<TranscriptLine> lines, ISet<int>? meVoices = null)
+    /// <summary>Voices that carry a name.</summary>
+    public static ISet<int> Named(IReadOnlyDictionary<string, string>? voiceNames)
     {
-        var number = VoiceNumbers(lines, meVoices);
+        var voices = new HashSet<int>();
+        if (voiceNames is null) return voices;
+        foreach (var (key, name) in voiceNames)
+            if (name.Length > 0 && int.TryParse(key, out var voice)) voices.Add(voice);
+        return voices;
+    }
+
+    /// <summary>Transcript line id → speaker number, for lines whose voice is on show.</summary>
+    public static IReadOnlyDictionary<Guid, int> Numbers(
+        IReadOnlyList<TranscriptLine> lines, ISet<int>? meVoices = null, ISet<int>? named = null)
+    {
+        var number = VoiceNumbers(lines, meVoices, named);
         var output = new Dictionary<Guid, int>();
         foreach (var line in lines)
         {
@@ -129,9 +156,23 @@ public static class SpeakerLabels
     {
         if (voiceNames is null || voiceNames.Count == 0) return new Dictionary<int, string>();
         var output = new Dictionary<int, string>();
-        foreach (var (voice, number) in VoiceNumbers(lines, meVoices))
+        foreach (var (voice, number) in VoiceNumbers(lines, meVoices, Named(voiceNames)))
             if (voiceNames.TryGetValue(voice.ToString(), out var name) && name.Length > 0) output[number] = name;
         return output;
+    }
+
+    /// <summary>A voice id nobody has yet, for a person the user adds by hand.</summary>
+    public static int NewVoice(
+        IReadOnlyList<TranscriptLine> lines, IReadOnlyDictionary<string, string>? voiceNames, ISet<int> meVoices)
+    {
+        var used = new List<int>();
+        foreach (var line in lines)
+            if (line.Voice is { } voice) used.Add(voice);
+        used.AddRange(meVoices);
+        if (voiceNames is not null)
+            foreach (var key in voiceNames.Keys)
+                if (int.TryParse(key, out var voice)) used.Add(voice);
+        return (used.Count == 0 ? -1 : used.Max()) + 1;
     }
 
     /// <summary>Lines of the other side or the room that are in a voice recognised as the user.</summary>
