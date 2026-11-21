@@ -129,6 +129,7 @@ enum SelfTest {
                 case "embedding-speed": return try await testEmbeddingSpeed(options)
                 case "import-speed": return try await testImportSpeed(options)
                 case "live-notes": return try await testLiveNotes(options)
+                case "backup-fixtures": return try await BackupFixtureSelfTest.run(options)
                 default: throw Failure("unknown suite \(suite)")
                 }
             }
