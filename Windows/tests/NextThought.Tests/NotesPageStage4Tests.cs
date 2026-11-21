@@ -165,4 +165,16 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasScreenshot}", view);
         Assert.Contains("{Binding AutomaticLabel}", view);
     }
+
+    [Fact]
+    public void TheMeetingInfoSheetHasAnEmptyStateAndRetry()
+    {
+        var view = Read("Views", "SessionInfoWindow.axaml");
+        Assert.Contains("EmptyPanel", view);
+        Assert.Contains("{loc:Tr 还没有可显示的会议信息。}", view);
+        Assert.Contains("Retry_Click", view);
+        var code = Read("Views", "SessionInfoWindow.axaml.cs");
+        Assert.Contains("EmptyPanel.IsVisible", code);
+        Assert.Contains("Retry_Click", code);
+    }
 }

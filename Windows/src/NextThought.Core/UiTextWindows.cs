@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1293;
+    public const int Count = 1294;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1151,6 +1151,7 @@ internal static class UiTextWindowsEnglish
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
         ["改这一句…"] = "Edit this sentence…",
+        ["还没有可显示的会议信息。"] = "No meeting details are available yet.",
         ["一句话印象"] = "One-line impression",
         ["用了多少"] = "How much you've recorded",
         ["本月"] = "This month",

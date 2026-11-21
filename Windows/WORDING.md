@@ -344,6 +344,7 @@ A:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 308 | 领域字段 | Domain fields | — | Windows/src/NextThought.Desktop/Views/SeriesEditorWindow.axaml |
 | 309 | 首次引导 | First-run guide | — |  |
 | 310 | （主屏） |  (main display) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:69 |
+| 还没有可显示的会议信息。 | No meeting details are available yet. | — | Windows Meeting Info empty state (task-78 notes 7) |
 | 311 | 一句话印象 | One-line impression | — | Windows/src/NextThought.Desktop/Views/NotesView.axaml |
 | 312 | 上一场转写 | Last meeting's transcript | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:101 |
 | 313 | 下一场会议 | Next meeting | — |  |
