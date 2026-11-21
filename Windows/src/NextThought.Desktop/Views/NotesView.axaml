@@ -33,6 +33,14 @@
                    FontWeight="Medium" Foreground="{DynamicResource InkBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
         <TextBlock Text="{Binding NotesFactsLine}" Classes="caption" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    IsVisible="{Binding HasNotesReadIssues}">
+          <TextBlock Text="{StaticResource IconExclamationmarkTriangleFill}" FontFamily="{StaticResource IconFont}"
+                     FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding NotesReadIssueText}" Classes="caption" TextWrapping="Wrap"
+                     Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+          <Button Classes="quiet" Content="{loc:Tr 详情}" Command="{Binding ShowNotesReadIssuesCommand}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasNotesStaleHint}">
           <TextBlock Text="{StaticResource IconQuestionCircle}" FontFamily="{StaticResource IconFont}"
                      FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />

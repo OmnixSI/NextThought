@@ -489,6 +489,7 @@ public partial class AppState
             if (generation != selectionEpoch) return;
             CurrentSession = data.Meta;
             if (data.SkippedLines > 0) SetStatus(UiText.Format("已跳过 %lld 行损坏记录，其余内容仍可查看。", data.SkippedLines));
+            RefreshNotesReadIssues(data.SkippedLines);
             var lines = data.Lines;
             try
             {

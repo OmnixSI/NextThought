@@ -116,4 +116,19 @@ public sealed class NotesPageStage4Tests
         Assert.Contains("{Binding HasNotesStaleHint}", view);
         Assert.Contains("{Binding NotesStaleHintText}", view);
     }
+
+    [Fact]
+    public void TheReadIssuesRowReportsSkippedLines()
+    {
+        var state = Read("AppState.NotesStatus.cs");
+        Assert.Contains("RefreshNotesReadIssues", state);
+        Assert.Contains("已跳过 %lld 行损坏记录，其余内容仍可查看。", state);
+        Assert.Contains("ShowNotesReadIssues", state);
+        var history = Read("AppState.StructuredNotes.cs");
+        Assert.Contains("RefreshNotesReadIssues(data.SkippedLines)", history);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasNotesReadIssues}", view);
+        Assert.Contains("{Binding NotesReadIssueText}", view);
+        Assert.Contains("ShowNotesReadIssuesCommand", view);
+    }
 }
