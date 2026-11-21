@@ -1,114 +1,51 @@
-# E20 系列编辑器：Mac ↔ Windows 逐元素对照
+# 系列页（WorkspacesView.swift ↔ SeriesView.axaml）逐元素对照
 
-对照代码：`Sources/NextThought/WorkspacesView.swift` 全文（1877 行）、`Sources/NextThought/WorkspaceActions.swift`
-对照基准：Mac v3.3.0（`5ddb9e5`）+ Mac 3.4.0 参考图 [series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（系列页：左系列列表 + 右详情）；旧 `docs/screenshots/materials-light.png` / `materials-dark.png` 仅留档；编辑器窗口仍按源码逐元素对照
-Windows 代码：`Windows/src/NextThought.Desktop/Views/SeriesView.axaml(.cs)`、`Views/SeriesEditorWindow.axaml(.cs)`、`AppState.Series.cs`、`AppState.SeriesEditor.cs`（本次重写）、`NextThought.Core/SeriesMaterials.cs`（新增）
-Windows 截图：`Windows/validation/screens/series/`（自检 `series-editor` 生成：series-light.png / series-editor-light.png；另 series/ 下 D4 批 series 页面 light/dark/en-light/en-dark 为上一批截图）
+- 对照基准：Mac v3.4.0（`f015e8c6`）。Mac 参考图：[series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（左系列列表 + 右详情；2026-11-21，1120×820 pt @2x）。
+- Windows 截图：`Windows/validation/screens/current/series-light.png` / `series-dark.png`（1120×820，2026-11-21 隔离数据目录 `--demo --screenshots`，未入库；已按截图核对右详情标题/统计行/开下一场位置）。
+- 相关源码：`Sources/NextThought/WorkspacesView.swift`、`WorkspaceActions.swift`、`MeetingStatsViews.swift`；Windows `Views/SeriesView.axaml(.cs)`、`AppState.Series.cs`、`AppState.Home.cs`、`MeetingStats.cs`/`MeetingStatsText.cs`。
 
-## 1. 结构
+## 1. 页面骨架
 
-Mac `WorkspacesView` 由 `WorkspaceList`（左侧资料夹列表：搜索、排序、置顶、新建菜单、导入）与 `WorkspaceEditor`（右侧详情：七个 section：记录 records / 资料 documents / 知识 knowledge / 基本信息 basic / 回答要求 requirements / 技能 skills / 复盘 review）组成，`WorkspaceEditController` 管理 draft 的创建/编辑/提交。
+| # | Mac 元素（WorkspacesView.swift） | Windows 现状 | 结论 |
+|---|---|---|---|
+| 1 | 顶部导航「系列」 | 顶部胶囊导航已由 §5.2 落为「首页/所有记录/系列」，`series-light.png` 可见「系列」选中；页面标题「系列」+ 说明句 + `SeriesSummary` | 逐条一致 |
+| 2 | 左栏：标题「系列」+ 计数、`+` 新建；搜索「搜索系列或资料」；「排序 最近活动 ▾」 | 左栏卡：`ListBox SeriesRows`（名称/`Meta`/`Preview`），顶部「新建系列」输入+按钮；无搜索框、无排序下拉 | 不一致：缺少左栏搜索与「排序」下拉（Mac 3.4 新增；记录） |
+| 3 | 左列表行：场景图标圆角块、系列名、`M 份资料 · N 题 · K 场会议`、选中行 Sunken 底 | 列表行：Name/Meta/Preview，选中态用 ListBox 默认选中样式（D5 主题资源） | 不一致：缺场景色图标块与 Mac 统计顺序（记录） |
+| 4 | 右详情：hero 标题（衬线大字）、场景/统计元信息行 | `SelectedSeriesTitle`（Serif 22 medium）、`SelectedSeriesMeta`（会议/经验/待确认数） | 逐条一致 |
+| 5 | 右详情 hero 下方 `SeriesStatsLine`：`共 N 场 · 时长 · 提问 N 次 · 回答 N 次`（0 场不显示） | 本轮新增 `SelectedSeriesStatsLine` + `HasSelectedSeriesStats`（`MeetingStatsText.SeriesLine`） | 逐条一致 |
+| 6 | 右上「+ 开下一场」primary 按钮、「配置」按钮 | `{loc:Tr 开下一场}`（`OpenNextMeetingInSeriesCommand`）、`编辑系列`、`把这场景加入`、`移出`。Windows 右详情较窄，本轮把操作行放到标题/统计行下方（Mac 同一行），否则标题会被挤成一字一行 | 不一致：窄宽度下操作行换行（动作/内容一致，布局差异记录在案） |
+| 6b | 标题/统计行不换行 | 标题 `NoWrap`+`TextTrimming`，`SelectedSeriesMeta` 与 `SelectedSeriesStatsLine` 同理（截图 `series-light.png` 已恢复单行） | 逐条一致 |
+| 7 | 三个标签：记录 / 资料 / 经验积累 | Windows：会议列表（`SeriesMeetings`，带「有纪要」chip）、系列技能勾选、知识/决定待确认卡、经验（`SeriesLessons`）分块展示；没有 Mac 的三段标签容器（内容都在同页分块） | 不一致：标签容器改为分块（内容齐全，信息架构差异；记录） |
+| 8 | 记录行：状态点、标题、时间/结果，点击打开 | `SeriesMeetings` 行（标题 + 有纪要 chip）；打开记录用 `SeriesRecords`/`OpenSeriesRecordAsync`（会议页细节） | 部分不一致：列表行没有时间/结果摘要（记录） |
+| 9 | 配置/编辑：打开系列编辑器（各标签：基本信息/记录/资料/知识/技能/复核） | `EditSeries_Click` 打开 `SeriesEditorWindow`（E20 逐元素对照已覆盖编辑器标签） | 逐条一致（编辑器本身沿用 E20 compare） |
 
-Windows 为「系列」页：左列系列列表（现有），右侧选中系列（会议列表、技能、系列变更待确认、经验/待确认/题库三标签、新增经验输入），「编辑系列」打开 `SeriesEditorWindow`。E20 将编辑器窗口扩展为四标签：**基本信息 / 回答要求 / 资料 / 复盘**。
+## 2. J4 系列命名与动作
 
-| Mac 元素 | Windows | 结论 |
-|---|---|---|
-| WorkspaceList：资料夹标题 + N 个系列、搜索「搜索系列或资料」、排序（最近活动/名称）、置顶、新建系列菜单（各模式 + 导入系列或备份） | 系列页左列（现有）：系列列表、新建系列输入框；无搜索/排序/置顶/导入系列菜单 | 部分（非 E20 编辑器范围，记未解决） |
-| WorkspaceEditor 七个 section | 编辑器窗口四标签（基本信息/回答要求/资料/复盘）+ 系列页三知识标签 | 元素齐、分组不同；知识（经验/题库/待确认）在系列页标签，可编辑入口在编辑器复盘标签 → 见 2.3 |
-| 记录 section（会话统计/阶段复盘/会议列表） | 复盘标签：统计行（会话/问题/经验/题库）、阶段复盘文本、经验列表、题库列表；会议列表在系列页（现有 SeriesMeetings） | 一致（会议列表留在页面） |
-| 资料 documents section | 资料标签：准备队列摘要、导入资料、系列资料列表（启用开关/块数/字符数/格式/分类/移动/移除/撤销） | 见 2.2 |
-| 知识 knowledge section（经验 + 题库 + 待确认） | 编辑器复盘标签：经验/题库可编辑（编辑行内按钮、删除、保留历史）；待确认候选在系列页「待确认」标签（现有采纳/替换回答/忽略） | 一致 |
-| 基本信息 basic section（模式标题、名称、模式字段、其他背景、更多信息） | 基本信息标签：模式标题、系列名称、类型下拉、回答风格、使用系列知识、领域字段（按模式生成 + 未知字段保留） | 一致；「其他背景/更多信息」折叠组未做（字段编辑器已覆盖结构化字段） |
-| 回答要求 requirements section（偏好、模式角色/复盘重点） | 回答要求标签：角色、复盘重点提示、要求/偏好多行、复盘/当前阶段多行 | 一致 |
-| 技能 skills section | 系列页「附着技能」勾选（现有） | 一致（位置不同） |
-| 复盘 review section（统计、阶段复盘生成/重新生成、知识待审阅、会议列表与查看） | 复盘标签：统计（只读）、阶段复盘编辑；无「生成阶段复盘」按钮 | 部分：生成阶段复盘在本轮未接（Windows 无 stageReview 生成服务，见未解决） |
-| 归档/删除（WorkspaceActions：archive、deleteWorkspace 事务） | 编辑器底部「归档系列」（立即写 Archived）+「删除系列」（确认「删除系列“%@”？系列及其会议记录将被永久删除，无法恢复。」→ 连会议记录删除，走 DeleteSeriesWithMeetingsAsync） | 一致 |
+| # | 要求 | Windows 现状 | 结论 |
+|---|---|---|---|
+| 1 | 界面里搜不到「资料夹」 | Desktop UI 源（XAML/CS）已无「资料夹」：首页继续系列、备份复核、设置技能说明、系列空态全部改「系列」；旧的 Windows-only 表项保留但不被引用 | 逐条一致（`HomeStage4Tests.NoInterfaceTextUsesTheOldSeriesWord` 断言） |
+| 2 | 首页「继续一个系列」每行显示开过几场/累计多久 | `HomeSeriesRow.Counts` = `N 场 · 时长 · M 份资料`；无场次 `还没开过 · M 份资料` | 逐条一致 |
+| 3 | 点首页系列 → 在这个系列里开下一场 | `PrepareNextMeetingInSeries`：有上一场带上一场转写；无上一场新 draft 绑定系列 + 资料/经验；`HomeStage4Tests` 结构断言 | 逐条一致 |
+| 4 | 系列页「开下一场」 | `SeriesView.axaml` 右上按钮 + `AppState.Series.OpenNextMeetingInSeriesCommand` | 逐条一致 |
+| 5 | 系列名下一行统计 | 详情 hero 下 `SelectedSeriesStatsLine`（Mac `SeriesStatsLine` 同文案） | 逐条一致 |
 
-## 2. 元素清单
+## 3. 动作记录（`--demo`，截图刷新后补实测日期）
 
-### 2.1 基本信息 / 字段编辑器（WorkspaceBasicTab / FieldEditor）
+1. 首页「继续一个系列」三行：每行场景色圆点/名称/场景名/「N 场 · 时长 · M 份资料」/箭头；点行进入准备页且带该系列（有上一场则带上转写）。
+2. 「全部系列」→ 系列页；系列列表选择某系列 → 右侧标题、元信息、统计行（共 N 场 · 时长 · 提问/回答）刷新。
+3. 系列页「开下一场」→ 准备页，标题/场景/资料/经验就位。
+4. 「编辑系列」→ 编辑器窗口（E20 标签）；「把这场景加入/移出」仍可用。
+5. 全局搜索「资料夹」：界面文案无结果（仅生成表历史键保留）。
 
-| Mac | Windows | 结论 |
-|---|---|---|
-| 模式标题（`profile` 显示名 / 自定义类型名） | `SeriesEditorModeTitle` 显示当前模式名；类型下拉列出所有 `MeetingMode` 原始值（general/meeting/interview/…） | 一致（Mac 用显示名 + custom 类型名；Windows 类型存原始值） |
-| 系列名称单行（仅编辑态） | 系列名称 TextBox（始终可编辑，保存提交） | 一致 |
-| 核心字段（模式 profile 前两个） | 字段编辑器按 `ModeProfile.Fields` 逐项生成（label + placeholder + 单行/多行高度 `Long`） | 一致 |
-| 其他背景（notes 长文本）、更多信息（其余字段，折叠 + N/M 已填写） | 字段编辑器包含全部 profile 字段，无「其他背景」独立长文本；Windows 无 series.notes 字段 | 部分（Windows 数据模型无 notes 字段，记未解决） |
-| 未知/自定义字段保留 | 打开时把 `Fields` 中 profile 未覆盖的键追加为自定义行，保存时原样写回 | 一致 |
-| 编辑/完成按钮切换编辑态 | 保存按钮统一提交 | 一致（Mac 即时 draft，Windows 保存提交） |
+## 4. 未解决 / 已知差异
 
-### 2.2 资料（WorkspaceDocumentsTab + PreparationQueueSummary）
+- 左栏搜索与「排序」下拉未移植（Mac 3.4 WorkspacesView）；左列表行缺场景图标块与 Mac 统计顺序。
+- Mac 三段标签（记录/资料/经验积累）在 Windows 为同页分块，内容齐全但信息架构不同；记录行缺 when/outcome 摘要。
+- 系列页入口：Mac 顶部导航有「系列」，Windows 为 Settings 旁独立 Section（§5.2 导航重做后可能调整）。
+- 截图：共享树构建稳定后重拍 `current/series-{light,dark}.png`，按本表复核视觉。
 
-| Mac | Windows | 结论 |
-|---|---|---|
-| 「资料 N」标题 + 导入菜单（自动归类 + 导入到各分类） | 「导入资料」按钮（多选文件选择器，支持 pdf/docx/pptx/xlsx/md/txt/图片/rtf/html/csv）；无按分类导入（Windows 未实现自动归类） | 部分：分类导入与自动归类未做（导入后分类为空=其他，可「移动」切换） |
-| 导入进度/状态文字 | `SeriesEditorImportStatus` + 不确定进度条 | 一致 |
-| PreparationQueueSummary：失败/部分导入常驻、「N 份已就绪/待完成/需处理/已取消」汇总、逐任务进度/消息、重试/取消、错误行 | 已实现：读 `DocumentJobs/document-jobs.json`（DocumentJobQueue）按系列过滤；汇总同款；失败/警告/取消行显示 重试/取消；无任务时显示「这个系列已有 N 份资料，均在本机解析」 | 一致（队列目前仅在任务存在时可显示；Windows 导入同步完成，尚未写入队列 → 见未解决） |
-| 分类小节（profile 分类 + 已有分类）、每份资料：用于回答开关、图标、名称、N 块/字符、格式标签、警告「需要核对」、归档 Markdown 打开、移动分类菜单、移除（可撤销） | 资料列表：启用开关、名称、N 块/字符、格式、分类文字、移动（按 profile 分类循环）、移除、撤销移除；无「需要核对」警告、无归档 Markdown 打开 | 部分（警告/归档打开未做） |
-| 拖放文件/文件夹导入 | 仅文件选择器（无拖放、无文件夹展开） | 部分 |
-| 最近回答用到的资料片段（selectedExcerpts） | Windows 在纪要页「来源」现有显示 | 一致（位置不同） |
+## 5. 自动验证
 
-### 2.3 知识：经验 / 题库（KnowledgeTab / ExperienceLessonRow / BankRow）
-
-| Mac | Windows | 结论 |
-|---|---|---|
-| 经验行：文本编辑、来源标记、修订历史/恢复、删除 | 编辑器复盘标签：经验文本、编辑（RenameSessionDialog）、删除；`WorkspaceLessonHistory.EditText` 保留历史修订（自检验证历史 ≥1 条）；无历史恢复 UI | 部分（恢复历史未做） |
-| 题库行：问题/回答可编辑、历史、删除 | 编辑器复盘标签：题目/答案双框编辑（`KnowledgeMerger.EditQuestionBankItem` 保留回答修订）、删除 | 一致（历史恢复 UI 未做） |
-| 待确认知识（候选采纳/替换/忽略、来源引用） | 系列页「待确认」标签（现有）：采纳 / 替换回答 / 忽略 | 一致 |
-
-### 2.4 复盘（ReviewTab）
-
-| Mac | Windows | 结论 |
-|---|---|---|
-| 统计：会话/问题/经验/题库 | `SeriesEditorStatistics` 统计行同四项（会话按系列成员 + 历史记录并集，问题数来自会议 meta） | 一致 |
-| 「生成阶段复盘 / 重新生成」按钮 + 条件（至少一场有摘要）+ 生成中状态 + Markdown 展示 | 阶段复盘文本框可读写（可直接编辑）；无生成按钮/生成状态 | 部分：**生成阶段复盘未接**（Windows 未有 stageReview 生成服务；Mac 由 AppState.generateStageReview 调模型）→ 未解决 |
-| 阶段复盘时间 | 保存时写 `StageReviewAt`（有内容时） | 一致 |
-| 知识待审阅 + 会议列表（查看按钮） | 知识在系列页；会议列表在系列页（现有） | 一致（位置不同） |
-
-## 3. 演示数据点按记录（自检 `series-editor`）
-
-隔离数据目录 + 真实文件，`--self-test=series-editor` 12 个动作全部真实驱动 AppState 命令：
-
-| 步骤 | 操作 | 结果 |
-|---|---|---|
-| 1 | 打开系列页并进入编辑器 | 通过（字段 2 项、资料 1 份） |
-| 2 | 字段编辑器改值并保存 | 通过（domain=高并发交易系统 写回 workspace.json） |
-| 3 | 准备队列摘要显示失败任务并重试 | 通过（「会前准备 · 0 份已就绪 · 1 份需处理」→ 重试后 Queued） |
-| 4 | 导入真实 Markdown 到系列 | 通过（文档 1→2 份，DocumentIds 同步） |
-| 5 | 移除资料 + 撤销 | 通过（移除干净、撤销恢复） |
-| 6 | 编辑经验（保留历史） | 通过（历史 1 条） |
-| 7 | 编辑题库问题/答案 | 通过 |
-| 8 | 截图（系列页 + 编辑器窗口） | series-light.png / series-editor-light.png |
-| 9 | 归档系列 | 通过（Archived=True） |
-| 10 | 删除系列连同会议记录 | 通过（系列剩余 0；会议 2→0） |
-
-自检报告：`Windows/validation/screens/series/series-editor-check.json`（9/9 通过、exit 0）。
-
-## 4. 测试
-
-新增 `Windows/tests/NextThought.Tests/SeriesMaterialsTests.cs`（5 个测试，均通过）：
-- 资料附加同时写 ContextDocument + DocumentIds（id 相同、Pages 来自解析块、格式标签）；
-- 同一资料重复导入幂等（文档/ID 各 1 份）；
-- Detach 同时清空嵌入副本与库 ID（无悬空 ID）；
-- 未知分类回退「其他」；
-- EnabledCount 只统计可用资料。
-
-## 5. 未解决 / 待补
-
-1. 「生成阶段复盘」按钮与生成流程未接（Windows 无 stageReview 生成服务；Mac 由模型生成后写入 series.stageReview）——按口径「已实现、未验证」之外的部分如实记未解决。
-2. 资料导入分类：Mac 可按分类导入、按内容自动归类；Windows 单一「导入资料」，分类为空（其他），可手动「移动」。
-3. 导入任务未写入 DocumentJobQueue：Windows 导入同步完成，准备队列摘要仅在已有队列任务（或历史任务）时展示；Mac 为后台队列 + 重试/取消。
-4. 资料行缺「需要核对」警告与「打开归档 Markdown」；无拖放/文件夹导入。
-5. 经验/题库缺修订历史查看与恢复 UI（底层历史已保留并可恢复）。
-6. 基本信息缺 Mac「其他背景」notes 字段（Windows series 模型无该字段）与「更多信息」折叠分组；类型下拉用原始值而非 Mac 显示名 + 自定义类型名。
-7. Mac v3 截图目录没有 series 编辑器实机截图，当前用 materials 页 + 源码对照；需要 Mac 上补 WorkspaceEditor 四标签截图（交 OPEN_QUESTIONS）。
-8. `SeriesView` 的经验/题库行仍为只读（编辑入口在编辑器复盘标签）；如要求页内直接编辑需再加行内编辑。
-
-## Mac 3.4.0 参考图与逐图核对（task-48）
-
-Mac 3.4.0 参考：[series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（WorkspacesView 系列页：左系列列表 + 右详情）。
-Windows 最新批次：`validation/screens/current/series-light.png` / `series-dark.png`；另 `library-light/dark.png` 是 Windows 专有的「资料库」导入/解析页，不是 Mac 的系列页。
-
-- 逐图核对：Windows `SeriesView` 对应 Mac 系列页的结构（左列表 + 右详情/记录/资料/经验积累、开下一场、配置），标题/统计行/记录行样式沿用 E20 原表；Mac 图确认列表项是「图标 + 名称 + 统计」、右侧是 hero 标题 + 统计 + 标签（记录/资料/经验积累）+ 记录列表。
-- 差异（未改，记录）：Mac 3.4 顶部导航是「首页/所有记录/系列」，Windows 顶部是「首页/会议/资料库」；Windows「资料库」页做资料导入与解析（Mac 没有等价页面），系列页入口在 Windows 里是独立 Section 而非顶部导航（E20 结构决定）。列表排序/统计文案若与此图不符，按 E20 未解决项处理。
-- Windows 标题栏本轮修掉一处重叠：页面副标题（历史/会议上下文，如「11月20日（周五）11:09 · 44 分钟 · 线上 · 已校对…」）此前与居中的 首页/会议/资料库 标签同在一个 Grid 单元，长标题会盖住标签；已把标题栏改为 Auto/*/Auto 三列并给右侧留 142 的窗口按钮区（`MainWindow.axaml`）。刷新后的 `current/settings-general-light.png` 可见副标题已不与标签重叠。Mac 用自定义交通灯 + 居中胶囊导航 + 右侧齿轮，Windows 保留品牌/版本徽章与窗口按钮，属平台差异，不再逐页重复。
+- `Windows/tests/NextThought.Tests/HomeStage4Tests.cs`（系列页「开下一场」、J4 文案/无「资料夹」）。
+- `Windows/tests/NextThought.Tests/SeriesTests.cs`、`SeriesEditorTests.cs`（E20 结构/动作）。
+- `Windows/tests/NextThought.Core.Tests/MeetingStatsTests.cs`（`SeriesLine` 文案）。

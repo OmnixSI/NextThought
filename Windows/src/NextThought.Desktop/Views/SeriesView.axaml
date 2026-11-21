@@ -55,15 +55,17 @@
       <!-- 选中的系列 -->
       <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_22_16}">
         <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid RowDefinitions="Auto,Auto" RowSpacing="{DynamicResource D4Spacing_8}">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
-                         FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" />
-              <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
+                         FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
               <TextBlock Text="{Binding SelectedSeriesStatsLine}" Classes="caption" FontSize="11"
-                         Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasSelectedSeriesStats}" />
+                         Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasSelectedSeriesStats}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+            <!-- Mac keeps the actions on the title row; the narrower Windows detail column wraps them
+                 onto their own row instead of squeezing the title into one character per line. -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right">
               <Button Content="{loc:Tr 开下一场}" Command="{Binding OpenNextMeetingInSeriesCommand}" />
               <Button Content="{loc:Tr 编辑系列}" Click="EditSeries_Click" />
               <Button Content="{loc:Tr 把这场景加入}" Command="{Binding AssignCurrentToSeriesCommand}" />
