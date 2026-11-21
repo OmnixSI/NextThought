@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
   H7: one local verification command. Restores locked dependencies, builds, runs both test
-  projects, runs the A15 MacCodec check and (unless skipped) the D1 screenshot batch.
+  projects, runs the Core tests a second time with the process treated as UTC (B24), runs the
+  A15 Mac fixture tests and (unless skipped) the D1 screenshot batch.
   Stops at the first failing step and prints a short summary for PORTING_STATUS.md.
 #>
 param(
@@ -55,6 +56,24 @@ try {
         & $dotnet test tests/NextThought.Tests -c Release --no-build --no-restore `
             --logger 'trx;LogFileName=app.trx' --results-directory artifacts/verify --verbosity minimal
     }
+    # B24: Windows cannot change TimeZoneInfo.Local for a process without administrator rights
+    # (TZ is only honoured on Unix; tzutil needs elevation). The Core test assembly reads this
+    # variable in its ModuleInitializer and points the production-local-time seam at UTC, so the
+    # second Core run exercises the suite exactly as if the machine's zone were UTC. The app never
+    # reads the variable, so production behaviour is unchanged. See validation/timezone.md.
+    Invoke-Step 'tests: NextThought.Core.Tests (UTC)' {
+        $previousTimeZone = $env:NEXTTHOUGHT_TEST_TIMEZONE
+        $env:NEXTTHOUGHT_TEST_TIMEZONE = 'UTC'
+        try {
+            & $dotnet test tests/NextThought.Core.Tests -c Release --no-build --no-restore `
+                --logger 'trx;LogFileName=core-utc.trx' --results-directory artifacts/verify --verbosity minimal
+        }
+        finally {
+            if ($null -eq $previousTimeZone) { Remove-Item Env:NEXTTHOUGHT_TEST_TIMEZONE -ErrorAction SilentlyContinue }
+            else { $env:NEXTTHOUGHT_TEST_TIMEZONE = $previousTimeZone }
+        }
+    }
+
     $fixtures = Join-Path $projectRoot 'tests\Fixtures\mac'
     if ($SkipMacCheck) {
         $results.Add('SKIP  A15 MacCodec check (-SkipMacCheck)')

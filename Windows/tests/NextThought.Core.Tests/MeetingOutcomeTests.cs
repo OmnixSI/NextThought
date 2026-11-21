@@ -16,6 +16,9 @@ public sealed class MeetingOutcomeTests : IDisposable
 
     public void Dispose() => UiText.EnglishUi = previousEnglish;
 
+    /// <summary>B24: explicit zone, so the expectations do not depend on the process-local zone.</summary>
+    private static readonly TimeZoneInfo Plus8 = TimeZoneInfo.CreateCustomTimeZone("test+08", TimeSpan.FromHours(8), "+08", "+08");
+
     private static SessionMeta Meta(
         string mode = "interview",
         string? typeName = null,
@@ -81,13 +84,15 @@ public sealed class MeetingOutcomeTests : IDisposable
     public void WhenFollowsTodayYesterdayWeekdayAndDate()
     {
         var now = new DateTimeOffset(2026, 11, 21, 18, 0, 0, TimeSpan.FromHours(8));
-        Assert.Equal("今天 上午10:00", MeetingOutcome.When(new DateTimeOffset(2026, 11, 21, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false));
-        Assert.Equal("昨天 上午10:00", MeetingOutcome.When(new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false));
-        Assert.Equal("周四", MeetingOutcome.When(new DateTimeOffset(2026, 11, 19, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false));
-        Assert.Equal("10月2日", MeetingOutcome.When(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false));
+        Assert.Equal("今天 上午10:00", MeetingOutcome.When(new DateTimeOffset(2026, 11, 21, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false, timeZone: Plus8));
+        Assert.Equal("昨天 上午10:00", MeetingOutcome.When(new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false, timeZone: Plus8));
+        Assert.Equal("周四", MeetingOutcome.When(new DateTimeOffset(2026, 11, 19, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false, timeZone: Plus8));
+        Assert.Equal("10月2日", MeetingOutcome.When(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false, timeZone: Plus8));
         // English: localized templates and invariant weekday/month-day.
-        Assert.Equal("Today 10:00 AM", MeetingOutcome.When(new DateTimeOffset(2026, 11, 21, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true));
-        Assert.Equal("Thursday", MeetingOutcome.When(new DateTimeOffset(2026, 11, 19, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true));
-        Assert.Equal("Oct 2", MeetingOutcome.When(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true));
+        Assert.Equal("Today 10:00 AM", MeetingOutcome.When(new DateTimeOffset(2026, 11, 21, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true, timeZone: Plus8));
+        Assert.Equal("Thursday", MeetingOutcome.When(new DateTimeOffset(2026, 11, 19, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true, timeZone: Plus8));
+        Assert.Equal("Oct 2", MeetingOutcome.When(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.FromHours(8)), now, english: true, timeZone: Plus8));
+        // B24: the explicit zone wins over the process-local zone (UTC renders 02:00 of the same day).
+        Assert.Equal("今天 上午2:00", MeetingOutcome.When(new DateTimeOffset(2026, 11, 21, 10, 0, 0, TimeSpan.FromHours(8)), now, english: false, timeZone: TimeZoneInfo.Utc));
     }
 }

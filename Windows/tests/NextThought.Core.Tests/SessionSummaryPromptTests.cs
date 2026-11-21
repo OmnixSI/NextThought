@@ -8,6 +8,9 @@ public sealed class SessionSummaryPromptTests
 {
     private static readonly DateTimeOffset Start = new(2026, 11, 18, 9, 0, 0, TimeSpan.FromHours(8));
 
+    /// <summary>B24: explicit zone, so the header does not depend on the process-local zone.</summary>
+    private static readonly TimeZoneInfo Plus8 = TimeZoneInfo.CreateCustomTimeZone("test+08", TimeSpan.FromHours(8), "+08", "+08");
+
     private static TranscriptLine Line(string text, int offset, string speaker = "remote", Guid? id = null) =>
         new() { Text = text, Speaker = speaker, Date = Start.AddSeconds(offset), Id = id ?? Guid.NewGuid() };
 
@@ -54,9 +57,12 @@ public sealed class SessionSummaryPromptTests
     [Fact]
     public void HeaderIncludesOnlyPresentFacts()
     {
-        var header = SessionSummaryPrompt.Header("会议", Start, 90, "结构组会", "背景", ["资料 A", "资料 B"]);
+        var header = SessionSummaryPrompt.Header("会议", Start, 90, "结构组会", "背景", ["资料 A", "资料 B"], Plus8);
         Assert.Equal("场景：会议\n开始时间：2026-11-18 09:00\n时长：90 分钟\n场景分区：结构组会\n用户背景：背景\n资料：资料 A、资料 B", header);
-        Assert.DoesNotContain("时长", SessionSummaryPrompt.Header("会议", Start, 0, null, "", []));
+        Assert.DoesNotContain("时长", SessionSummaryPrompt.Header("会议", Start, 0, null, "", [], Plus8));
+        // B24: an explicit UTC zone renders the same instant in UTC, independent of the machine zone.
+        var utc = SessionSummaryPrompt.Header("会议", Start, 0, null, "", [], TimeZoneInfo.Utc);
+        Assert.Contains("开始时间：2026-11-18 01:00", utc);
     }
 
     [Fact]

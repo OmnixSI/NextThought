@@ -8,6 +8,9 @@ public sealed class SessionMarkdownExporterTests
 {
     private static readonly DateTimeOffset Start = new(2026, 11, 18, 9, 30, 0, TimeSpan.FromHours(8));
 
+    /// <summary>B24: explicit zone, so the header does not depend on the process-local zone.</summary>
+    private static readonly TimeZoneInfo Plus8 = TimeZoneInfo.CreateCustomTimeZone("test+08", TimeSpan.FromHours(8), "+08", "+08");
+
     private static TranscriptLine Line(string text, int offsetSeconds, string speaker = "remote", string? translation = null) =>
         new()
         {
@@ -30,7 +33,7 @@ public sealed class SessionMarkdownExporterTests
     {
         var value = (projection ?? Projection()) with { Summary = summary };
         return SessionMarkdownExporter.Export("默认标题", "会议", Start, 90 * 60, "系统音频",
-            value, lines ?? [Line("第一句", 5)], questions, notes);
+            value, lines ?? [Line("第一句", 5)], questions, notes, Plus8);
     }
 
     private static StructuredNotesPayload Notes() => new(NotesFormat.Outline,
@@ -60,6 +63,10 @@ public sealed class SessionMarkdownExporterTests
         var markdown = Export(summary: new SessionProjectedSummary("复盘", ""));
         Assert.StartsWith("# 复盘\n", markdown);
         Assert.Contains("> 会议 · 2026-11-18 09:30 · 90 分钟 · 系统音频", markdown);
+        // B24: an explicit UTC zone renders the same instant in UTC, independent of the machine zone.
+        var utc = SessionMarkdownExporter.Export("默认标题", "会议", Start, 0, "", Projection(), [Line("第一句", 5)],
+            timeZone: TimeZoneInfo.Utc);
+        Assert.Contains("> 会议 · 2026-11-18 01:30", utc);
     }
 
     [Fact]

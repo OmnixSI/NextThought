@@ -32,14 +32,22 @@ public static class SessionMarkdownExporter
         SessionTextProjection projection,
         IReadOnlyList<TranscriptLine> lines,
         IReadOnlyList<SessionQuestionEvent>? detectedQuestions = null,
-        StructuredNotesPayload? notes = null)
+        StructuredNotesPayload? notes = null,
+        TimeZoneInfo? timeZone = null)
     {
+        // B24: the header time is produced in an explicit zone (null = the process-local one), so
+        // the exporter renders the same Markdown in a UTC process as on the presenter's machine.
+        var zone = timeZone ?? LocalTime.Zone;
         var output = new List<string>
         {
             "# " + (projection.Summary is { Title.Length: > 0 } summary ? summary.Title : title),
             ""
         };
-        var facts = new List<string> { modeTitle, startedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm") };
+        var facts = new List<string>
+        {
+            modeTitle,
+            TimeZoneInfo.ConvertTime(startedAt, zone).ToString("yyyy-MM-dd HH:mm")
+        };
         if (durationSeconds > 0) facts.Add((int)(durationSeconds / 60) + " 分钟");
         if (audioSource.Length > 0) facts.Add(audioSource);
         output.Add("> " + string.Join(" · ", facts));

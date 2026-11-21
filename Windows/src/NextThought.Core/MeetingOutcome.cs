@@ -23,12 +23,17 @@ public static class MeetingOutcome
         return minutes > 0 ? UiText.Format("%@ · %lld 分钟", type, minutes) : type;
     }
 
-    /// <summary>"今天 10:00" / "昨天 10:00" / "周四" / "10月2日" (HomeView.swift MeetingOutcome.when).</summary>
-    public static string When(DateTimeOffset date, DateTimeOffset? now = null, bool? english = null)
+    /// <summary>
+    /// "今天 10:00" / "昨天 10:00" / "周四" / "10月2日" (HomeView.swift MeetingOutcome.when).
+    /// B24: the time zone is an explicit input; null keeps the machine's local zone as before.
+    /// </summary>
+    public static string When(DateTimeOffset date, DateTimeOffset? now = null, bool? english = null,
+        TimeZoneInfo? timeZone = null)
     {
         var isEnglish = english ?? UiText.EnglishUi;
-        var local = date.ToLocalTime();
-        var today = (now ?? DateTimeOffset.Now).ToLocalTime().Date;
+        var zone = timeZone ?? LocalTime.Zone;
+        var local = TimeZoneInfo.ConvertTime(date, zone);
+        var today = TimeZoneInfo.ConvertTime(now ?? DateTimeOffset.Now, zone).Date;
         if (local.Date == today) return UiText.FormatTemplate(UiText.Lookup("今天 %@", isEnglish), ShortTime(local, isEnglish));
         if (local.Date == today.AddDays(-1)) return UiText.FormatTemplate(UiText.Lookup("昨天 %@", isEnglish), ShortTime(local, isEnglish));
         if (today.AddDays(-6) < local.Date) return Weekday(local, isEnglish);

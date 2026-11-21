@@ -83,12 +83,15 @@ public static class SessionSummaryPrompt
     }
 
     public static string Header(string modeTitle, DateTimeOffset startedAt, int durationMinutes,
-        string? seriesName, string profile, IReadOnlyList<string> documentNames)
+        string? seriesName, string profile, IReadOnlyList<string> documentNames,
+        TimeZoneInfo? timeZone = null)
     {
+        // B24: explicit zone; null keeps the machine's local zone (the Windows app's default).
+        var zone = timeZone ?? LocalTime.Zone;
         var parts = new List<string>
         {
             "场景：" + modeTitle,
-            "开始时间：" + startedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+            "开始时间：" + TimeZoneInfo.ConvertTime(startedAt, zone).ToString("yyyy-MM-dd HH:mm")
         };
         if (durationMinutes > 0) parts.Add("时长：" + durationMinutes + " 分钟");
         if (seriesName is { Length: > 0 }) parts.Add("场景分区：" + seriesName);
