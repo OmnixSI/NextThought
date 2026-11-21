@@ -3,6 +3,7 @@
         xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:views="using:NextThought.Desktop.Views"
+        xmlns:c="using:NextThought.Desktop.Controls"
         x:Class="NextThought.Desktop.Views.CorrectedTranscript"
         x:DataType="local:AppState"
         Title="{loc:Tr 校正原话}" Width="880" Height="640"
@@ -16,17 +17,11 @@
     </StackPanel>
 
     <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_0_12_0_12}">
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 转写版本}" Classes="caption" VerticalAlignment="Center" />
-        <RadioButton Classes="chip" GroupName="correctedVersion" Content="{loc:Tr 校正转写}"
-                     IsChecked="{Binding CorrectedTranscriptShowCorrected, Mode=OneWay}"
-                     Command="{Binding SetCorrectedTranscriptVersionCommand}" CommandParameter="corrected"
-                     ToolTip.Tip="{loc:Tr 查看校正转写}" />
-        <RadioButton Classes="chip" GroupName="correctedVersion" Content="{loc:Tr 原始转写}"
-                     IsChecked="{Binding CorrectedTranscriptShowOriginal, Mode=OneWay}"
-                     Command="{Binding SetCorrectedTranscriptVersionCommand}" CommandParameter="original"
-                     ToolTip.Tip="{loc:Tr 查看原始转写}" />
-      </StackPanel>
+      <TextBlock Text="{loc:Tr 转写版本}" Classes="caption" VerticalAlignment="Center" />
+        <c:PillTabs SelectedIndex="{Binding CorrectedTranscriptVersionIndex}" VerticalAlignment="Center">
+        <ListBoxItem Content="{loc:Tr 校正转写}" ToolTip.Tip="{loc:Tr 查看校正转写}" />
+        <ListBoxItem Content="{loc:Tr 原始转写}" ToolTip.Tip="{loc:Tr 查看原始转写}" />
+      </c:PillTabs>
       <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_16_0_16_0}">
         <TextBox Text="{Binding CorrectedTranscriptFind}"
                  PlaceholderText="{loc:Tr 在转写里查找（听错的写法也会找出来）}" />

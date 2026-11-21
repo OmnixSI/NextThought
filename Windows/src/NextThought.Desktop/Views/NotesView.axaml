@@ -4,6 +4,7 @@
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:views="using:NextThought.Desktop.Views"
+             xmlns:c="using:NextThought.Desktop.Controls"
              x:Class="NextThought.Desktop.Views.NotesView"
              x:DataType="local:AppState">
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
@@ -34,7 +35,7 @@
         <TextBlock Text="{Binding NotesFactsLine}" Classes="caption" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasSelectedNotesEvidence}">
-          <TextBlock Text="{StaticResource IconLink}" FontFamily="{StaticResource IconFont}"
+          <TextBlock Text="{StaticResource IconArrowUpRight}" FontFamily="{StaticResource IconFont}"
                      FontSize="11" Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding SelectedNotesEvidenceText}" Classes="caption" FontSize="11"
                      TextWrapping="Wrap" Foreground="{DynamicResource Secondary}" />
@@ -56,7 +57,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasNotesStaleHint}">
-          <TextBlock Text="{StaticResource IconQuestionCircle}" FontFamily="{StaticResource IconFont}"
+          <TextBlock Text="{StaticResource IconQuestionmarkBubble}" FontFamily="{StaticResource IconFont}"
                      FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding NotesStaleHintText}" Classes="caption"
                      Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -95,28 +96,12 @@
 
     <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
     <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-        <RadioButton Classes="chip" GroupName="notesformat"
-                     IsChecked="{Binding NotesFormatIsStandard, Mode=OneWay}"
-                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Standard}">
-          <TextBlock Text="{loc:Tr 复盘}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="notesformat"
-                     IsChecked="{Binding NotesFormatIsOutline, Mode=OneWay}"
-                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Outline}">
-          <TextBlock Text="{loc:Tr 提纲}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="notesformat"
-                     IsChecked="{Binding NotesFormatIsFishbone, Mode=OneWay}"
-                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Fishbone}">
-          <TextBlock Text="{loc:Tr 鱼骨图}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="notesformat"
-                     IsChecked="{Binding NotesFormatIsViewpoints, Mode=OneWay}"
-                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Viewpoints}">
-          <TextBlock Text="{loc:Tr 观点对照}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-      </StackPanel>
+      <c:PillTabs SelectedIndex="{Binding NotesFormatIndex}" VerticalAlignment="Center">
+        <ListBoxItem Content="{loc:Tr 复盘}" />
+        <ListBoxItem Content="{loc:Tr 提纲}" />
+        <ListBoxItem Content="{loc:Tr 鱼骨图}" />
+        <ListBoxItem Content="{loc:Tr 观点对照}" />
+      </c:PillTabs>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
         <Button Content="{loc:Tr 生成这种纪要}" Command="{Binding GenerateStructuredNotesCommand}"
                 IsVisible="{Binding !NotesFormatIsStandard}" />

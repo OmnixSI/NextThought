@@ -3,6 +3,7 @@
         xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:v="using:NextThought.Desktop.Views"
+        xmlns:components="using:NextThought.Desktop.Controls"
         x:Class="NextThought.Desktop.Views.TeleprompterWindow"
         x:DataType="local:AppState"
         Title="{loc:Tr NextThought 回答浮窗}"
@@ -55,8 +56,7 @@
         <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}" RowSpacing="10">
           <!-- "● 正在听  如果删除缓存失败了怎么办？" plus the panel controls. -->
           <Grid x:Name="Header" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
-            <Border x:Name="StatusDot" Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
-                    Background="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+            <components:StatusDot x:Name="StatusDot" Grid.Column="0" />
             <TextBlock x:Name="StatusText" Grid.Column="1" FontSize="12" FontWeight="Medium"
                        Foreground="{DynamicResource InkBrush}" VerticalAlignment="Center" TextWrapping="NoWrap" />
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center"

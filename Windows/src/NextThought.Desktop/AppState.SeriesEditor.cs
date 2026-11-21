@@ -66,6 +66,8 @@ public partial class AppState
         SeriesEditorPreferences = series.Preferences ?? "";
         SeriesEditorUseKnowledge = series.UseKnowledge;
         SeriesEditorStageReview = series.StageReview ?? "";
+        SeriesEditorNotes = series.Notes ?? "";
+        SeriesEditorCustomTypeName = series.CustomTypeName ?? "";
         SeriesEditorImportStatus = "";
         RebuildSeriesEditorFields(series);
         SeriesEditorDocuments.Clear();
@@ -77,7 +79,49 @@ public partial class AppState
         OnPropertyChanged(nameof(SeriesEditorRole));
         OnPropertyChanged(nameof(SeriesEditorReviewFocus));
         OnPropertyChanged(nameof(SeriesEditorStatistics));
+        MarkSeriesEditorClean();
     }
+
+    // ---- WorkspaceEditor.hasChanges / showUnsavedPrompt (decisions §3.5 series-editor 6) ----
+
+    private sealed record SeriesEditorDraftSnapshot(
+        string Name, string Mode, string Style, string Preferences, bool UseKnowledge,
+        string StageReview, string Notes, string CustomTypeName, IReadOnlyList<(string Id, string Value)> Fields);
+
+    private SeriesEditorDraftSnapshot? seriesEditorBaseline;
+
+    /// <summary>WorkspaceEditor.hasChanges: the basic/requirements draft differs from load/save.</summary>
+    public bool SeriesEditorHasChanges =>
+        seriesEditorBaseline is { } baseline && !SameDraft(baseline, DraftSnapshot());
+
+    private SeriesEditorDraftSnapshot DraftSnapshot() => new(
+        SeriesEditorName, SeriesEditorMode, SeriesEditorStyle, SeriesEditorPreferences, SeriesEditorUseKnowledge,
+        SeriesEditorStageReview, SeriesEditorNotes, SeriesEditorCustomTypeName,
+        SeriesEditorFieldRows.Select(row => (row.Id, row.Value)).ToList());
+
+    private static bool SameDraft(SeriesEditorDraftSnapshot left, SeriesEditorDraftSnapshot right) =>
+        left.Name == right.Name && left.Mode == right.Mode && left.Style == right.Style
+        && left.Preferences == right.Preferences && left.UseKnowledge == right.UseKnowledge
+        && left.StageReview == right.StageReview && left.Notes == right.Notes
+        && left.CustomTypeName == right.CustomTypeName
+        && left.Fields.Count == right.Fields.Count
+        && left.Fields.Zip(right.Fields).All(pair => pair.First == pair.Second);
+
+    /// <summary>After 保存 / 取消: the draft becomes the new baseline and the prompt closes.</summary>
+    public void MarkSeriesEditorClean()
+    {
+        seriesEditorBaseline = DraftSnapshot();
+        ShowSeriesEditorUnsavedPrompt = false;
+        OnPropertyChanged(nameof(SeriesEditorHasChanges));
+    }
+
+    /// <summary>WorkspaceEditor.showUnsavedPrompt setter side effects; the window asks for it.</summary>
+    public void ShowSeriesEditorUnsaved() => ShowSeriesEditorUnsavedPrompt = true;
+
+    public void HideSeriesEditorUnsaved() => ShowSeriesEditorUnsavedPrompt = false;
+
+    public string SeriesEditorUnsavedTitle => UiText.T("有未保存的修改");
+    public string SeriesEditorUnsavedSubtitle => UiText.T("保存后继续刚才的操作；放弃更改会丢弃本次草稿。");
 
     partial void OnSeriesEditorModeChanged(string value)
     {
@@ -141,12 +185,15 @@ public partial class AppState
             Preferences = SeriesEditorPreferences.Trim(),
             UseKnowledge = SeriesEditorUseKnowledge,
             Fields = fields,
+            Notes = SeriesEditorNotes.Trim().Length == 0 ? null : SeriesEditorNotes.Trim(),
+            CustomTypeName = SeriesEditorCustomTypeName.Trim().Length == 0 ? null : SeriesEditorCustomTypeName.Trim(),
             StageReview = SeriesEditorStageReview.Trim().Length == 0 ? null : SeriesEditorStageReview.Trim(),
             StageReviewAt = SeriesEditorStageReview.Trim().Length == 0 ? null : DateTimeOffset.UtcNow
         });
         SaveWorkspace();
         RefreshSeries();
         SetStatus(UiText.T("系列信息已保存。"));
+        MarkSeriesEditorClean();
         OnPropertyChanged(nameof(SeriesEditorStatistics));
     }
 
@@ -225,8 +272,21 @@ public partial class AppState
     /// <summary>
     /// WorkspaceDocumentsTab import: reads the files on a worker (OCR included), then attaches the
     /// library documents to the series. The same file imported twice is attached only once.
+    /// <paramref name="category"/> comes from 导入到 …; null runs the Mac 自动归类 content classifier.
     /// </summary>
-    public async Task ImportSeriesDocumentsAsync(IReadOnlyList<string> paths)
+    public IReadOnlyList<string> SeriesEditorImportCategories
+    {
+        get
+        {
+            var categories = new List<string>(ModeProfile.For(CurrentEditorMode).DocumentCategories);
+            foreach (var row in SeriesEditorDocuments)
+                if (!categories.Contains(row.Category, StringComparer.Ordinal)) categories.Add(row.Category);
+            if (categories.Count == 0) categories.Add(SeriesMaterials.OtherCategory);
+            return categories;
+        }
+    }
+
+    public async Task ImportSeriesDocumentsAsync(IReadOnlyList<string> paths, string? category = null)
     {
         if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
         if (paths.Count == 0) return;
@@ -235,11 +295,20 @@ public partial class AppState
         {
             var store = new MaterialStore(Paths);
             var imported = new List<MaterialDocument>();
+            var categories = SeriesEditorImportCategories;
+            var autoCategories = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             foreach (var path in paths)
             {
                 try
                 {
-                    imported.Add(await Task.Run(() => store.ImportAsync(path)));
+                    var material = await Task.Run(() => store.ImportAsync(path));
+                    if (category is null)
+                    {
+                        // Mac 自动归类: the same Core classifier the document pipeline uses.
+                        var text = string.Join("\n", material.Blocks.Select(block => block.Text));
+                        autoCategories[material.Id] = DocumentClassifier.Classify(material.Name, text, categories);
+                    }
+                    imported.Add(material);
                     SeriesEditorImportStatus = UiText.Format("正在导入 %@…", Path.GetFileName(path));
                 }
                 catch (Exception ex)
@@ -251,7 +320,9 @@ public partial class AppState
             if (imported.Count == 0) return;
             series = workspace.Find(selected.Id) ?? series;
             var attached = imported.Count;
-            foreach (var material in imported) series = SeriesMaterials.Attach(series, material);
+            foreach (var material in imported)
+                series = SeriesMaterials.Attach(series, material,
+                    category ?? autoCategories.GetValueOrDefault(material.Id));
             workspace = workspace.WithSeries(series);
             SaveWorkspace();
             RefreshSeries();

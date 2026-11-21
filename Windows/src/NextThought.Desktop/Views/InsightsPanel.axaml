@@ -76,6 +76,9 @@
                   <TextBlock Text="{Binding SlideDocumentName}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+                  <!-- Mac SlideSection: ProgressView().controlSize(.mini) while insights.generatingNotes. -->
+                  <ProgressBar IsIndeterminate="True" Width="42" Height="3" VerticalAlignment="Center"
+                               IsVisible="{Binding SlideNotesGenerating}" />
                   <Button Classes="quiet" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
                           Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding SlideHasPrevious}" ToolTip.Tip="{loc:Tr 上一页}">
                     <TextBlock Text="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" FontSize="11" />
@@ -85,9 +88,11 @@
                     <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11" />
                   </Button>
                   <Button Classes="pill" Content="{loc:Tr 重新生成}" FontSize="11" MinHeight="{DynamicResource IvMinHeight_24}"
-                          Command="{Binding RegenerateNotesCommand}" IsVisible="{Binding !SlideNotesAreScript}" />
+                          Command="{Binding RegenerateNotesCommand}" IsVisible="{Binding !SlideNotesAreScript}"
+                          IsEnabled="{Binding !SlideNotesGenerating}" />
                   <Button Classes="pill" Content="{loc:Tr 改用 AI 要点}" FontSize="11" MinHeight="{DynamicResource IvMinHeight_24}"
-                          Command="{Binding RegenerateNotesCommand}" IsVisible="{Binding SlideNotesAreScript}" />
+                          Command="{Binding RegenerateNotesCommand}" IsVisible="{Binding SlideNotesAreScript}"
+                          IsEnabled="{Binding !SlideNotesGenerating}" />
                 </StackPanel>
               </Grid>
 
@@ -131,8 +136,11 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <!-- Mac SlideSection: slideNotesError renders as an orange Note under the points. -->
+              <TextBlock Text="{Binding SlideNotesError}" FontSize="12" Foreground="{DynamicResource Caution}"
+                         TextWrapping="Wrap" IsVisible="{Binding HasSlideNotesError}" />
               <TextBlock Text="{loc:Tr 正在根据这一页和你的资料写讲稿提示…}" Classes="caption" FontSize="12"
-                         TextWrapping="Wrap" IsVisible="{Binding !HasSlidePoints}" />
+                         TextWrapping="Wrap" IsVisible="{Binding SlideNotesWaiting}" />
             </StackPanel>
           </Border>
 

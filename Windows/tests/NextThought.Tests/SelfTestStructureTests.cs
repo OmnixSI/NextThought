@@ -644,7 +644,11 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
         Assert.Contains("IsHighlighted", xaml);
-        Assert.Contains("MeetingHighlights", xaml);
+        // §3.3 live 12: the highlights list is the shared MeetingUserNotes panel embedded in the live page.
+        Assert.Contains("MeetingUserNotes", xaml);
+        var userNotes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MeetingUserNotes.axaml"));
+        Assert.Contains("HasMeetingHighlights", userNotes);
+        Assert.Contains("MeetingHighlightRows", userNotes);
         var row = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "TranscriptRow.cs"));
         Assert.Contains("isHighlighted", row);
     }
@@ -710,10 +714,13 @@ public sealed class SelfTestStructureTests
     public void SeriesEditorHasFieldsAndReview()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
-        Assert.Contains("SeriesEditorFieldRows", xaml);
+        // E25 split the field editor into the mode's core fields plus the collapsed extra/custom rows.
+        Assert.Contains("SeriesEditorCoreFields", xaml);
+        Assert.Contains("SeriesEditorExtraFields", xaml);
         Assert.Contains("SeriesEditorStageReview", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
         Assert.Contains("StageReview", state);
+        Assert.Contains("SeriesEditorFieldRows", state);
     }
 
     [Fact]
@@ -770,8 +777,9 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
         // GlossaryView.swift: the scope is the 全局 / 当前系列 segmented control, not a second list.
-        Assert.Contains("GlossaryScopeSeriesLabel", xaml);
-        Assert.Contains("ScopeSeries_Click", xaml);
+        // E22 now uses the design-system InkSegmented (items set in code-behind) instead of hand-made buttons.
+        Assert.Contains("ScopeSeg", xaml);
+        Assert.Contains("InkSegmented", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("AddGlossaryToSeries", state);
     }
@@ -803,7 +811,8 @@ public sealed class SelfTestStructureTests
     {
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml")));
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
-        Assert.Contains("打开术语表", xaml);
+        // The settings entry is the 通用 → 术语和人名 card with 管理… (the old 打开术语表 label is gone).
+        Assert.Contains("OpenGlossary_Click", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("GlossaryRows", state);
     }
@@ -890,8 +899,9 @@ public sealed class SelfTestStructureTests
         Assert.Contains("LiveWebSources", xaml);
         Assert.Contains("EvidenceSummary", xaml);
         Assert.Contains("EvidenceMaterialRows", xaml);
+        var web = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.WebSearch.cs"));
+        Assert.Contains("WebResults.Clear", web);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
-        Assert.Contains("WebResults.Clear", live);
         Assert.Contains("new EvidenceBundle", live);
     }
 

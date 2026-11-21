@@ -21,6 +21,77 @@ public partial class SeriesEditorWindow : Window
     {
         InitializeComponent();
         Opened += (_, _) => PopulateConfigTypeMenu();
+        Closing += OnClosing;
+    }
+
+    private string currentSection = "records";
+    private string? pendingSection;
+    private bool pendingClose;
+    private bool allowClose;
+
+    /// <summary>WorkspaceEditor.shouldCloseWindow: an unsaved draft asks first (决议 §3.5 series-editor 6).</summary>
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (allowClose) return;
+        if (DataContext is not AppState state || !state.SeriesEditorHasChanges) return;
+        e.Cancel = true;
+        pendingClose = true;
+        state.ShowSeriesEditorUnsaved();
+    }
+
+    /// <summary>WorkspaceEditor.request: every transition away from a dirty draft asks first.</summary>
+    private void RequestSection(string section)
+    {
+        if (section == currentSection) return;
+        if (DataContext is AppState { SeriesEditorHasChanges: true } state)
+        {
+            pendingSection = section;
+            pendingClose = false;
+            state.ShowSeriesEditorUnsaved();
+            return;
+        }
+        ApplySection(section);
+    }
+
+    private void SaveUnsavedSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state)
+        {
+            state.SaveSeriesEditorCommand.Execute(null);
+            state.HideSeriesEditorUnsaved();
+        }
+        ContinueAfterUnsavedPrompt();
+    }
+
+    private void DiscardUnsavedSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state)
+        {
+            state.LoadSeriesEditor();
+            state.HideSeriesEditorUnsaved();
+        }
+        ContinueAfterUnsavedPrompt();
+    }
+
+    private void KeepEditingSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        (DataContext as AppState)?.HideSeriesEditorUnsaved();
+        pendingSection = null;
+        pendingClose = false;
+    }
+
+    private void ContinueAfterUnsavedPrompt()
+    {
+        if (pendingClose)
+        {
+            pendingClose = false;
+            allowClose = true;
+            Close();
+            return;
+        }
+        var section = pendingSection ?? "records";
+        pendingSection = null;
+        ApplySection(section);
     }
 
     /// <summary>WorkspaceEditor editorActions: the type picker lives in the 配置 menu.</summary>
@@ -35,16 +106,17 @@ public partial class SeriesEditorWindow : Window
             item.Click += (_, _) =>
             {
                 state.SeriesEditorMode = choice;
-                ShowSection("basic");
+                RequestSection("basic");
             };
             typeMenu.Items.Add(item);
         }
     }
 
     /// <summary>WorkspaceEditor section switching: 记录/资料/经验积累 plus the 配置 sections.</summary>
-    private void ShowSection(string section)
+    private void ApplySection(string section)
     {
         if (RecordsSection is null) return;
+        currentSection = section;
         var primary = section is "records" or "documents" or "knowledge";
         RecordsSection.IsVisible = section == "records";
         DocumentsSection.IsVisible = section == "documents";
@@ -62,25 +134,33 @@ public partial class SeriesEditorWindow : Window
 
     private static void SetTab(Button tab, bool active) => tab.Classes.Set("active", active);
 
-    private void SectionRecords_Click(object? sender, RoutedEventArgs e) => ShowSection("records");
-    private void SectionDocuments_Click(object? sender, RoutedEventArgs e) => ShowSection("documents");
-    private void SectionKnowledge_Click(object? sender, RoutedEventArgs e) => ShowSection("knowledge");
-    private void SectionBasic_Click(object? sender, RoutedEventArgs e) => ShowSection("basic");
-    private void SectionRequirements_Click(object? sender, RoutedEventArgs e) => ShowSection("requirements");
-    private void SectionSkills_Click(object? sender, RoutedEventArgs e) => ShowSection("skills");
+    private void SectionRecords_Click(object? sender, RoutedEventArgs e) => RequestSection("records");
+    private void SectionDocuments_Click(object? sender, RoutedEventArgs e) => RequestSection("documents");
+    private void SectionKnowledge_Click(object? sender, RoutedEventArgs e) => RequestSection("knowledge");
+    private void SectionBasic_Click(object? sender, RoutedEventArgs e) => RequestSection("basic");
+    private void SectionRequirements_Click(object? sender, RoutedEventArgs e) => RequestSection("requirements");
+    private void SectionSkills_Click(object? sender, RoutedEventArgs e) => RequestSection("skills");
 
     /// <summary>WorkspaceEditor.save in the draft bar: commit the basic/requirements edits.</summary>
     private void SaveDraft_Click(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is AppState state) state.SaveSeriesEditorCommand.Execute(null);
-        ShowSection("records");
+        if (DataContext is AppState state)
+        {
+            state.SaveSeriesEditorCommand.Execute(null);
+            state.HideSeriesEditorUnsaved();
+        }
+        ApplySection("records");
     }
 
     /// <summary>WorkspaceEditor.cancelDraft.</summary>
     private void CancelDraft_Click(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is AppState state) state.LoadSeriesEditor();
-        ShowSection("records");
+        if (DataContext is AppState state)
+        {
+            state.LoadSeriesEditor();
+            state.HideSeriesEditorUnsaved();
+        }
+        ApplySection("records");
     }
     private void ToggleKnowledgeEditing_Click(object? sender, RoutedEventArgs e) =>
         (DataContext as AppState)?.ToggleSeriesEditorKnowledgeEditing();
@@ -88,7 +168,7 @@ public partial class SeriesEditorWindow : Window
     private void ToggleAllFields_Click(object? sender, RoutedEventArgs e) =>
         (DataContext as AppState)?.ToggleSeriesEditorAllFields();
 
-    internal void ShowSectionForCheck(string section) => ShowSection(section);
+    internal void ShowSectionForCheck(string section) => ApplySection(section);
 
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
 
@@ -142,8 +222,27 @@ public partial class SeriesEditorWindow : Window
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
-    /// <summary>WorkspaceDocumentsTab: import one or more files into this series.</summary>
-    private async void ImportDocuments_Click(object? sender, RoutedEventArgs e)
+    /// <summary>WorkspaceDocumentsTab 导入资料 menu: 自动归类 or 导入到 a material slot (Mac).</summary>
+    private void ImportDocuments_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not AppState state) return;
+        var menu = new MenuFlyout();
+        var auto = new MenuItem { Header = UiText.T("自动归类") };
+        auto.Click += async (_, _) => await PickAndImportSeriesDocumentsAsync(null);
+        menu.Items.Add(auto);
+        menu.Items.Add(new Separator());
+        foreach (var category in state.SeriesEditorImportCategories)
+        {
+            var pickedCategory = category;
+            var item = new MenuItem { Header = UiText.Format("导入到 %@", category) };
+            item.Click += async (_, _) => await PickAndImportSeriesDocumentsAsync(pickedCategory);
+            menu.Items.Add(item);
+        }
+        menu.ShowAt(button);
+    }
+
+    /// <summary>WorkspaceDocumentsTab: pick files and import them into one slot (null = 自动归类).</summary>
+    private async Task PickAndImportSeriesDocumentsAsync(string? category)
     {
         try
         {
@@ -152,7 +251,7 @@ public partial class SeriesEditorWindow : Window
             if (storage is null) return;
             var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = UiText.T("导入资料"),
+                Title = category is null ? UiText.T("自动归类") : UiText.Format("导入到 %@", category),
                 AllowMultiple = true,
                 FileTypeFilter =
                 [
@@ -166,9 +265,9 @@ public partial class SeriesEditorWindow : Window
             });
             var paths = files.Select(file => file.TryGetLocalPath()).Where(path => path is not null)
                 .Cast<string>().ToList();
-            if (paths.Count > 0) await state.ImportSeriesDocumentsAsync(paths);
+            if (paths.Count > 0) await state.ImportSeriesDocumentsAsync(paths, category);
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
     private async void EditLesson_Click(object? sender, RoutedEventArgs e)

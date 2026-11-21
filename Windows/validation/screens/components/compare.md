@@ -73,3 +73,17 @@ Windows 实现：`Windows/src/NextThought.Desktop/Controls/DesignSystemComponent
 - `ScrollEdgeFade`：浅/深主题各一套 paper→透明渐变（Theme.axaml `ScrollFadeToTop/Bottom`）。
 - hover/snappy：`ControlButtonBody`/`InteractiveRowBody`/`InkSwitch`/`WideToggleRow`/`MenuPicker`/`PaperFieldBody`/`PillTabs`/`UnderlineTabs` 补 `Transitions`（工具 hover 0.14s、切换 snappy 0.28s）。
 - `MarkdownText`：表格渲染（公式 LaTeXMath 已有）。
+
+### components 6（手写等价物换组件，本轮安全替换）
+- `Views/MainWindow.axaml` 侧栏统计 chip → `components:MetricPill`
+- `Views/TeleprompterWindow.axaml` 头部状态点 Border → `components:StatusDot`（代码仍按录音状态设 Background）
+- `Views/LiveView.axaml` 顶栏两个手写 on-air `Ellipse` → `components:StatusDot`（Live/Idle tone），「立即回答」快捷键文字 → `components:ShortcutHint`（OnInk）
+- `Views/GlossaryWindow.axaml` 三处分段 → `controls:InkSegmented`（见 glossary compare）
+- `Views/Assistant/ConversationBubble.axaml` 的 hover 是「悬停出现回答这句」的行为，不是设计系统组件的视觉等价物（Mac 同样只切按钮可见），保留行为，不硬套 `InteractiveRowBody` 的整行 hover 底色。
+
+## components-6 替换（2026-11-21）
+
+- `NotesView.axaml` 格式选择：4 个手写 chip RadioButton → `PillTabs`（`SelectedIndex={Binding NotesFormatIndex}`，`AppState.DesignSystemIndex.cs` 桥接 `SelectedNotesFormat`，Mac 顺序 复盘/提纲/鱼骨图/观点对照）。
+- `CorrectedTranscriptView.axaml` 版本选择：2 个 chip RadioButton → `PillTabs`（`SelectedIndex={Binding CorrectedTranscriptVersionIndex}` 桥接 `CorrectedTranscriptShowOriginal`）。
+- `NotesEditorWindow.axaml` 的「查看 AI 原稿」→ `InkSwitch`（前一次 E16 提交）。
+- 仍待接：NotesView 的 3 个信息 badge（自动/未完成等）改 `MetricPill`。

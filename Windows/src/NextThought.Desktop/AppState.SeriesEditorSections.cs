@@ -61,6 +61,9 @@ public partial class AppState
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string seriesEditorNotes = "";
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool seriesEditorShowAllFields;
 
+    /// <summary>WorkspaceEditor.showUnsavedPrompt: asked before switching sections or closing.</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool showSeriesEditorUnsavedPrompt;
+
     public bool IsSeriesEditorCustomMode => CurrentEditorModeForUi == MeetingMode.Custom;
 
     private MeetingMode CurrentEditorModeForUi =>

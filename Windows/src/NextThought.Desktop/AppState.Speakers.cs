@@ -26,6 +26,25 @@ public partial class AppState
     [ObservableProperty] private string selectedSpeakerName = "";
     [ObservableProperty] private bool selectedSpeakerIsMe;
     [ObservableProperty] private string speakerEditorStatus = "";
+
+    private bool speakerSaveFailed;
+
+    public bool HasSpeakerSaveError => speakerSaveFailed;
+    public bool IsSavingSpeakerEdit { get; private set; }
+
+    partial void OnSpeakerEditorStatusChanged(string value)
+    {
+        if (value.Length == 0) speakerSaveFailed = false;
+        OnPropertyChanged(nameof(HasSpeakerSaveError));
+    }
+
+    /// <summary>Mac SpeakerEditor retry: run the current person save again after a failure.</summary>
+    [RelayCommand]
+    private async Task RetrySpeakerSave()
+    {
+        if (IsSavingSpeakerEdit) return;
+        await SaveSpeakerEditAsync();
+    }
     [ObservableProperty] private bool speakerStripVisible;
 
     /// <summary>E12: the empty state when no voices were told apart yet.</summary>
@@ -119,7 +138,7 @@ public partial class AppState
                 ? UiText.Format("已清除说话人 %lld 的名字。", person.Number)
                 : UiText.Format("说话人 %lld 已命名为 %@。", person.Number, name));
         }
-        catch (Exception ex) { SpeakerEditorStatus = UiText.T("保存说话人设置失败：") + ex.Message; }
+        catch (Exception ex) { SpeakerEditorStatus = UiText.T("保存说话人设置失败：") + ex.Message; speakerSaveFailed = true; OnPropertyChanged(nameof(HasSpeakerSaveError)); }
     }
 
     /// <summary>E12/Mac "不是我": takes the me mark off the selected voice.</summary>
@@ -137,7 +156,7 @@ public partial class AppState
             SpeakerEditorVisible = false;
             SetStatus(UiText.T("已取消「这是我」，这场会议里不会再识别为该声音。"));
         }
-        catch (Exception ex) { SpeakerEditorStatus = UiText.T("保存说话人设置失败：") + ex.Message; }
+        catch (Exception ex) { SpeakerEditorStatus = UiText.T("保存说话人设置失败：") + ex.Message; speakerSaveFailed = true; OnPropertyChanged(nameof(HasSpeakerSaveError)); }
     }
 
     /// <summary>E12/Mac mergeVoices: two voices are one person; names and the me mark come along.</summary>
@@ -156,7 +175,7 @@ public partial class AppState
             SpeakerEditorVisible = false;
             SetStatus(UiText.Format("已把 %@ 并入 %@。", person.DisplayLabel, target.DisplayLabel));
         }
-        catch (Exception ex) { SpeakerEditorStatus = UiText.T("合并说话人失败：") + ex.Message; }
+        catch (Exception ex) { SpeakerEditorStatus = UiText.T("保存说话人设置失败：") + ex.Message; speakerSaveFailed = true; OnPropertyChanged(nameof(HasSpeakerSaveError)); }
     }
 
     /// <summary>Batch 应用 (legacy flat list): persists every name/me flag and applies the labels.</summary>

@@ -83,6 +83,8 @@
         <Button IsVisible="False" Click="MergePrevious_Click" />
         <TextBlock Text="{Binding SpeakerEditorStatus}" Classes="caption" Foreground="{DynamicResource Caution}"
                    TextWrapping="Wrap" />
+        <Button Classes="quiet" Content="{loc:Tr 重试}" Command="{Binding RetrySpeakerSaveCommand}"
+                IsVisible="{Binding HasSpeakerSaveError}" FontSize="11" HorizontalAlignment="Left" />
       </StackPanel>
     </ScrollViewer>
 
