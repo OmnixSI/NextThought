@@ -1183,6 +1183,7 @@ internal static class UiTextWindowsEnglish
         ["；已经记录的内容已保存。"] = "; what was recorded is saved.",
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
+        ["一句话印象"] = "One-line impression",
         ["用了多少"] = "How much you've recorded",
         ["本月"] = "This month",
         ["累计"] = "All time",

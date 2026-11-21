@@ -112,6 +112,11 @@ public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.
     }
 
     public bool HasSummary => Meta.SummaryState == "ready";
+
+    /// <summary>G9: the Subtitle/Title/Outcome strings are computed, so a language switch has to
+    /// invalidate them explicitly (the demo screenshot batch keeps its rows across the switch).</summary>
+    public void NotifyLanguageChanged() =>
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(string.Empty));
 }
 
 /// <summary>E18: one content-search hit shown by the history hit navigator (HistoryView.swift).</summary>

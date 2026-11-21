@@ -60,6 +60,23 @@ public sealed class WordingTableTests
         Assert.Contains("**残留（需要修）：0**", document, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void EnglishScreenshotScanAlsoChecksTruncationAndListsEveryPage()
+    {
+        var document = File.ReadAllText(Wording);
+        Assert.Contains("**英文文字截断/溢出（需要修）：0**", document, StringComparison.Ordinal);
+        Assert.Contains("逐页结论", document, StringComparison.Ordinal);
+        var evidencePath = Path.Combine(RepoRoot(), "Windows", "validation", "localization", "english-scan.md");
+        Assert.True(File.Exists(evidencePath), evidencePath + " is missing");
+        var evidence = File.ReadAllText(evidencePath);
+        Assert.Contains("逐页结论", evidence, StringComparison.Ordinal);
+        Assert.Contains("文字截断/溢出：0", evidence, StringComparison.Ordinal);
+        // Every English page row ends in a conclusion; the scan must cover the whole page set.
+        var rows = evidence.Split('\n').Where(line => line.StartsWith("| ", StringComparison.Ordinal)).ToArray();
+        Assert.True(rows.Length >= 40, "per-page table only has " + rows.Length + " rows");
+        Assert.DoesNotContain("不通过", evidence, StringComparison.Ordinal);
+    }
+
     /// <summary>Same escaping the generator uses for a Markdown table cell.</summary>
     private static string Cell(string key) =>
         key.Replace("|", "\\|", StringComparison.Ordinal).Replace("\n", "⏎", StringComparison.Ordinal);
