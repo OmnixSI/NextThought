@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
+        xmlns:c="using:NextThought.Desktop.Controls"
         x:Class="NextThought.Desktop.Views.NotesEditorWindow"
         x:DataType="local:AppState"
         Title="{loc:Tr 编辑纪要}" Width="900" Height="640" WindowStartupLocation="CenterOwner"
@@ -13,8 +14,10 @@
         <TextBlock Text="{loc:Tr 修改保存在独立的用户版本中。重新生成只更新 AI 原稿，时间引用仍然保留。}"
                    Classes="caption" TextWrapping="Wrap" />
       </StackPanel>
-      <ToggleButton Grid.Column="1" Content="{loc:Tr 查看 AI 原稿}" IsChecked="{Binding NotesEditorShowOriginal}"
-                    VerticalAlignment="Top" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Top">
+        <TextBlock Text="{loc:Tr 查看 AI 原稿}" Classes="caption" VerticalAlignment="Center" />
+        <c:InkSwitch IsChecked="{Binding NotesEditorShowOriginal}" VerticalAlignment="Center" />
+      </StackPanel>
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="{DynamicResource D4Spacing_10}"
