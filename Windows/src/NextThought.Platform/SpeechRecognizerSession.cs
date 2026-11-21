@@ -29,6 +29,10 @@ public sealed class SpeechRecognizerSession : IDisposable
         public long StartSample;
         public string LastText = "";
         public long LastPartialSample;
+        /// <summary>J5: the Mac transcriber's pending watch / coverage / delivery rules.</summary>
+        public readonly StreamingUtteranceTracker Tracker = new();
+        /// <summary>Absolute sample index where accepted audio currently ends.</summary>
+        public long LastAcceptedEnd;
     }
     public SpeechRecognizerSession(ModelStore store, AppSettings settings, IReadOnlyList<string>? extraHotwords = null)
     {
@@ -83,34 +87,101 @@ public sealed class SpeechRecognizerSession : IDisposable
         FrameObserved?.Invoke(frame);
         if (!states.TryGetValue(frame.Source, out var state)) { state = new(online.CreateStream()) { Origin = frame.Origin, StartSample = frame.StartSample }; states[frame.Source] = state; }
         var clock = Stopwatch.StartNew();
+        state.LastAcceptedEnd = frame.StartSample + frame.Samples.Length;
         var segments = state.Vad.Append(frame.Samples);
         state.Stream.AcceptWaveform(16000, frame.Samples.Select(x => x / 32768f).ToArray()); Decode(state);
         var text = online.GetText(state.Stream).Trim();
-        if (text.Length > 0 && text != state.LastText && frame.StartSample-state.LastPartialSample >= 3200)
+        var now = DateTimeOffset.UtcNow;
+        var partialEnd = state.Origin.AddSeconds(state.LastAcceptedEnd / 16000.0);
+        if (text.Length > 0) state.Tracker.Heard(text, now);
+        if (text.Length > 0 && text != state.LastText && frame.StartSample-state.LastPartialSample >= 3200
+            && state.Tracker.ShouldDeliver(false, partialEnd))
         {
             state.LastText = text; state.LastPartialSample = frame.StartSample;
-            Updated?.Invoke(new(state.Utterance, frame.Source, text, false, state.Origin.AddSeconds(state.StartSample/16000.0), state.Origin.AddSeconds((frame.StartSample+frame.Samples.Length)/16000.0)));
+            Updated?.Invoke(new(state.Utterance, frame.Source, text, false, state.Origin.AddSeconds(state.StartSample/16000.0), partialEnd));
         }
         foreach (var segment in segments)
             if (segment.Kind == SpeechSegmentEvent.KindValue.Final)
                 Commit(frame.Source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), frame.StartSample + frame.Samples.Length);
+        // J5: words the segmenter never closes are closed by the 2.5 s / 20 s watch.
+        CheckPending(now);
         InferenceSeconds += clock.Elapsed.TotalSeconds; AudioSeconds += frame.Samples.Length/16000.0;
     }
     private void Decode(State state) { while (online.IsReady(state.Stream)) online.Decode(state.Stream); }
+    /// <summary>
+    /// J5: close utterances nobody else closed. The offline re-decode only ever replaces the range
+    /// its segment covers, so the words the stream heard are kept; the committed range moves with
+    /// the closed utterance so the segmenter's overlap is not decoded twice.
+    /// </summary>
+    public void CheckPending(DateTimeOffset now)
+    {
+        if (disposed) return;
+        foreach (var (source, state) in states)
+        {
+            if (!state.Tracker.IsOverdue(now)) continue;
+            FinalizePending(source, state, now);
+        }
+    }
+    private void FinalizePending(AudioSource source, State state, DateTimeOffset now)
+    {
+        var pendingText = state.Tracker.Pending.Text;
+        // Mac commitUtterance(nil): finish the stream and deliver what it holds.
+        state.Stream.AcceptWaveform(16000, new float[4800]); state.Stream.InputFinished(); Decode(state);
+        var streaming = online.GetText(state.Stream).Trim();
+        var text = streaming.Length > 0 ? streaming : pendingText;
+        var started = state.Origin.AddSeconds(state.StartSample / 16000.0);
+        var ended = state.Origin.AddSeconds(state.LastAcceptedEnd / 16000.0);
+        if (ended <= started) ended = started.AddSeconds(0.01);
+        if (text.Length > 0 && state.Tracker.ShouldDeliver(true, ended))
+        {
+            Updated?.Invoke(new(state.Utterance, source, text, true, started, ended));
+            state.Tracker.Delivered(true, ended);
+        }
+        state.Tracker.MarkClosedWithoutSegment(now);
+        state.Tracker.MarkCommittedThrough(state.LastAcceptedEnd);
+        state.Tracker.ClosedPending();
+        var replacement = online.CreateStream(); state.Stream.Dispose(); state.Stream = replacement;
+        state.Utterance = Guid.NewGuid(); state.LastText = ""; state.StartSample = state.LastAcceptedEnd;
+    }
     private void Commit(AudioSource source, State state, SpeechSegment segment, long nextStart)
     {
         state.Stream.AcceptWaveform(16000, new float[4800]); state.Stream.InputFinished(); Decode(state);
-        var text = online.GetText(state.Stream).Trim();
-        if (offline != null)
+        var streaming = online.GetText(state.Stream).Trim();
+        // The segmenter re-sends half a second when it splits a long utterance: only the uncovered
+        // rest is re-decoded, so no words are dropped or written twice.
+        var overlap = (int)Math.Min(
+            state.Tracker.OverlapToDrop(segment.StartSample, state.Origin,
+                state.Origin.AddSeconds(segment.StartSample / 16000.0)),
+            segment.Samples.Length);
+        var samples = overlap > 0 ? segment.Samples.AsSpan(overlap).ToArray() : segment.Samples;
+        var segmentSeconds = samples.Length / 16000.0;
+        var streamSeconds = Math.Max(0, (state.LastAcceptedEnd - state.StartSample) / 16000.0);
+        var text = streaming;
+        if (offline != null && samples.Length > 0)
         {
             try
             {
-                using var stream = offline.CreateStream(); stream.AcceptWaveform(16000, segment.Samples.Select(x => x/32768f).ToArray());
-                offline.Decode(stream); var refined = offline.GetText(stream).Trim(); if (refined.Length > 0) text = refined;
+                using var stream = offline.CreateStream(); stream.AcceptWaveform(16000, samples.Select(x => x/32768f).ToArray());
+                offline.Decode(stream); var refined = offline.GetText(stream).Trim();
+                if (refined.Length > 0)
+                {
+                    // J5: the offline text covers the segment only; it may not replace minutes of
+                    // quiet speech the stream heard (Mac UtteranceText.final).
+                    text = StreamingUtteranceTracker.FinalText(streaming, streamSeconds, refined, segmentSeconds);
+                }
             }
             catch (Exception ex) { Warning?.Invoke("精修失败，保留流式结果：" + ex.Message); }
         }
-        if (text.Length > 0) Updated?.Invoke(new(state.Utterance, source, text, true, state.Origin.AddSeconds(segment.StartSample/16000.0), state.Origin.AddSeconds(segment.EndSample/16000.0)));
+        var started = state.Origin.AddSeconds(segment.StartSample/16000.0);
+        var ended = state.Origin.AddSeconds(segment.EndSample/16000.0);
+        if (ended <= started) ended = started.AddSeconds(0.01);
+        if (text.Length > 0 && state.Tracker.ShouldDeliver(true, ended))
+        {
+            Updated?.Invoke(new(state.Utterance, source, text, true, started, ended));
+            state.Tracker.Delivered(true, ended);
+        }
+        state.Tracker.MarkCommittedThrough(segment.EndSample);
+        state.Tracker.ClosedPending();
         var replacement = online.CreateStream(); state.Stream.Dispose(); state.Stream = replacement;
         state.Utterance = Guid.NewGuid(); state.LastText = ""; state.StartSample = nextStart;
     }
@@ -118,7 +189,12 @@ public sealed class SpeechRecognizerSession : IDisposable
     {
         var clock = Stopwatch.StartNew();
         foreach (var (source, state) in states)
-            if (state.Vad.Flush() is { } segment) Commit(source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), segment.EndSample);
+        {
+            if (state.Vad.Flush() is { } segment)
+                Commit(source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), segment.EndSample);
+            // Mac finish(): whatever is still pending is a line too (text never lost).
+            if (state.Tracker.Pending.Text.Length > 0) FinalizePending(source, state, DateTimeOffset.UtcNow);
+        }
         InferenceSeconds += clock.Elapsed.TotalSeconds;
     }
     public void Dispose()
@@ -154,7 +230,24 @@ public sealed class LiveSpeechEngine : IAsyncDisposable
         session.Updated += update => Updated?.Invoke(update); session.Warning += message => Warning?.Invoke(message);
         processing = Task.Run(async () =>
         {
-            try { await foreach (var frame in channel.Reader.ReadAllAsync()) session.Accept(frame); session.Complete(); }
+            try
+            {
+                while (true)
+                {
+                    AudioFrame? frame = null;
+                    try
+                    {
+                        using var wait = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+                        frame = await channel.Reader.ReadAsync(wait.Token);
+                    }
+                    catch (OperationCanceledException) { /* quiet: still watch the words left pending */ }
+                    catch (ChannelClosedException) { break; }
+                    if (frame is { } next) session.Accept(next);
+                    // J5: the pending watch must also run when no audio arrives for a while.
+                    session.CheckPending(DateTimeOffset.UtcNow);
+                }
+                session.Complete();
+            }
             catch (Exception ex) { channel.Writer.TryComplete(ex); Failed?.Invoke("识别停止：" + ex.Message); }
             finally { session.Dispose(); }
         });

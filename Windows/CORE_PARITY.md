@@ -243,6 +243,29 @@ SceneSettings.liveMode == .prompting && !isOfflineMeeting, speakers: speakers.en
 Mac key 且只有 4 个字段（不含 transcription）、损坏文件不报错，以及保存 sidecar 不碰系列文件、
 Mac `workspace.json` 夹具经 Core 类型往返不新增键。
 
+## J5：重识别覆盖范围与待定句收尾（转写管线，J9 604 之外的新增测试）
+
+Mac 的规则在 `Sources/NextThought/ZipformerStreamingTranscriber.swift`：离线重识别只覆盖它那段音频
+（`UtteranceText.final`，60 秒以上的安静说话不会被最后几秒的响亮句子替换）；分段器切长句时会重发 0.5 秒重叠，
+重识别前要剪掉（`newSamples`）；没人收尾的句子由 `PendingUtterance` 的 2.5 秒/20 秒看门狗收成一行；
+final 只发一次（`deliver` 的时间单调过滤）。
+
+| Mac 参照 | C# | 语义 |
+|---|---|---|
+| `UtteranceText.final(streaming:streamSeconds:refined:segmentSeconds:)` | `StreamingUtteranceTracker.FinalText`（复用 Core J5 `UtteranceText.Final`） | 覆盖范围内才用离线文本，否则保留流式文字（不丢字） |
+| `PendingUtterance` + 500 ms watch | `StreamingUtteranceTracker.Pending/IsOverdue/ClosedPending`；Platform `SpeechRecognizerSession.CheckPending` + `LiveSpeechEngine` 每 ≤500 ms 调用 | 2.5 s 安静或 20 s 最长待定后收行 |
+| `committedThroughSample/committedThroughDate` + `newSamples` | `StreamingUtteranceTracker.OverlapToDrop/MarkCommittedThrough/MarkClosedWithoutSegment`；`SpeechRecognizerSession.Commit` 剪掉重叠后再重识别 | 分段器重发的 0.5 秒不重复解码、不重复写 |
+| `deliver` 的 `lastFinalizedAt` 过滤 | `StreamingUtteranceTracker.ShouldDeliver/Delivered` | final 不重复；已结束句子的 partial 不再显示 |
+| `commitUtterance(nil)`（看门狗收尾） | `SpeechRecognizerSession.FinalizePending`（结束当前流、发 final、按时间记已提交、换新流） | 未被分段器收尾的词也成立一行 |
+
+接线：`Windows/src/NextThought.Platform/SpeechRecognizerSession.cs`（Accept/Commit/Complete/CheckPending、
+`LiveSpeechEngine` 的 500 ms 看门狗）。Desktop 的 `ReceiveTranscript` 不需要改：final 事件已带正确的
+Id/文本/时间范围，路径本来就是「一条 final 一条转写行」；待定句由 Platform 发 final 后自然落行。
+测试 `Windows/tests/NextThought.Core.Tests/StreamingUtteranceTrackerTests.cs` 6 项（先红 CS0103 后绿）：
+覆盖范围替换（长时间流式文本不被短离线文本替换、同音频短文本仍胜出）、2.5 s/20 s 待定窗、待定收尾不丢字、
+重叠剪除（样本与时钟两种已提交标记）、final 单调/partial 过期过滤、重置。**不计入 Mac 604 项**。
+未验证：真实模型+真实音频下的端到端（需要 `sherpa-onnx` 模型与麦克风，属 K6/K7 实机项）。
+
 ## B22：Swift 测试文件逐行翻译进度
 
 | Swift 测试文件 | Swift 测试数 | 已翻译数 |
@@ -345,6 +368,9 @@ python Windows/scripts/core_usage.py
   `DocumentJobSQLiteParityTests`（2 项，测试工程限定 SQLite 依赖）。J7 的 `TextZoomTests`（7 项）也通过。
 - J6 Core 新增 `SessionLineEditsTests`（11 项，说话人改派 + 整句改字，见「J6」一节；不计入 Mac 604 项）。
 - J2 Core 新增 `MeetingFeatureChoicesTests`（7 项，系列功能选择持久化，见「J2」一节；不计入 Mac 604 项）。
-- 最近一次全量 Core 测试（J2 提交时）：**1769 项，1764 通过，5 项失败**。失败的 5 项属 localization
-  任务进行中的 G8/G9/G10 测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`、
-  `WordingTableTests`），不在本表 604 项范围内。
+- J5 转写管线新增 `StreamingUtteranceTrackerTests`（6 项，覆盖范围替换/待定收尾/重叠剪除，见「J5」一节；
+  不计入 Mac 604 项），并接线 Platform `SpeechRecognizerSession`（Desktop `ReceiveTranscript` 无需改）。
+- 最近一次全量 Core 测试（J5 管线提交时）：**1775 项，1772 通过，3 项失败**。失败的 3 项属 localization
+  任务进行中的 G8/G9/G10 测试（`LocalizationSourceScanTests`、`LocalizationCoverageTests`），不在本表
+  604 项范围内。`NextThought.Tests`：640 项，617 通过，23 项失败——失败项均为其它 agent 在途的
+  Prepare/Onboarding/Settings/Assistant/History/SelfTest/DesignSystem 任务，与本次转写管线无关。
