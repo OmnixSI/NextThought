@@ -274,7 +274,12 @@ public partial class SubtitleBarWindow : Window
         var now = DateTimeOffset.UtcNow;
         Refresh(now);
 
-        var phase = editing || autoEndShown ? SubtitleBarTiming.Phase.Visible : Timing.PhaseAt(now, feed.LastActivity);
+        // C13/K4: while the user explicitly chose the 字幕条 mode (Persistent) the bar stays up like
+        // Mac's subtitle mode; only the automatic "somebody is speaking" mode hides after the idle
+        // delay. Without this the timer restarted by ResumeAfterUserShow hid a re-shown bar again.
+        var phase = editing || autoEndShown || Persistent
+            ? SubtitleBarTiming.Phase.Visible
+            : Timing.PhaseAt(now, feed.LastActivity);
         if (phase == SubtitleBarTiming.Phase.Hidden)
         {
             if (!hiddenByTiming) { hiddenByTiming = true; IsVisible = false; }

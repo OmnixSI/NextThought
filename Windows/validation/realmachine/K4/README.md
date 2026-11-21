@@ -32,3 +32,12 @@
 5. 穿透状态下点「隐藏所有窗口」，确认屏幕上不剩任何本应用窗口。
 
 结果请记到本目录（`README-human.md` 或 `report-human.json`）。
+
+## 2026-11-21 补充：关闭/隐藏路径的自动化记录（K4）
+
+- `--demo --self-test=window-close`（Release，隔离数据目录）——**passed**：
+  - 提词岛 `Close()`（与 Alt+F4 相同的 `Closing` 处理器，`AllowClose=false`）→ 窗口隐藏、程序不退出 → 再次 `Show()` 可见；
+  - 字幕条同样关闭→隐藏→重新显示可见。
+- 运行中发现并修复真实 bug：`SubtitleBarWindow.Tick` 在 `Persistent`（用户明确选字幕模式）时仍按空闲计时隐藏，导致「关闭后重新显示」的字幕条立刻被计时器再次隐藏；修复后 `subtitleReshow=true`（`Views/SubtitleBarWindow.axaml.cs`，随 `C13:` 提交）。
+- 证据：`window-close.json`（自检输出）、本 README；此前「隐藏所有窗口」见 `report.json` 与 before/after 截图。
+- 仍留给人：真实会议里的 Alt+F4 与继续说话后字幕保持隐藏（步骤见 `RELEASE.md §9 K4`）。
