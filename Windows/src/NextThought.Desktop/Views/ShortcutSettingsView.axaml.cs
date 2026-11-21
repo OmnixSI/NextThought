@@ -18,7 +18,14 @@ public partial class ShortcutSettingsView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => BuildShortcutRows();
+        // The editor keeps the buttons it built, so a language switch has to rebuild the labels.
+        NextThought.Core.UiTextSource.Instance.PropertyChanged += OnLanguageChanged;
+        DetachedFromVisualTree += (_, _) =>
+            NextThought.Core.UiTextSource.Instance.PropertyChanged -= OnLanguageChanged;
     }
+
+    private void OnLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        BuildShortcutRows();
 
     protected override void OnLoaded(RoutedEventArgs e)
     {

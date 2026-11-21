@@ -60,7 +60,8 @@ OTHER_TASK_TEXT = [
 ]
 
 # Lines that come from the OS (device names) are not our wording and follow the OS language.
-SYSTEM_DATA_PREFIXES = ("扬声器 (", "麦克风 (", "Speakers (", "Microphone (")
+SYSTEM_DATA_PREFIXES = ("扬声器 (", "麦克风 (", "扬声器阵列 (", "麦克风阵列 (",
+                        "Speakers (", "Microphone (", "Speakers Array (", "Microphone Array (")
 # Demo/meeting content shown by the demo shell (MainWindow demo panel) is user data.
 DEMO_TEXT = [
     "温度补偿之后残差还剩多少，和有限元对得上吗？",
@@ -71,6 +72,8 @@ DEMO_TEXT = [
 ]
 
 DEMO_TEXT.extend([
+    "被问项目时先报规模和结果数字",  # J2 demo series lesson (DemoScript.cs)
+    "一致性问题先画读写时序，再说",  # J2 demo series lesson (DemoScript.cs)
     "Cache Aside", "删除失败兜底", "并发读写窗口", "取舍",
     "Undo correction", "先写数据库、再删缓存", "先更新数据库、再删除缓存",
 ])
@@ -227,7 +230,8 @@ def scan_screens(directory: Path) -> dict:
                 if not line.strip():
                     continue
                 kind, _, rest = line.partition("\t")
-                fit, _, text = rest.partition("\t")
+                fit, _, rest = rest.partition("\t")
+                location, _, text = rest.partition("\t")
                 truncations.append({"page": page.stem, "kind": kind, "fit": fit,
                                     "text": text,
                                     # Chinese text on an English page is user/demo data (it is
