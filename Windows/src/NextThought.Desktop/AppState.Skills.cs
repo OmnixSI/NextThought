@@ -119,6 +119,11 @@ public partial class AppState
     }
 
     /// <summary>Mac DemoMode installDemo list: the three sample skills, verbatim (E28).</summary>
+    /// <summary>§3.6 E28: Mac SkillSettings "N 个系列在用" — how many series attach this skill.</summary>
+    public int SeriesUsingSkill(string skillId) =>
+        workspace.Series.Count(series => (series.SkillIds ?? []).Any(id =>
+            string.Equals(id, skillId, StringComparison.OrdinalIgnoreCase)));
+
     public void InstallDemoSkill()
     {
         var list = skills.ToList();

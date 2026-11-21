@@ -33,21 +33,32 @@ public sealed class SkillSettingsTests
                  })
             Assert.Contains(key, xaml);
         Assert.Contains("IsVisible=\"{Binding !HasSkills}\"", xaml);
+        // §3.5: the Mac rows are built by the page code; the demo-install entry is Windows-only and gone.
+        Assert.Contains("x:Name=\"SkillListPanel\"", xaml);
+        Assert.DoesNotContain("{loc:Tr 安装示例技能}", xaml);
+        Assert.Contains("Classes=\"primary\" Content=\"{loc:Tr 导入 .md 文件…}\"", xaml);
     }
 
     [Fact]
-    public void TheEditorUsesTheMacLabelsAndConfirmsDelete()
+    public void TheSkillEditorIsTheMacSheet()
     {
+        var window = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SkillEditorWindow.axaml"));
+        foreach (var key in new[] { "{loc:Tr 编辑技能}", "{loc:Tr 名称}", "{loc:Tr 一句话说明（可选）}",
+                                    "{loc:Tr 所有系列都使用这个技能}", "{loc:Tr 取消}", "{loc:Tr 保存}" })
+            Assert.Contains(key, window);
+        var windowCode = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SkillEditorWindow.axaml.cs"));
+        Assert.Contains("EditAsync", windowCode);
+        Assert.Contains("\"%lld 字 · 单个技能最多使用约 6000 字\"", windowCode);
+        Assert.Contains("Close(null)", windowCode);
         var code = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
-        foreach (var key in new[]
-                 {
-                     "UiText.T(\"名称\")", "UiText.T(\"一句话说明（可选）\")", "UiText.T(\"所有系列都使用这个技能\")",
-                     "UiText.T(\"启用\")", "UiText.T(\"保存\")", "UiText.T(\"删除\")",
-                     "\"%lld 字 · 单个技能最多使用约 6000 字\""
-                 })
+        // Mac SkillSettings rows: icon, summary/N 字, N 个系列在用, toggles saved immediately, edit sheet, delete confirm.
+        foreach (var key in new[] { "SkillEditorWindow.EditAsync", "SeriesUsingSkill", "SaveSkillEdit",
+                                    "UiText.T(\"编辑\")", "UiText.T(\"删除\")", "UiText.T(\"所有系列\")",
+                                    "UiText.Format(\"%lld 个系列在用\"", "UiText.T(\"还没有系列使用\")",
+                                    "UiText.Format(\"删除技能“%@”？\", skill.Name)" })
             Assert.Contains(key, code);
-        Assert.Contains("UiText.Format(\"删除技能“%@”？\", skill.Name)", code);
         Assert.Contains("ConfirmDialog", code);
+        Assert.DoesNotContain("SkillEditorPanel", code);
     }
 
     [Fact]

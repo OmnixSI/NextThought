@@ -389,19 +389,10 @@
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <TextBlock Text="{loc:Tr 还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。}"
                      Classes="caption" FontSize="11" IsVisible="{Binding !HasSkills}" />
-          <ItemsControl ItemsSource="{Binding SkillRows}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:SkillRow">
-                <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Name}" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <StackPanel x:Name="SkillEditorPanel" Spacing="{DynamicResource D4Spacing_8}" />
+          <StackPanel x:Name="SkillListPanel" Spacing="{DynamicResource D4Spacing_4}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
-            <Button Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
+            <Button Classes="primary" Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
             <Button Content="{loc:Tr 新建技能}" Click="NewSkill_Click" />
-            <Button Content="{loc:Tr 安装示例技能}" Click="InstallDemoSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
           </StackPanel>
         </StackPanel>
