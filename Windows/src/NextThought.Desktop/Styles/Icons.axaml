@@ -77,4 +77,22 @@
     <x:String x:Key="IconPersonCropRectangle">&#xF5CE;</x:String>
     <x:String x:Key="IconSliderHorizontal3">&#xF588;</x:String>
     <x:String x:Key="IconSync">&#xF191;</x:String>
+    <!-- §6.6 C5–C9: the cue island's own symbols (Fluent System Icons glyph map of the
+         bundled font; the island's view names them IconIsland*). -->
+    <x:String x:Key="IconIslandBolt">&#xE61A;</x:String>
+    <x:String x:Key="IconIslandBubble">&#xE3F3;</x:String>
+    <x:String x:Key="IconIslandChevronLeft">&#xF2AC;</x:String>
+    <x:String x:Key="IconIslandChevronRight">&#xF2B2;</x:String>
+    <x:String x:Key="IconIslandChevronUp">&#xF2B8;</x:String>
+    <x:String x:Key="IconIslandEdit">&#xE5B2;</x:String>
+    <x:String x:Key="IconIslandEye">&#xEFC8;</x:String>
+    <x:String x:Key="IconIslandFont">&#xF0B9C;</x:String>
+    <x:String x:Key="IconIslandMic">&#xE7FB;</x:String>
+    <x:String x:Key="IconIslandMoon">&#xEE45;</x:String>
+    <x:String x:Key="IconIslandPause">&#xE8CD;</x:String>
+    <x:String x:Key="IconIslandPin">&#xE982;</x:String>
+    <x:String x:Key="IconIslandPlay">&#xE991;</x:String>
+    <x:String x:Key="IconIslandStop">&#xF0544;</x:String>
+    <x:String x:Key="IconIslandWaveform">&#xE9DE;</x:String>
+    <x:String x:Key="IconIslandWindow">&#xEE5F;</x:String>
 </ResourceDictionary>
