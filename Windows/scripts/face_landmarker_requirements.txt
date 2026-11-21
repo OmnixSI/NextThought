@@ -1,0 +1,8 @@
+# E10 face-landmark conversion environment (Python 3.12).
+#   py -3.12 -m pip install -r Windows/scripts/face_landmarker_requirements.txt
+# Used by Windows/scripts/convert_face_landmarker.py only; not a runtime dependency of the app.
+tflite2onnx==0.4.1
+onnx==1.23.2
+onnxruntime==1.32.0
+tensorflow-cpu==2.21.0
+numpy==2.5.5

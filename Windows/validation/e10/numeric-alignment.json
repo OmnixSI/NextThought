@@ -1,0 +1,110 @@
+{
+  "manifest": {
+    "source": "https://huggingface.co/litert-community/MediaPipe-FaceLandmarker/resolve/cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1/face_landmarker.task",
+    "source_sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+    "source_bytes": 3758596,
+    "revision": "cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1",
+    "submodels_sha256": {
+      "face_detector.tflite": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+      "face_landmarks_detector.tflite": "c7d54204ce0448474c7f3fa9af494787c0965cbdd6f20fc72867e43046bd43d5",
+      "geometry_pipeline_metadata_landmarks.binarypb": "bdbcda96dfcb7da883da124aaa2c55dee49770d934f0fcc71747f8c21bdc75b4",
+      "face_blendshapes.tflite": "4f36dded049db18d76048567439b2a7f58f1daabc00d78bfe8f3ad396a2d2082"
+    },
+    "converted_sha256": {
+      "face_detector.onnx": "fd2a4d2133b48a515bbfe248480cbcd7c9efa95d82dbf0d82bb99a5ae57efeb9",
+      "face_landmarks_detector.onnx": "f03920f259c58ea9695ff53698386f9b1c104bd22cbe8942626be5bda6b01d4c"
+    },
+    "tflite2onnx_patch": {
+      "pr_elu_alpha_reshaped": 69,
+      "left_untouched": [],
+      "reason": "tflite2onnx 0.4.1 layout propagation vs channel-last PRelu alpha"
+    }
+  },
+  "alignment": [
+    {
+      "model": "face_detector",
+      "output": "regressors",
+      "values": 14336,
+      "max_abs": 0.390625,
+      "mean_abs": 0.004676309414207935,
+      "max_rel": 0.06461084634065628,
+      "tflite_range": [
+        -82820.2890625,
+        275704.8125
+      ],
+      "onnx_range": [
+        -82820.2578125,
+        275704.8125
+      ],
+      "tolerance_abs": 27.57048125
+    },
+    {
+      "model": "face_detector",
+      "output": "classificators",
+      "values": 896,
+      "max_abs": 0.75,
+      "mean_abs": 0.0453249029815197,
+      "max_rel": 7.910854037618265e-06,
+      "tflite_range": [
+        -713133.5625,
+        -18.818042755126953
+      ],
+      "onnx_range": [
+        -713133.5625,
+        -18.818029403686523
+      ],
+      "tolerance_abs": 71.31335625
+    },
+    {
+      "model": "face_landmarks_detector",
+      "output": "landmarks",
+      "values": 1434,
+      "max_abs": 0.004638671875,
+      "mean_abs": 0.0008967805770225823,
+      "max_rel": 0.001261737896129489,
+      "tflite_range": [
+        -4140.5166015625,
+        1130.067138671875
+      ],
+      "onnx_range": [
+        -4140.51611328125,
+        1130.066162109375
+      ],
+      "tolerance_abs": 0.41405166015625
+    },
+    {
+      "model": "face_landmarks_detector",
+      "output": "face_presence",
+      "values": 1,
+      "max_abs": 0.0003662109375,
+      "mean_abs": 0.0003662109375,
+      "max_rel": 5.051414291301626e-07,
+      "tflite_range": [
+        724.9671020507812,
+        724.9671020507812
+      ],
+      "onnx_range": [
+        724.9674682617188,
+        724.9674682617188
+      ],
+      "tolerance_abs": 0.07249671020507813
+    },
+    {
+      "model": "face_landmarks_detector",
+      "output": "tongue_out",
+      "values": 1,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "max_rel": 0.0,
+      "tflite_range": [
+        0.0,
+        0.0
+      ],
+      "onnx_range": [
+        0.0,
+        0.0
+      ],
+      "tolerance_abs": 0.0001
+    }
+  ]
+}
