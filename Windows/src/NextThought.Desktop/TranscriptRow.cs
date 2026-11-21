@@ -26,6 +26,7 @@ public partial class TranscriptRow : ObservableObject
         IsEcho = line.SuspectedEcho == true;
         Voice = line.Voice;
         IsMeVoice = line.Speaker == "me";
+        ShowSpeakerLabel = true;
         SpeakerName = DefaultSpeakerName;
     }
 
@@ -112,6 +113,15 @@ public partial class TranscriptRow : ObservableObject
     /// E12/Mac SpeakerTag: once names or the "this is me" mark are set, the voice part shows the
     /// name (or 我) instead of 说话人 N. Clearing the edits restores the plain label.
     /// </summary>
+    /// <summary>Mac SpeakerTag: the speaker label shows only when the speaker changes.</summary>
+    [ObservableProperty] private bool showSpeakerLabel;
+
+    public static void RefreshSpeakerLabels(IReadOnlyList<TranscriptRow> rows)
+    {
+        for (var index = 0; index < rows.Count; index++)
+            rows[index].ShowSpeakerLabel = index == 0 || !string.Equals(rows[index].Speaker, rows[index - 1].Speaker, StringComparison.Ordinal);
+    }
+
     public void ApplySpeakerLabel(string? name, bool isMe)
     {
         var voicePart = Voice is { } voice

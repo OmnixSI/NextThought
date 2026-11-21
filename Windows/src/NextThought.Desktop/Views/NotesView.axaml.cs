@@ -21,7 +21,12 @@ public partial class NotesView : UserControl
         Viewpoints.Jump += seconds => (DataContext as AppState)?.ShowNotesTranscriptAt(seconds);
         Loaded += (_, _) =>
         {
-            if (DataContext is AppState state) state.NotesJumpRequested += OnNotesJumpRequested;
+            if (DataContext is AppState state)
+            {
+                state.NotesJumpRequested += OnNotesJumpRequested;
+                state.Transcript.CollectionChanged += OnNotesTranscriptChanged;
+                TranscriptRow.RefreshSpeakerLabels(state.Transcript);
+            }
             // D1: demo mode maps the notes tabs to the Mac demo's capture stages.
             if (this.GetVisualDescendants().OfType<TabControl>().FirstOrDefault() is { } tabs)
                 tabs.SelectionChanged += (_, _) =>
@@ -29,10 +34,18 @@ public partial class NotesView : UserControl
         };
         Unloaded += (_, _) =>
         {
-            if (DataContext is AppState state) state.NotesJumpRequested -= OnNotesJumpRequested;
+            if (DataContext is AppState state)
+            {
+                state.NotesJumpRequested -= OnNotesJumpRequested;
+                state.Transcript.CollectionChanged -= OnNotesTranscriptChanged;
+            }
         };
     }
 
+    private void OnNotesTranscriptChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (DataContext is AppState state) TranscriptRow.RefreshSpeakerLabels(state.Transcript);
+    }
     private void NotesStructured_SizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (DataContext is AppState state) state.SetNotesStructuredWidth(e.NewSize.Width);

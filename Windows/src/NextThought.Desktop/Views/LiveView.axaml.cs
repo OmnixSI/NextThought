@@ -455,8 +455,10 @@ public partial class LiveView : UserControl
         transcriptScroll.Offset = new Vector(0, Math.Min(max, index * 56));
     }
 
+    
     private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (state is not null) TranscriptRow.RefreshSpeakerLabels(state.Transcript);
         if (TranscriptList.ItemCount == 0) return;
         state?.RefreshLiveSpeakerNames();
         var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
