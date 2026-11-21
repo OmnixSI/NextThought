@@ -117,6 +117,7 @@ public sealed record Glossary
 
     public IReadOnlyList<GlossaryEntry> Entries { get; init; }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsEmpty => Entries.Count == 0;
 
     public static readonly Glossary Empty = new();
