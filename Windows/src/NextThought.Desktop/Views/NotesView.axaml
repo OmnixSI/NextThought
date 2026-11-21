@@ -34,7 +34,7 @@
         <TextBlock Text="{Binding NotesFactsLine}" Classes="caption" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasSelectedNotesEvidence}">
-          <TextBlock Text="{StaticResource IconLink}" FontFamily="{StaticResource IconFont}"
+          <TextBlock Text="{StaticResource IconArrowUpRight}" FontFamily="{StaticResource IconFont}"
                      FontSize="11" Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding SelectedNotesEvidenceText}" Classes="caption" FontSize="11"
                      TextWrapping="Wrap" Foreground="{DynamicResource Secondary}" />
@@ -56,7 +56,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
                     IsVisible="{Binding HasNotesStaleHint}">
-          <TextBlock Text="{StaticResource IconQuestionCircle}" FontFamily="{StaticResource IconFont}"
+          <TextBlock Text="{StaticResource IconQuestionmarkBubble}" FontFamily="{StaticResource IconFont}"
                      FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding NotesStaleHintText}" Classes="caption"
                      Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" />

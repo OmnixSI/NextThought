@@ -710,10 +710,13 @@ public sealed class SelfTestStructureTests
     public void SeriesEditorHasFieldsAndReview()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
-        Assert.Contains("SeriesEditorFieldRows", xaml);
+        // E25 split the field editor into the mode's core fields plus the collapsed extra/custom rows.
+        Assert.Contains("SeriesEditorCoreFields", xaml);
+        Assert.Contains("SeriesEditorExtraFields", xaml);
         Assert.Contains("SeriesEditorStageReview", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
         Assert.Contains("StageReview", state);
+        Assert.Contains("SeriesEditorFieldRows", state);
     }
 
     [Fact]
@@ -804,7 +807,8 @@ public sealed class SelfTestStructureTests
     {
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml")));
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
-        Assert.Contains("打开术语表", xaml);
+        // The settings entry is the 通用 → 术语和人名 card with 管理… (the old 打开术语表 label is gone).
+        Assert.Contains("OpenGlossary_Click", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("GlossaryRows", state);
     }
