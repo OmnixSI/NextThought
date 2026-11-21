@@ -7,7 +7,7 @@ namespace NextThought.Tests;
 
 /// <summary>
 /// Stage 4 §6.4/J3/J4: the home page must carry the 3.4.0 statistics section, the continue-series
-/// row stats, mac wording (系列, not 资料夹) and the scene-chip/placeholder presentation. These
+/// row stats, mac wording (系列, not 系列) and the scene-chip/placeholder presentation. These
 /// tests are written first and fail until the page is reworked.
 /// </summary>
 public sealed class HomeStage4Tests
