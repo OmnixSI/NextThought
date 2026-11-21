@@ -147,6 +147,10 @@ public sealed record AppSettings
     public string LastMeetingTitle { get; set; } = "";
     public bool AutomaticAnswers { get; set; } = true;
     public bool AutoSummarize { get; set; } = true;
+
+    /// <summary>Mac key <c>recordSessions</c> (default true): keep the transcript and in-meeting
+    /// answers of each meeting. Off, the meeting is not written to the history at all.</summary>
+    public bool RecordSessions { get; set; } = true;
     public bool UseSemanticRetrieval { get; set; }
     public bool SeparateSpeakers { get; set; }
     public bool TranslateSpeech { get; set; }

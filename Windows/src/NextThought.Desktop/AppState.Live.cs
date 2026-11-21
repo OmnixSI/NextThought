@@ -107,6 +107,9 @@ public partial class AppState
         AnswerModel = settings.Model
     };
 
+    /// <summary>Mac <c>recordSessions</c>: false keeps this meeting out of the history entirely.</summary>
+    private bool recordSessionsThisMeeting = true;
+
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartRecordingAsync()
     {
@@ -141,6 +144,7 @@ public partial class AppState
             // Endpoints are enumerated lazily; make sure a saved device choice is applied.
             await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();
+            recordSessionsThisMeeting = settings.RecordSessions;
             CancelRequest();
             ResetDisplay();
             meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || IsNewMeetingTitle(MeetingTitle) ? null : MeetingTitle);
@@ -350,6 +354,11 @@ public partial class AppState
             ResetLiveTranslation();
             voiceTagger?.Dispose(); voiceTagger = null;
             await Sessions.EndAsync(meta);
+            if (!recordSessionsThisMeeting)
+            {
+                // Mac recordSessions off: the meeting must not reach the history or a backup.
+                try { await Sessions.DeleteAsync(meta.Id); } catch { }
+            }
             ++epoch;
             SystemPartial = MicrophonePartial = "";
             SetPageSubtitle("已结束 · 会议已归档");
@@ -371,8 +380,9 @@ public partial class AppState
         }
         // E30/DataBackup.afterSession: a recovery point is created in the background after the
         // meeting is archived; its failure is shown on the backup settings line, not as a stop error.
-        if (!closing) _ = RunAfterSessionBackupAsync(meta.Id);
-        if (reason == null && !closing && Settings.AutoSummarize && CurrentSession?.Id == meta.Id) await SummarizeCoreAsync(meta);
+        if (recordSessionsThisMeeting && !closing) _ = RunAfterSessionBackupAsync(meta.Id);
+        if (recordSessionsThisMeeting && reason == null && !closing && Settings.AutoSummarize && CurrentSession?.Id == meta.Id)
+            await SummarizeCoreAsync(meta);
     }
 
     private void ReceiveTranscript(SessionMeta? meta, TranscriptUpdate update, bool automatic)

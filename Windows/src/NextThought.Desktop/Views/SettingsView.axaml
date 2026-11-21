@@ -16,6 +16,17 @@
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BoxShadow" Value="none" />
     </Style>
+    <!-- §3.6 settings-pages G2: Mac AppNavigationSidebar row — icon + label, selected soft block. -->
+    <Style Selector="Button.settings-nav">
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_10_6}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_8}" />
+    </Style>
+    <Style Selector="Button.settings-nav.active /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    </Style>
+    <Style Selector="Button.settings-nav.active /template/ ContentPresenter TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
     <Style Selector="Border.settings-section TextBlock.section">
       <Setter Property="FontFamily" Value="{DynamicResource SansFamily}" />
       <Setter Property="FontSize" Value="17" />
@@ -23,32 +34,69 @@
       <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="184,*">
-    <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
-            BorderThickness="0,0,0.5,0">
-      <StackPanel Margin="{DynamicResource D4Margin_14_18_14_14}" Spacing="{DynamicResource D4Spacing_2}">
-        <TextBlock Text="{loc:Tr 设置}" Classes="overline" Margin="{DynamicResource D4Margin_10_0_10_8}" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 场景}" Tag="Scene" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 回答与资料}" Tag="Answer" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 提词与教练}" Tag="Coach" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 纪要}" Tag="Notes" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 通用}" Tag="General" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 高级}" Tag="Advanced" Click="SettingsPage_Click" />
-      </StackPanel>
-    </Border>
-    <ScrollViewer Grid.Column="1" Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="{DynamicResource D4Margin_32_18_32_36}" MaxWidth="720" Spacing="{DynamicResource D4Spacing_18}">
-      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 设置}" Classes="display" />
-        <TextBlock Text="{loc:Tr 所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。}"
-                   Classes="caption" />
-      </StackPanel>
-
-      <Border Name="SettingsSearchCard" Classes="card" Padding="{DynamicResource D4Padding_16}">
-        <TextBox Name="SettingsSearch" PlaceholderText="{loc:Tr 搜索设置}" TextChanged="SettingsSearch_TextChanged" />
+  <!-- §3.6 settings-pages G1: Mac sheet header — 完成 (left), the page title (centre), search (right). -->
+  <Grid RowDefinitions="Auto,*">
+    <Grid Grid.Row="0" ColumnDefinitions="184,*,Auto" Margin="{DynamicResource D4Margin_0_0_18_18}">
+      <Button Grid.Column="0" Classes="quiet" HorizontalAlignment="Left" VerticalAlignment="Center"
+              Margin="{DynamicResource D4Margin_14_0_0_0}"
+              Command="{Binding NavigateCommand}" CommandParameter="Home">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+          <TextBlock Text="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                     VerticalAlignment="Center" />
+          <TextBlock Text="{loc:Tr 完成}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <TextBlock Grid.Column="1" Name="SettingsHeaderTitle" Text="{loc:Tr 设置}" Classes="title"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+      <TextBox Grid.Column="2" Name="SettingsSearch" PlaceholderText="{loc:Tr 搜索设置}" Width="240"
+               HorizontalAlignment="Right" VerticalAlignment="Center" TextChanged="SettingsSearch_TextChanged" />
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="184,*">
+      <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,0.5,0">
+        <StackPanel Margin="{DynamicResource D4Margin_14_8_14_14}" Spacing="{DynamicResource D4Spacing_2}">
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="Scene" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconRectangleTopthirdInsetFilled}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 场景}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="Answer" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconSparkles}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 回答与资料}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="Coach" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconRectangleOnRectangle}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 提词与教练}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="Notes" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 纪要}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="General" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 通用}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="quiet settings-nav" HorizontalContentAlignment="Left" Tag="Advanced" Click="SettingsPage_Click">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconSliderHorizontal3}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 高级}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Border>
-      <StackPanel Name="SettingsSearchResults" Spacing="{DynamicResource D4Spacing_4}" IsVisible="False"
-                  AutomationProperties.Name="{loc:Tr 设置搜索结果}" />
+      <ScrollViewer Grid.Column="1" Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="{DynamicResource D4Margin_32_6_32_36}" MaxWidth="720" Spacing="{DynamicResource D4Spacing_18}">
+        <StackPanel Name="SettingsSearchResults" Spacing="{DynamicResource D4Spacing_4}" IsVisible="False"
+                    AutomationProperties.Name="{loc:Tr 设置搜索结果}" />
 
       <!-- Sound sources -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
@@ -128,6 +176,20 @@
         </StackPanel>
       </Border>
 
+      <!-- §3.6 decision: 说话人与翻译 moved to 通用; the Mac live-page toggle is the reference. -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Name="AnchorCoach3" Text="{loc:Tr 同声传译}" Classes="section" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+              <CheckBox Content="{loc:Tr 记录时将完整句中英互译（使用当前回答服务）}" IsChecked="{Binding Settings.TranslateSpeech}" />
+              <TextBlock Text="{loc:Tr Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。}"
+                         Classes="caption" FontSize="11" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
       <!-- §6.7: 术语和人名 belongs to 通用 (Mac GeneralSettings GlossarySettingsEntry). -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
@@ -147,6 +209,17 @@
             <Button Classes="quiet" Content="{loc:Tr 打开术语表}" Click="OpenGlossary_Click" />
           </StackPanel>
           </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- §3.6 settings-structure: Mac GeneralSettings 记录每次会议 (recordSessions, default on). -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorGeneralRecord" Text="{loc:Tr 记录每次会议}" Classes="section" />
+          <CheckBox Content="{loc:Tr 记录每次会议}" IsChecked="{Binding Settings.RecordSessions}"
+                    IsEnabled="{Binding !Recording}" />
+          <TextBlock Text="{loc:Tr 保存转录和会中回答，不保存原始音频。生成纪要时会把本次转录发送给当前回答服务。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
@@ -325,20 +398,6 @@
             <Button Content="{loc:Tr 安装示例技能}" Click="InstallDemoSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
           </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <!-- §6.7: 同声传译 lives on 提词与教练 (with 字幕条); the speaker/voiceprint part moved to 通用. -->
-      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorCoach3" Text="{loc:Tr 同声传译}" Classes="section" />
-          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-              <CheckBox Content="{loc:Tr 记录时将完整句中英互译（使用当前回答服务）}" IsChecked="{Binding Settings.TranslateSpeech}" />
-              <TextBlock Text="{loc:Tr Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。}"
-                         Classes="caption" FontSize="11" />
-            </StackPanel>
-          </Border>
         </StackPanel>
       </Border>
 
@@ -531,6 +590,29 @@
         </StackPanel>
       </Border>
 
+<!-- E3: 设置清单 — Mac 高级 → 数据与维护 SetupChecklist（排除 Windows 没有的录屏/签名项） -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="{loc:Tr 设置清单}" Classes="section" />
+          <views:SettingsSetupChecklist />
+        </StackPanel>
+      </Border>
+
+<!-- §3.6: 数据与关于 belongs to the advanced data/maintenance group (Mac DataMaintenanceAdvanced). -->
+      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{Binding VersionText}" Classes="overline" />
+              <TextBlock Text="{loc:Tr NextThought 把会议讨论留在本机，变成可以带走的结论。}"
+                         Classes="caption" FontSize="11" />
+              <Button Classes="quiet" Content="{loc:Tr 第三方许可与版权说明}" HorizontalAlignment="Left" Margin="{DynamicResource D4Margin_m10_4_0_0}"
+                      Click="Notices_Click" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
       <!-- Phone companion (LAN channel) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
@@ -569,15 +651,7 @@
         </StackPanel>
       </Border>
 
-      <!-- E3: 设置清单 — Mac 通用页 SetupChecklist（排除 Windows 没有的录屏/签名项） -->
-      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
-        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="{loc:Tr 设置清单}" Classes="section" />
-          <views:SettingsSetupChecklist />
-        </StackPanel>
-      </Border>
-
-      <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
+                  <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <views:BackupSettingsSection />
@@ -615,6 +689,10 @@
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 更新}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="{Binding Settings.VersionLine}" Classes="body" FontWeight="Medium" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Settings.BuildLine}" Classes="caption" VerticalAlignment="Center" />
+          </StackPanel>
           <TextBlock Text="{loc:Tr 检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。}"
                      Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <CheckBox Content="{loc:Tr 启动后自动检查更新（每 6 小时）}" IsChecked="{Binding Settings.AutoCheckUpdates}" />
@@ -633,21 +711,6 @@
         </StackPanel>
       </Border>
 
-      <!-- Data and about -->
-      <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="General">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
-          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="{Binding VersionText}" Classes="overline" />
-              <TextBlock Text="{loc:Tr NextThought 把会议讨论留在本机，变成可以带走的结论。}"
-                         Classes="caption" FontSize="11" />
-              <Button Classes="quiet" Content="{loc:Tr 第三方许可与版权说明}" HorizontalAlignment="Left" Margin="{DynamicResource D4Margin_m10_4_0_0}"
-                      Click="Notices_Click" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
-      </Border>
       <Border Classes="card settings-section" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 各场景开会时的设置}" Classes="section" />
@@ -683,5 +746,6 @@
       </Border>
     </StackPanel>
   </ScrollViewer>
+      </Grid>
   </Grid>
 </UserControl>

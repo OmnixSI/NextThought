@@ -387,6 +387,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string vocabulary = "";
     [ObservableProperty] private bool automaticAnswers = true;
     [ObservableProperty] private bool autoSummarize = true;
+    /// <summary>Mac key <c>recordSessions</c>: save the transcript and answers of each meeting.</summary>
+    [ObservableProperty] private bool recordSessions = true;
     [ObservableProperty] private bool useSemanticRetrieval;
     [ObservableProperty] private bool separateSpeakers;
     [ObservableProperty] private bool translateSpeech;
@@ -777,6 +779,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         Vocabulary = settings.Vocabulary;
         AutomaticAnswers = settings.AutomaticAnswers;
         AutoSummarize = settings.AutoSummarize;
+        RecordSessions = settings.RecordSessions;
         UseSemanticRetrieval = settings.UseSemanticRetrieval;
         SeparateSpeakers = settings.SeparateSpeakers;
         TranslateSpeech = settings.TranslateSpeech;
@@ -835,6 +838,19 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         RefreshScreens();
     }
 
+    /// <summary>Mac UpdateSettings first line: "NextThought " + the assembly version.</summary>
+    public string VersionLine
+    {
+        get
+        {
+            var version = typeof(SettingsViewModel).Assembly.GetName().Version ?? new Version(0, 0, 0);
+            return "NextThought " + version.ToString(3);
+        }
+    }
+
+    /// <summary>Mac UpdateSettings second line: 构建 %@, the monotonic revision of this build.</summary>
+    public string BuildLine => UiText.Format("构建 %@", UpdateCheck.CurrentBuild.ToString());
+
     public AppSettings Build()
     {
         // G1/G5/G6: save on top of what is on disk, so fields this page does not edit (scene
@@ -881,6 +897,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         LastMeetingTitle = state.MeetingTitle == "新会议" ? LastMeetingTitle : state.MeetingTitle,
         AutomaticAnswers = AutomaticAnswers,
         AutoSummarize = AutoSummarize,
+        RecordSessions = RecordSessions,
         UseSemanticRetrieval = UseSemanticRetrieval,
         WebSearch = WebSearch,
         SeparateSpeakers = SeparateSpeakers,

@@ -16,7 +16,7 @@ public static class MacPreferenceMap
     private static readonly string[] MappedJsonNames =
     [
         "baseUrl", "model", "notesModel", "reasoningEffort", "localModel", "secondPass", "captureMicrophone",
-        "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt",
+        "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt", "recordSessions",
         "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize", "cueSurface", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
@@ -35,7 +35,7 @@ public static class MacPreferenceMap
     private static readonly HashSet<string> MappedKeysTemp =
     [
         "answerBackend", "answerGloss", "answerLanguage", "apiBaseURL", "apiModel", "appearance", "autoSummarize",
-        "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider",
+        "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider", "recordSessions",
         "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueSurface", "cueWidth", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
@@ -73,6 +73,7 @@ public static class MacPreferenceMap
         "recognitionVocabulary" => settings.Vocabulary,
         "autoSummarize" => settings.AutoSummarize,
         "automaticAnswers" => settings.AutomaticAnswers,
+        "recordSessions" => settings.RecordSessions,
         "automaticUpdateChecks" => settings.AutoCheckUpdates,
         "answerBackend" => settings.UseCodex ? "codexAppServer" : "openAICompatible",
         "webSearchMode" => settings.WebSearch ? "auto" : "off",
@@ -147,6 +148,7 @@ public static class MacPreferenceMap
             case "recognitionVocabulary": settings.Vocabulary = AsString(normalized, settings.Vocabulary); break;
             case "autoSummarize": settings.AutoSummarize = normalized is bool summarize ? summarize : settings.AutoSummarize; break;
             case "automaticAnswers": settings.AutomaticAnswers = normalized is bool automatic ? automatic : settings.AutomaticAnswers; break;
+            case "recordSessions": settings.RecordSessions = normalized is bool record ? record : settings.RecordSessions; break;
             case "automaticUpdateChecks": settings.AutoCheckUpdates = normalized is bool checks ? checks : settings.AutoCheckUpdates; break;
             case "answerBackend":
                 settings.UseCodex = normalized is string backend && backend is "codexAppServer" or "codexExec";
