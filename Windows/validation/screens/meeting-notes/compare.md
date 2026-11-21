@@ -22,12 +22,12 @@
 - 本轮限制不启动应用，未做 `--demo` 实机点按；可测行为由 `MeetingNotesParityTests`（7 项）+ `MeetingHighlightSegmentsTests`（6 项）锁定：视图/控件同名存在、个人笔记页承载、草稿/保存状态绑定、重点计数与引文跳转、合并算法（空、相邻合并、间隔分段、排序/空引文、可配置间隔）、高亮开关与 user-content 字段。
 - 已实现行为：打开会议 → `LoadMeetingNotes` 装载笔记与高亮（并计算分段）；转写行「高亮」→ 添加并写入 user-content.json；再次点同一行 → 移除并写入；重点引文点击 → 跳回原话；保存按钮 → 写 PersonalNotes+Highlights，状态变「已保存在本机」；编辑后状态变「尚未保存」。
 
-## 未解决/已知差异
+## 未解决/已知差异（task-78/§3.4 裁决后更新，2026-11-21）
 
-- Mac 的编辑自动保存（debounced `editPersonalNotes`）+ 页面消失时持久化未做；Windows 目前按钮/失焦保存，草稿在内存保留。
-- 读取失败「重试」行、`正在保存…` 的服务端保存队列状态（Mac `archive.savingUserContent`）未接，因为 Windows 存储是同步本地写。
-- 「分段合并」按 30 秒间隔把相邻高亮合成段落（Mac 源里 `MeetingUserNotes` 是平铺列表，无现成分段实现；FIX_TASKS 的「分段合并未做」按任务要求落地为可测的合并段落展示；如后续 Mac 有专门分段规则再对齐）。
-- 浅/深截图待 verify 批次。
+1. 编辑自动保存：已按 Mac `editPersonalNotes` 改为**输入后 800ms 防抖写入 user-content.json**；页面离开（`DetachedFromVisualTree`）时 `FlushMeetingNotes()` 兜底保存；不再需要单独的「保存个人笔记」按钮（已去掉，Windows 不再比 Mac 多入口）。
+2. 读取失败：新增 `MeetingNotesLoadError` / `HasMeetingNotesLoadError` 行与「重试」按钮（`RetryMeetingNotesCommand`，重读 user-content.json），保存状态仍显示「正在保存… / 尚未保存 / 已保存在本机」。
+3. 重点列表：改为 Mac 的**平铺列表**（`MeetingHighlightRows`，每条 ★ + [mm:ss] 引文 + 点击跳回原话），去掉了 Windows 自己加的「按 30 秒合并成段」展示；Core 的 `MeetingHighlightSegments` 仅保留为未使用的工具（不再出现在界面）。
+4. 截图：本页 `meeting-notes-{light,dark}.png` 需按 §5 在全部页面完成后从最终提交重拍；本轮因共享树外来编译错误（`HistoryView.axaml.cs` 重复构造）未能启动应用截图，已记录待补。
 
 ## 自动验证
 
