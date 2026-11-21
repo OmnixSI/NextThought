@@ -89,15 +89,16 @@ public partial class AppState
     private async Task RegenerateSlideNotesAsync()
     {
         if (CurrentSlide is not { } info) return;
-        var page = SlidePages().FirstOrDefault(item => item.Page == info.Number && item.DocumentName == info.DocumentName);
-        if (page is null) return;
+        var pageInfo = SlidePages().FirstOrDefault(item => item.Number == info.Number && item.DocumentName == info.DocumentName);
+        if (pageInfo is null) return;
+        var page = pageInfo.ToSlidePage();
         SlideNotesError = "";
         SlideNotesGenerating = true;
-        slideNotesCacheByPage.Remove(page.Key);
+        slideNotesCacheByPage.Remove(pageInfo.Key);
         try
         {
-            var notes = await Task.Run(() => BuildRegeneratedSlideNotes(page));
-            slideNotesCacheByPage[page.Key] = notes;
+            var notes = await Task.Run(() => BuildRegeneratedSlideNotes(pageInfo));
+            slideNotesCacheByPage[pageInfo.Key] = notes;
             var directory = SlideNotesDirectory;
             var fingerprint = SlideNotesCacheStore.Fingerprint(page, SlideNotesMode);
             try { SlideNotesCacheStore.Save(directory, page, notes, fingerprint); }
@@ -115,10 +116,10 @@ public partial class AppState
     }
 
     /// <summary>The Mac local fallback when no cache/script exists: the slide's own lines become points.</summary>
-    private SlideNotes BuildRegeneratedSlideNotes(SlidePage page)
+    private SlideNotes BuildRegeneratedSlideNotes(SlidePageInfo page)
     {
         var pages = SlidePages();
-        var next = pages.FirstOrDefault(item => item.DocumentId == page.DocumentId && item.Page == page.Page + 1);
+        var next = pages.FirstOrDefault(item => item.DocumentId == page.DocumentId && item.Number == page.Number + 1);
         if (SlideNotes.Script(page, next) is { } script) return script;
         return new SlideNotes
         {
@@ -127,7 +128,7 @@ public partial class AppState
                 .Where(line => line.Length > 1)
                 .Take(4)
                 .ToList(),
-            Transition = next?.Title ?? ""
+            Transition = next?.ToSlidePage().Title ?? ""
         };
     }
 
@@ -158,7 +159,8 @@ public partial class AppState
                  {
                      nameof(HasSlide), nameof(SlidePositionText), nameof(HasSlidePoints), nameof(SlideDocumentName),
                      nameof(SlideHasPrevious), nameof(SlideHasNext), nameof(SlideNotesAreScript), nameof(SlideTransitionText),
-                     nameof(SlideQuestionRows), nameof(HasSlideQuestions), nameof(SlidePointRows)
+                     nameof(SlideQuestionRows), nameof(HasSlideQuestions), nameof(SlidePointRows),
+                     nameof(SlideNotesWaiting), nameof(HasSlideNotesError), nameof(SlideNotesGenerating)
                  })
             OnPropertyChanged(name);
     }
