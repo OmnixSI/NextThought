@@ -80,7 +80,10 @@ public static class MacSettingsPlist
             new XDeclaration("1.0", "UTF-8", null),
             new XDocumentType("plist", "-//Apple//DTD PLIST 1.0//EN", "http://www.apple.com/DTDs/PropertyList-1.0.dtd", null),
             xml);
-        return System.Text.Encoding.UTF8.GetBytes(document.ToString());
+        // XDocument.ToString() omits the XML declaration, but Mac writes one; keep the export
+        // byte-compatible in shape so the plist round-trip is easier to compare.
+        var declaration = document.Declaration is { } head ? head + "\n" : "";
+        return System.Text.Encoding.UTF8.GetBytes(declaration + document);
     }
 
     /// <summary>Reads the Mac settings.plist into the Windows settings, keeping unknown keys (G6).</summary>

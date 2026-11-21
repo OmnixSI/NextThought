@@ -110,7 +110,7 @@ public sealed class BackupService(AppPaths paths)
                     ct.ThrowIfCancellationRequested(); var name = Path.GetRelativePath(paths.Root, file).Replace('\\', '/');
                     hashes[name] = Hash(file); zip.CreateEntryFromFile(file, name, CompressionLevel.Fastest);
                 }
-                var manifest = new { format = "nextthought-backup", version = 1, kind = "full", createdAt = DateTimeOffset.UtcNow, appVersion = "0.2.0", appBuild = "windows-p2", includesSecrets = false,
+                var manifest = new { format = "nextthought-backup", version = 1, kind = "full", createdAt = DateTimeOffset.UtcNow, appVersion = ProductVersion.Current, appBuild = "windows", includesSecrets = false,
                     workspaceCount = Directory.Exists(Path.Combine(paths.Root, "Workspaces")) ? Directory.GetFiles(Path.Combine(paths.Root, "Workspaces"), "*.json").Length : 0, sessionCount = records.Count, windowsExtensionVersion = 1, fileHashes = hashes };
                 void AddText(string name, string text)
                 {
