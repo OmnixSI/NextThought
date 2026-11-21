@@ -36,6 +36,8 @@ public class MarkdownText : ContentControl
     {
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         Rebuild();
+        // §6.1/D6: theme dictionaries are resolved per control; a variant switch must re-resolve them.
+        ActualThemeVariantChanged += (_, _) => Rebuild();
     }
 
     public string Text
@@ -247,7 +249,7 @@ public class MarkdownText : ContentControl
         if (index < text.Length) target.Add(new Run(text[index..]));
     }
 
-    private static IBrush Resource(string key) => ResourceLookup.ByKey(key);
+    private IBrush Resource(string key) => ResourceLookup.ByKey(key, this);
 
     private static class Fonts
     {
@@ -258,9 +260,20 @@ public class MarkdownText : ContentControl
 
     private static class ResourceLookup
     {
-        public static IBrush ByKey(string key)
+        /// <summary>
+        /// D6: resolve through the control's own theme scope first. Application.TryFindResource only
+        /// sees the application theme, which returned light Ink for a control inside a dark window.
+        /// </summary>
+        public static IBrush ByKey(string key, StyledElement origin)
         {
-            if (Application.Current is { } app && app.TryFindResource(key, out var value) && value is IBrush brush) return brush;
+            if (origin.TryFindResource(key, origin.ActualThemeVariant, out var themedValue) && themedValue is IBrush themed)
+                return themed;
+            if (origin.TryFindResource(key, out var scopedValue) && scopedValue is IBrush scoped)
+                return scoped;
+            if (Application.Current is { } app && app.TryFindResource(key, origin.ActualThemeVariant, out var appValue)
+                && appValue is IBrush appBrush) return appBrush;
+            if (Application.Current is { } current && current.TryFindResource(key, out var anyValue) && anyValue is IBrush any)
+                return any;
             return Brushes.Black;
         }
     }

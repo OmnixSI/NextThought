@@ -107,4 +107,24 @@ public sealed class DesignSystemComponentsTests
         Assert.Contains(MarkdownReader.Inline("*强调*"),
             run => run.Kind == MarkdownInlineKind.Italic && run.Text == "强调");
     }
+    [Fact]
+    public void MarkdownTextResolvesInkFromTheActualThemeVariant()
+    {
+        var code = File.ReadAllText(Path.Combine(WindowsRoot(), "src", "NextThought.Desktop", "Views", "MarkdownText.cs"));
+        // D6: the control's own theme scope must win over Application.TryFindResource (which is light-only
+        // when the app theme differs from the window's ThemeVariantScope).
+        Assert.Contains("ActualThemeVariant", code);
+        Assert.Contains("TryFindResource(key, origin.ActualThemeVariant", code);
+        Assert.Contains("ActualThemeVariantChanged", code);
+    }
+
+    private static string WindowsRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "App.axaml")))
+                return Path.Combine(directory.FullName, "Windows");
+        }
+        throw new DirectoryNotFoundException("repository root");
+    }
 }
