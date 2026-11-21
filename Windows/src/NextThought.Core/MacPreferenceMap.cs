@@ -22,7 +22,7 @@ public static class MacPreferenceMap
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
         "cueScreen", "cueSurface", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen", "presenterSlideNotes",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
-        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
+        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "textZoom",
         "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository",
         "documentOcrProvider", "documentProviderWasSelected", "localOcrModelId",
         "ocrFallbackToVision", "codexOcrModel", "codexOcrEffort", "codexOcrTimeout"
@@ -40,7 +40,7 @@ public static class MacPreferenceMap
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
-        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
+        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "textZoom", "textZoom",
         "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository",
         "documentOCRProvider", "documentProviderWasSelected", "localOCRModelID",
         "ocrFallbackToVision", "codexOCRModel", "codexOCREffort", "codexOCRTimeout"
@@ -95,6 +95,7 @@ public static class MacPreferenceMap
         "teleprompterOpacity" => settings.TeleprompterOpacity,
         "teleprompterFontSize" => settings.TeleprompterFontSize,
         "reducedEffects" => settings.ReducedEffects,
+        "textZoom" => settings.TextZoom,
         "apiPresets" => settings.ApiPresets.Select(preset => (object?)new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["id"] = preset.Id,
@@ -188,6 +189,9 @@ public static class MacPreferenceMap
                 break;
             case "reducedEffects":
                 settings.ReducedEffects = normalized is bool reduced ? reduced : settings.ReducedEffects;
+                break;
+            case "textZoom":
+                settings.TextZoom = normalized is double zoom ? zoom : settings.TextZoom;
                 break;
             case "apiPresets":
                 settings.ApiPresets = ApplyPresets(normalized);
