@@ -14,12 +14,12 @@
        card, its translation smaller beneath it, and nothing else. Room around the card for the
        shadow (16 top / 20 sides / 28 bottom) and the "对方可见" badge above the trailing corner. -->
   <Panel>
-    <Panel x:Name="Outer" Margin="20,16,20,28">
+    <Panel x:Name="Outer" Margin="{DynamicResource D4Margin_20_16_20_28}">
       <Border x:Name="Card" Background="{DynamicResource SurfaceRaised}" BorderBrush="{DynamicResource Hairline}"
-              BorderThickness="0.5" CornerRadius="22" BoxShadow="0 12 26 0 #50000000" Padding="24,12">
-        <StackPanel x:Name="Stack" Spacing="4" HorizontalAlignment="Stretch">
+              BorderThickness="0.5" CornerRadius="{DynamicResource D4CornerRadius_22}" BoxShadow="0 12 26 0 #50000000" Padding="{DynamicResource D4Padding_24_12}">
+        <StackPanel x:Name="Stack" Spacing="{DynamicResource D4Spacing_4}" HorizontalAlignment="Stretch">
           <!-- Auto-end reminder: the same countdown the live page shows as a banner. -->
-          <StackPanel x:Name="AutoEndRow" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center"
+          <StackPanel x:Name="AutoEndRow" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}" HorizontalAlignment="Center"
                       IsVisible="False">
             <TextBlock x:Name="AutoEndIcon" Text="{StaticResource IconMoonZzz}" FontFamily="{StaticResource IconFont}"
                        FontSize="13" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
@@ -31,8 +31,8 @@
 
           <!-- One sentence, big and centred; its translation beneath. The other side is the
                default speaker and needs no label. -->
-          <StackPanel x:Name="LineStack" Spacing="4">
-            <StackPanel x:Name="PrimaryRow" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+          <StackPanel x:Name="LineStack" Spacing="{DynamicResource D4Spacing_4}">
+            <StackPanel x:Name="PrimaryRow" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_8}">
               <TextBlock x:Name="SpeakerLabel" FontSize="11" FontWeight="Medium"
                          Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" IsVisible="False" />
               <TextBlock x:Name="PrimaryText" FontWeight="Medium" TextAlignment="Center" TextWrapping="Wrap"
@@ -45,15 +45,15 @@
       </Border>
       <!-- Resting the pointer on the bar makes it draggable; the outline says so. -->
       <Border x:Name="EditingOutline" BorderBrush="{DynamicResource Secondary}" BorderThickness="1.5"
-              CornerRadius="22" IsVisible="False" IsHitTestVisible="False" />
+              CornerRadius="{DynamicResource D4CornerRadius_22}" IsVisible="False" IsHitTestVisible="False" />
     </Panel>
 
     <!-- Shown while the window is not hidden from screen sharing. -->
-    <Border x:Name="SharedBadge" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,8,0"
+    <Border x:Name="SharedBadge" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource D4Margin_0_7_8_0}"
             Background="{DynamicResource SurfaceRaised}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
-            CornerRadius="10" Padding="8,0" Height="20">
-      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource Caution}" VerticalAlignment="Center" />
+            CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_8_0}" Height="20">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+        <Border Width="6" Height="6" CornerRadius="{DynamicResource D4CornerRadius_3}" Background="{DynamicResource Caution}" VerticalAlignment="Center" />
         <TextBlock Text="{loc:Tr 对方可见}" Classes="caption" VerticalAlignment="Center" />
       </StackPanel>
     </Border>

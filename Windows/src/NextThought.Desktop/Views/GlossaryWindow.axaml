@@ -49,6 +49,14 @@
       <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     </Style>
     <!-- Mac fieldSurface(): a sunken 32 pt single-line field. -->
+    <Style Selector="TextBox.paste">
+      <Setter Property="MinHeight" Value="220" />
+    </Style>
+    <Style Selector="Button.tagRemove">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
     <Style Selector="Border.field">
       <Setter Property="Background" Value="{DynamicResource Sunken}" />
       <Setter Property="CornerRadius" Value="8" />
@@ -67,10 +75,10 @@
   <!-- E22 / §6.7: the glossary page (GlossaryView.swift). Two scopes, a 270 pt list, the entry
        editor (or the bulk-paste editor) on the right; 完成 has the default action; the window
        commits the open entry and tidies duplicates when it closes. -->
-  <Grid RowDefinitions="Auto,Auto,*" Margin="24" RowSpacing="12">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{DynamicResource D4Margin_24}" RowSpacing="12">
     <!-- Header: title + hint, 完成. -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Grid.Column="0" Spacing="4">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_4}">
         <TextBlock Text="{Binding GlossaryTitleText}" Classes="section" />
         <TextBlock Text="{Binding GlossaryHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
                    TextWrapping="Wrap" />
@@ -82,7 +90,7 @@
     <!-- Toolbar: global/series scope, filter, status and the more menu. -->
     <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
       <Border Grid.Column="0" Classes="segTrack">
-        <StackPanel Orientation="Horizontal" Spacing="2">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
           <Button x:Name="ScopeGlobalButton" Classes="segItem" Content="{Binding GlossaryScopeGlobalLabel}"
                   Click="ScopeGlobal_Click" />
           <Button x:Name="ScopeSeriesButton" Classes="segItem" Content="{Binding GlossaryScopeSeriesLabel}"
@@ -90,7 +98,7 @@
         </StackPanel>
       </Border>
       <Border Grid.Column="1" Classes="field" MaxWidth="200" MinWidth="140">
-        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
           <TextBlock Text="{StaticResource IconMagnifyingglass}" FontFamily="{StaticResource IconFont}"
                      FontSize="11" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
           <TextBox Text="{Binding GlossaryFilter, Mode=TwoWay}" PlaceholderText="{loc:Tr 查找}"
@@ -119,23 +127,23 @@
 
     <!-- List + editor. -->
     <Grid Grid.Row="2" ColumnDefinitions="270,*" ColumnSpacing="16">
-      <Border Grid.Column="0" Classes="card" Padding="8">
+      <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_8}">
         <Grid RowDefinitions="Auto,*" RowSpacing="4">
           <Button Grid.Row="0" Classes="quiet" Click="New_Click" HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
               <TextBlock Text="{StaticResource IconPlus}" FontFamily="{StaticResource IconFont}" FontSize="11"
                          VerticalAlignment="Center" />
               <TextBlock Text="{loc:Tr 新增}" FontSize="13" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="{DynamicResource D4Spacing_2}">
               <ItemsControl x:Name="GlossaryList" ItemsSource="{Binding GlossaryRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="local:GlossaryEntryRow">
                     <Button Classes="glossaryRow" Tag="{Binding}" Click="SelectEntry_Click">
-                      <StackPanel Spacing="2">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                           <TextBlock Text="{Binding Canonical}" Classes="label" TextTrimming="CharacterEllipsis" />
                           <Border Classes="chip" IsVisible="{Binding IsPerson}" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Tr 人名}" FontSize="10.5" Foreground="{DynamicResource Secondary}" />
@@ -150,9 +158,9 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Text="{Binding GlossaryEmptyText}" Classes="caption" Foreground="{DynamicResource Secondary}"
-                         TextWrapping="Wrap" Margin="8" />
+                         TextWrapping="Wrap" Margin="{DynamicResource D4Margin_8}" />
               <TextBlock Text="{Binding GlossaryFilteredEmptyText}" Classes="caption"
-                         Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" Margin="8" />
+                         Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_8}" />
             </StackPanel>
           </ScrollViewer>
         </Grid>
@@ -165,10 +173,10 @@
       </Border>
 
       <!-- Entry editor. -->
-      <Border x:Name="EntryEditor" Grid.Column="1" Classes="card" Padding="14" IsVisible="False">
+      <Border x:Name="EntryEditor" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="False">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="16">
-            <StackPanel Spacing="4">
+          <StackPanel Spacing="{DynamicResource D4Spacing_16}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{loc:Tr 规范写法}" Classes="overline" />
               <Border Classes="field">
                 <TextBox x:Name="CanonicalBox" Text="{Binding GlossaryEditorCanonical, Mode=TwoWay}"
@@ -176,14 +184,14 @@
               </Border>
             </StackPanel>
             <Border Classes="segTrack" HorizontalAlignment="Left">
-              <StackPanel Orientation="Horizontal" Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
                 <Button x:Name="KindTermButton" Classes="segItem" Content="{Binding GlossaryKindTermLabel}"
                         Click="KindTerm_Click" />
                 <Button x:Name="KindPersonButton" Classes="segItem" Content="{Binding GlossaryKindPersonLabel}"
                         Click="KindPerson_Click" />
               </StackPanel>
             </Border>
-            <StackPanel Spacing="8">
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
               <TextBlock Text="{loc:Tr 听错的写法}" Classes="overline" />
               <ItemsControl x:Name="VariantTags">
                 <ItemsControl.ItemsPanel>
@@ -193,11 +201,11 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="x:String">
-                    <Border Background="{DynamicResource Sunken}" CornerRadius="12" Padding="8,3" Margin="0,0,6,6">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_8_3}" Margin="{DynamicResource D4Margin_0_0_6_6}">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
                         <TextBlock Text="{Binding}" Classes="caption" />
-                        <Button Classes="quiet" Tag="{Binding}" Click="RemoveVariant_Click" Padding="0"
-                                MinWidth="20" MinHeight="20" ToolTip.Tip="{loc:Tr 移除}">
+                        <Button Classes="quiet" Tag="{Binding}" Click="RemoveVariant_Click" Padding="{DynamicResource D4Padding_0}"
+                                MinWidth="20" MinHeight="{DynamicResource Control}" ToolTip.Tip="{loc:Tr 移除}">
                           <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}"
                                      FontSize="8" Foreground="{DynamicResource Secondary}" />
                         </Button>
@@ -211,7 +219,7 @@
                          KeyDown="VariantInput_KeyDown" TextChanged="VariantInput_TextChanged" />
               </Border>
             </StackPanel>
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{loc:Tr 备注}" Classes="overline" />
               <Border Classes="field">
                 <TextBox Text="{Binding GlossaryEditorNote, Mode=TwoWay}"
@@ -229,21 +237,21 @@
       </Border>
 
       <!-- Paste editor: one line per entry. -->
-      <Border x:Name="PasteEditor" Grid.Column="1" Classes="card" Padding="14" IsVisible="False">
-        <StackPanel Spacing="12">
+      <Border x:Name="PasteEditor" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="False">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 批量粘贴}" Classes="label" />
           <TextBlock Text="{Binding GlossaryPasteHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
                      TextWrapping="Wrap" />
-          <Border Background="{DynamicResource Sunken}" CornerRadius="8" Padding="8">
+          <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" Padding="{DynamicResource D4Padding_8}">
             <TextBox Text="{Binding GlossaryPasteText, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinHeight="220" Background="Transparent" BorderThickness="0"
+                     MinHeight="{DynamicResource D4TextArea_220}" Background="Transparent" BorderThickness="0"
                      FontFamily="{StaticResource MonoFamily}" FontSize="12" />
           </Border>
           <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
             <TextBlock Grid.Column="0" Text="{loc:Tr 没写类型的当作}" Classes="caption"
                        Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
             <Border Grid.Column="1" Classes="segTrack">
-              <StackPanel Orientation="Horizontal" Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
                 <Button x:Name="PasteTermButton" Classes="segItem" Content="{Binding GlossaryKindTermLabel}"
                         Click="PasteTerm_Click" />
                 <Button x:Name="PastePersonButton" Classes="segItem" Content="{Binding GlossaryKindPersonLabel}"

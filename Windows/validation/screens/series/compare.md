@@ -1,5 +1,7 @@
 # 系列页（WorkspacesView.swift ↔ SeriesView.axaml）逐元素对照
 
+> 对照基准：Mac 3.4.0（`f015e8c6`）；参考图见 [series-light](../../mac-screens/series/series-light.png)、[series-dark](../../mac-screens/series/series-dark.png)。
+
 - 对照基准：Mac v3.4.0（`f015e8c6`）。Mac 参考图：[series-light](../../mac-screens/series/series-light.png) / [series-dark](../../mac-screens/series/series-dark.png)（左系列列表 + 右详情；2026-11-21，1120×820 pt @2x）。
 - Windows 截图：`Windows/validation/screens/current/series-light.png` / `series-dark.png`（1120×820，2026-11-21 隔离数据目录 `--demo --screenshots`，未入库；已按截图核对右详情标题/统计行/开下一场位置）。
 - 相关源码：`Sources/NextThought/WorkspacesView.swift`、`WorkspaceActions.swift`、`MeetingStatsViews.swift`；Windows `Views/SeriesView.axaml(.cs)`、`AppState.Series.cs`、`AppState.Home.cs`、`MeetingStats.cs`/`MeetingStatsText.cs`。

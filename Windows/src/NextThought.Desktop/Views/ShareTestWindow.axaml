@@ -8,11 +8,11 @@
         WindowStartupLocation="CenterOwner" Background="{DynamicResource Paper}">
   <!-- E13 / §6.7: ShareTestSheet.swift — 640-wide sheet: headline, the ScreenCaptureKit paragraph,
        the full-screen capture (own floating windows included), then 关闭 as the default action. -->
-  <StackPanel Margin="20" Spacing="12">
+  <StackPanel Margin="{DynamicResource D4Margin_20}" Spacing="{DynamicResource D4Spacing_12}">
     <TextBlock Text="{loc:Tr 共享可见性测试}" Classes="label" FontSize="15" />
     <TextBlock Text="{loc:Tr 下面是 ScreenCaptureKit 截取的整个屏幕，与 Zoom、Teams、Meet 等共享整屏时可能捕获的范围相近。如果能看到回答浮窗，整屏共享时其他参与者也可能看到；实际范围取决于会议软件和共享方式。}"
                Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-    <Border Background="{DynamicResource Sunken}" CornerRadius="8" MaxHeight="420" ClipToBounds="True"
+    <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" MaxHeight="420" ClipToBounds="True"
             IsVisible="{Binding HasShareTestImage}">
       <Image x:Name="ShareImage" Source="{Binding ShareTestImage}" Stretch="Uniform" MaxHeight="420" />
     </Border>
